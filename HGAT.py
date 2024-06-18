@@ -18,34 +18,26 @@ from TransformerBlock import TransformerBlock
 from torch.autograd import Variable
 
 
-class DJconv(nn.Module):
-    def __init__(self, in_channels, out_channels, layers = 1, bias=True):
-        super(DJconv, self).__init__()
-        self.in_channels = in_channels
-        self.out_channels = out_channels
+class HGNN_conv(nn.Module):
+    """
+    A HGNN layer
+    """
+    def __init__(self,dim_in, dim_out, activation, bias = True):
+        super(HGNN_conv, self).__init__()
 
-        self.weight = nn.Parameter(torch.Tensor(in_channels, out_channels))
-        # use xavier initialization
-        nn.init.xavier_uniform_(self.weight)
-        if bias:
-            self.bias = nn.Parameter(torch.Tensor(out_channels))
-        self.layers = layers
+        self.dim_in = dim_in
+        self.dim_out = dim_out
+        self.fc = nn.Linear(self.dim_in, self.dim_out, bias)
+        self.dropout = nn.Dropout(p=0.5)
+        self.activation = activation
 
-
-    def forward(self, H, U):
-        adj = torch.matmul(H, H.t())
-        item_embeddings = U
-        item_embedding_layer0 = item_embeddings
-        final = [item_embedding_layer0]
-        for i in range(self.layers):
-            item_embeddings = torch.sparse.mm(adj.cuda(), item_embeddings)
-            final.append(item_embeddings)
-        #  final1 = trans_to_cuda(torch.tensor([item.cpu().detach().numpy() for item in final]))
-        #  item_embeddings = torch.sum(final1, 0)
-        final_tensor = torch.stack(final, dim=0)  # 将列表转换为张量列表（在额外的维度上）  
-        item_embeddings = final_tensor.sum(dim=0) / (self.layers + 1)  # 求和并平均
-        item_embeddings = torch.matmul(item_embeddings, self.weight) + self.bias
-        return item_embeddings
+    def forward(self, G, feats):
+        x = feats
+        x = self.activation(self.fc(x))
+        G = G.matmul(G.t())
+        x = G.matmul(x)
+        x = self.dropout(x)
+        return x
 
 
 def get_previous_user_mask(seq, user_size):
@@ -137,7 +129,8 @@ class HGNN_ATT(nn.Module):
             self.batch_norm1 = torch.nn.BatchNorm1d(output_size)
         self.gat1 = HGATLayer(input_size, output_size, dropout=self.dropout, transfer=False, concat=True, edge=True)
         self.fus1 = Fusion(output_size)
-        self.hgnn = DJconv(64, 64, 1)
+        # self.hgnn = DJconv(64, 64, 1)
+        self.hgnn = HGNN_conv(64, 64, nn.ReLU, True)
 
     def forward(self, x, hypergraph_list):
         root_emb = F.embedding(hypergraph_list[1].cuda(), x)
