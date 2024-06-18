@@ -60,7 +60,7 @@ class HGNN2(nn.Module):
         self.hgc2 = HGNN_conv(emb_dim, emb_dim)
         # self.feat = nn.Embedding(n_node, emb_dim)
         # self.feat_idx = torch.arange(n_node).cuda()
-        nn.init.xavier_uniform_(self.feat.weight)
+        # nn.init.xavier_uniform_(self.feat.weight)
 
     def forward(self, x, G):
         # x = self.feat(self.feat_idx)
