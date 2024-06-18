@@ -130,7 +130,7 @@ class HGNN_ATT(nn.Module):
         self.gat1 = HGATLayer(input_size, output_size, dropout=self.dropout, transfer=False, concat=True, edge=True)
         self.fus1 = Fusion(output_size)
         # self.hgnn = DJconv(64, 64, 1)
-        self.hgnn = HGNN_conv(64, 64, nn.ReLU, True)
+        self.hgnn = HGNN_conv(64, 64, nn.ReLU(), True)
 
     def forward(self, x, hypergraph_list):
         root_emb = F.embedding(hypergraph_list[1].cuda(), x)
