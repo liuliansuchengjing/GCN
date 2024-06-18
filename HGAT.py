@@ -58,6 +58,7 @@ class HGNN2(nn.Module):
         self.dropout = dropout
         self.hgc1 = HGNN_conv(emb_dim, emb_dim)
         self.hgc2 = HGNN_conv(emb_dim, emb_dim)
+        self.hgc3 = HGNN_conv(emb_dim, emb_dim)
         # self.feat = nn.Embedding(n_node, emb_dim)
         # self.feat_idx = torch.arange(n_node).cuda()
         # nn.init.xavier_uniform_(self.feat.weight)
@@ -69,6 +70,8 @@ class HGNN2(nn.Module):
         x = self.hgc1(x, G)        
         # x = F.dropout(x, self.dropout)
         x = self.hgc2(x, G)
+        x = self.hgc3(x, G)
+        x = F.dropout(x, self.dropout)
         x = F.relu(x,inplace = False)
         return x
 
