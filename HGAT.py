@@ -35,7 +35,7 @@ class HGNN_conv(nn.Module):
         x = feats
         x = self.activation(self.fc(x))
         G = G.matmul(G.t())
-        x = G.matmul(x)
+        x = G.cuda().matmul(x.cuda())
         x = self.dropout(x)
         return x
 
