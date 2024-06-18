@@ -153,7 +153,7 @@ class HGNN_ATT(nn.Module):
         for sub_key in hypergraph_list.keys():
             sub_graph = hypergraph_list[sub_key]
             sub_node_embed, sub_edge_embed = self.gat1(x, sub_graph.cuda(), root_emb)
-            sub_node_embed = self.hgnn(sub_graph, x)
+            sub_node_embed = self.hgnn(sub_graph.cuda(), x)
             sub_node_embed = F.dropout(sub_node_embed, self.dropout, training=self.training)
 
             if self.is_norm:
