@@ -53,7 +53,7 @@ class HGNN_conv(nn.Module):
         return x
 
 class HGNN2(nn.Module):
-    def __init__(self, emb_dim, dropout=0.5):
+    def __init__(self, emb_dim, dropout=0.15):
         super(HGNN2, self).__init__()
         self.dropout = dropout
         self.hgc1 = HGNN_conv(emb_dim, emb_dim)
@@ -162,7 +162,7 @@ class HGNN_ATT(nn.Module):
         self.fus1 = Fusion(output_size)
         # self.hgnn = DJconv(64, 64, 1)
         # self.hgnn = HGNN_conv(input_size, output_size, True)
-        self.hgnn = HGNN2(input_size, 0.3)
+        self.hgnn = HGNN2(input_size, 0.15)
 
     def forward(self, x, hypergraph_list):
         root_emb = F.embedding(hypergraph_list[1].cuda(), x)
