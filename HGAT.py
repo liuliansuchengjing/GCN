@@ -72,7 +72,7 @@ class HGNN2(nn.Module):
         x = self.hgc2(x, G)
         x = self.hgc3(x, G)
         x = F.dropout(x, self.dropout)
-        x = F.relu(x,inplace = False)
+        # x = F.relu(x,inplace = False)
         return x
 
 
