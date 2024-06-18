@@ -67,7 +67,7 @@ class HGNN2(nn.Module):
         #x = F.dropout(x, self.dropout)
         # x = F.tanh(self.hgc1(x, G))
         x = self.hgc1(x, G)
-        x = F.dropout(x, self.dropout)
+        # x = F.dropout(x, self.dropout)
         x = self.hgc2(x, G)
         return x
 
