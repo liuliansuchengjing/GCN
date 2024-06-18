@@ -41,7 +41,7 @@ class HGNN_conv(nn.Module):
             self.bias.data.uniform_(-stdv, stdv)
 
 
-    def forward(self, G, x):  # x: torch.Tensor, G: torch.Tensor
+    def forward(self, x, G):  # x: torch.Tensor, G: torch.Tensor
 
         x = x.matmul(self.weight)
         if self.bias is not None:
@@ -50,6 +50,24 @@ class HGNN_conv(nn.Module):
         eage = eage.matmul(self.weight1)
         x = G.matmul(eage)
 
+        return x
+
+class HGNN2(nn.Module):
+    def __init__(self, emb_dim, dropout=0.5):
+        super(HGNN2, self).__init__()
+        self.dropout = dropout
+        self.hgc1 = HGNN_conv(emb_dim, emb_dim)
+        self.hgc2 = HGNN_conv(emb_dim, emb_dim)
+        # self.feat = nn.Embedding(n_node, emb_dim)
+        # self.feat_idx = torch.arange(n_node).cuda()
+        nn.init.xavier_uniform_(self.feat.weight)
+
+    def forward(self, x, G):
+        # x = self.feat(self.feat_idx)
+        #x = F.dropout(x, self.dropout)
+        x = F.tanh(self.hgc1(x, G))
+        x = F.dropout(x, self.dropout)
+        x = self.hgc2(x, G)
         return x
 
 
@@ -143,7 +161,8 @@ class HGNN_ATT(nn.Module):
         self.gat1 = HGATLayer(input_size, output_size, dropout=self.dropout, transfer=False, concat=True, edge=True)
         self.fus1 = Fusion(output_size)
         # self.hgnn = DJconv(64, 64, 1)
-        self.hgnn = HGNN_conv(input_size, output_size, True)
+        # self.hgnn = HGNN_conv(input_size, output_size, True)
+        self.hgnn = HGNN2(input_size, 0.5)
 
     def forward(self, x, hypergraph_list):
         root_emb = F.embedding(hypergraph_list[1].cuda(), x)
@@ -153,7 +172,7 @@ class HGNN_ATT(nn.Module):
         for sub_key in hypergraph_list.keys():
             sub_graph = hypergraph_list[sub_key]
             sub_node_embed, sub_edge_embed = self.gat1(x, sub_graph.cuda(), root_emb)
-            sub_node_embed = self.hgnn(sub_graph.cuda(), x)
+            sub_node_embed = self.hgnn(x, sub_graph.cuda())
             sub_node_embed = F.dropout(sub_node_embed, self.dropout, training=self.training)
 
             if self.is_norm:
