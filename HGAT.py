@@ -19,24 +19,37 @@ from torch.autograd import Variable
 
 
 class HGNN_conv(nn.Module):
-    """
-    A HGNN layer
-    """
-    def __init__(self,dim_in, dim_out, activation, bias = True):
+    def __init__(self, in_ft, out_ft, bias=True):  #
         super(HGNN_conv, self).__init__()
 
-        self.dim_in = dim_in
-        self.dim_out = dim_out
-        self.fc = nn.Linear(self.dim_in, self.dim_out, bias)
-        self.dropout = nn.Dropout(p=0.5)
-        self.activation = activation
+        self.weight = nn.Parameter(torch.Tensor(in_ft, out_ft))
+        self.weight1 = nn.Parameter(torch.Tensor(in_ft, out_ft))
+        if bias:
+            self.bias = nn.Parameter(torch.Tensor(out_ft))
+        else:
+            self.register_parameter('bias', None)
 
-    def forward(self, G, feats):
-        x = feats
-        x = self.activation(self.fc(x))
-        G = G.matmul(G.t())
-        x = G.cuda().matmul(x.cuda())
-        x = self.dropout(x)
+
+        self.reset_parameters()
+
+
+    def reset_parameters(self):
+        stdv = 1. / math.sqrt(self.weight.size(1))
+        self.weight.data.uniform_(-stdv, stdv)
+        self.weight1.data.uniform_(-stdv, stdv)
+        if self.bias is not None:
+            self.bias.data.uniform_(-stdv, stdv)
+
+
+    def forward(self, G, x):  # x: torch.Tensor, G: torch.Tensor
+
+        x = x.matmul(self.weight)
+        if self.bias is not None:
+            x = x + self.bias
+        eage = G.t().matmul(x)
+        eage = eage.matmul(self.weight1)
+        x = G.matmul(eage)
+
         return x
 
 
@@ -130,7 +143,7 @@ class HGNN_ATT(nn.Module):
         self.gat1 = HGATLayer(input_size, output_size, dropout=self.dropout, transfer=False, concat=True, edge=True)
         self.fus1 = Fusion(output_size)
         # self.hgnn = DJconv(64, 64, 1)
-        self.hgnn = HGNN_conv(64, 64, nn.ReLU(), True)
+        self.hgnn = HGNN_conv(input_size, output_size, True)
 
     def forward(self, x, hypergraph_list):
         root_emb = F.embedding(hypergraph_list[1].cuda(), x)
