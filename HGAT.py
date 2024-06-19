@@ -23,9 +23,8 @@ class HGNN_conv(nn.Module):
         super(HGNN_conv, self).__init__()
 
         self.weight = nn.Parameter(torch.Tensor(in_ft, out_ft))
-        self.weight0 = nn.Parameter(torch.Tensor(in_ft, out_ft))
         self.weight1 = nn.Parameter(torch.Tensor(in_ft, out_ft))
-        
+        # self.edge = nn.Embedding(984, out_ft)
         if bias:
             self.bias = nn.Parameter(torch.Tensor(out_ft))
         else:
@@ -38,14 +37,14 @@ class HGNN_conv(nn.Module):
     def reset_parameters(self):
         stdv = 1. / math.sqrt(self.weight.size(1))
         self.weight.data.uniform_(-stdv, stdv)
-        self.weight0.data.uniform_(-stdv, stdv)
         self.weight1.data.uniform_(-stdv, stdv)
         if self.bias is not None:
             self.bias.data.uniform_(-stdv, stdv)
 
 
     def forward(self, x, G):  # x: torch.Tensor, G: torch.Tensor
-        edge_emb = nn.Embedding(984, 64)
+        n_e = G.shape[1]
+        edge_emb = nn.Embedding(n_e, 64)
         x = G.matmul(edge_emb.weight.cuda())
         x = x.matmul(self.weight)
         if self.bias is not None:
@@ -62,8 +61,8 @@ class HGNN2(nn.Module):
         self.dropout = dropout
         self.hgc1 = HGNN_conv(emb_dim, emb_dim)
         self.hgc2 = HGNN_conv(emb_dim, emb_dim)
-        self.bn1 = nn.BatchNorm1d(emb_dim)
-        self.bn2 = nn.BatchNorm1d(emb_dim)
+        # self.bn1 = nn.BatchNorm1d(emb_dim)
+        # self.bn2 = nn.BatchNorm1d(emb_dim)
         # self.feat = nn.Embedding(n_node, emb_dim)
         # self.feat_idx = torch.arange(n_node).cuda()
         # nn.init.xavier_uniform_(self.feat.weight)
@@ -73,13 +72,12 @@ class HGNN2(nn.Module):
 
     def forward(self, x, G):
         x = self.fc1(x)
-        x = F.softmax(x,dim = 1)
-        # x = torch.sigmoid(x)
+        x = torch.sigmoid(x)
         x = F.relu(x,inplace = False)
         x = self.hgc1(x, G)        
         x = self.hgc2(x, G)
-        x = F.dropout(x, self.dropout)
-        
+        # x = F.dropout(x, self.dropout)
+        x = F.softmax(x,dim = 1)
         return x
 
 
@@ -174,7 +172,7 @@ class HGNN_ATT(nn.Module):
         self.fus1 = Fusion(output_size)
         # self.hgnn = DJconv(64, 64, 1)
         # self.hgnn = HGNN_conv(input_size, output_size, True)
-        self.hgnn = HGNN2(input_size, 0.1)
+        self.hgnn = HGNN2(input_size, 0.3)
 
     def forward(self, x, hypergraph_list):
         root_emb = F.embedding(hypergraph_list[1].cuda(), x)
