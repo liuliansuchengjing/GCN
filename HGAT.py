@@ -25,7 +25,7 @@ class HGNN_conv(nn.Module):
         self.weight = nn.Parameter(torch.Tensor(in_ft, out_ft))
         self.weight0 = nn.Parameter(torch.Tensor(in_ft, out_ft))
         self.weight1 = nn.Parameter(torch.Tensor(in_ft, out_ft))
-        self.edge = nn.Embedding(n_node, out_ft)
+        
         if bias:
             self.bias = nn.Parameter(torch.Tensor(out_ft))
         else:
