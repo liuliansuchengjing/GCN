@@ -73,7 +73,7 @@ class HGNN2(nn.Module):
         x = F.softmax(x,dim = 1)
         x = self.hgc3(x, G)
         x = F.dropout(x, self.dropout)
-        x = F.tanh(x,inplace = False)
+        x = F.tanh(x)
         return x
 
 
