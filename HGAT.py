@@ -70,9 +70,10 @@ class HGNN2(nn.Module):
         x = self.hgc1(x, G)        
         # x = F.dropout(x, self.dropout)
         x = self.hgc2(x, G)
+        x = F.softmax(x,dim = 1)
         x = self.hgc3(x, G)
         x = F.dropout(x, self.dropout)
-        # x = F.relu(x,inplace = False)
+        x = F.tanh(x,inplace = False)
         return x
 
 
