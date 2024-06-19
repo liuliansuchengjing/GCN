@@ -65,8 +65,10 @@ class HGNN2(nn.Module):
         # nn.init.xavier_uniform_(self.feat.weight)
         self.fc1 = nn.Linear(emb_dim, 200, bias=True)
         self.fc2 = nn.Linear(200, emb_dim, bias=True)
+        self.weight = nn.Parameter(torch.Tensor(emb_dim, emb_dim))
 
-    def forward(self, x, G):        
+    def forward(self, x, G):
+        x = x.matmul(self.weight)
         x = self.fc1(x)
         x = self.fc2(x)
         x = F.relu(x,inplace = False)
