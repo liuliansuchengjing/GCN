@@ -63,18 +63,17 @@ class HGNN2(nn.Module):
         # self.feat = nn.Embedding(n_node, emb_dim)
         # self.feat_idx = torch.arange(n_node).cuda()
         # nn.init.xavier_uniform_(self.feat.weight)
-        self.fc1 = nn.Linear(emb_dim, 200, bias=True)
-        self.fc2 = nn.Linear(200, emb_dim, bias=True)
+        self.fc1 = nn.Linear(emb_dim, emb_dim, bias=False)
+        self.fc2 = nn.Linear(emb_dim, emb_dim, bias=False)
         self.weight = nn.Parameter(torch.Tensor(emb_dim, emb_dim))
 
     def forward(self, x, G):
-        x = x.matmul(self.weight)
         x = self.fc1(x)
-        x = self.fc2(x)
+        x = torch.sigmoid(x)
         x = F.relu(x,inplace = False)
         x = self.hgc1(x, G)        
         x = self.hgc2(x, G)
-        x = F.dropout(x, self.dropout)
+        # x = F.dropout(x, self.dropout)
         x = F.softmax(x,dim = 1)
         return x
 
