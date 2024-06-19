@@ -66,24 +66,14 @@ class HGNN2(nn.Module):
         self.fc1 = nn.Linear(emb_dim, 200, bias=True)
         self.fc2 = nn.Linear(200, emb_dim, bias=True)
 
-    def forward(self, x, G):
-        # x = self.feat(self.feat_idx)
-        #x = F.dropout(x, self.dropout)
-        # x = F.tanh(self.hgc1(x, G))
+    def forward(self, x, G):        
         x = self.fc1(x)
         x = self.fc2(x)
         x = F.relu(x,inplace = False)
-        x1 = self.hgc1(x, G)
-        x1 = F.dropout(x1, self.dropout)
-        x1 = F.softmax(x1,dim = 1)
-        # x = F.dropout(x, self.dropout)
-        x2 = self.hgc2(x1, G)
-        # x = self.hgc3(x, G)
-        # x = self.hgc4(x, G)
-        x2 = F.dropout(x2, self.dropout)
-        x2 = F.softmax(x2,dim = 1)
-        x = (x1 + x2 + x)/3
-        # x = F.tanh(x)
+        x = self.hgc1(x, G)        
+        x = self.hgc2(x, G)
+        x = F.dropout(x, self.dropout)
+        x = F.softmax(x,dim = 1)
         return x
 
 
