@@ -29,7 +29,7 @@ metric = Metrics()
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-data_name', default='MOOCCube')
-parser.add_argument('-epoch', type=int, default=80)
+parser.add_argument('-epoch', type=int, default=75)
 parser.add_argument('-batch_size', type=int, default=64)
 parser.add_argument('-d_model', type=int, default=64)
 parser.add_argument('-initialFeatureSize', type=int, default=64)
