@@ -24,8 +24,6 @@ class HGNN_conv(nn.Module):
 
         self.weight = nn.Parameter(torch.Tensor(in_ft, out_ft))
         self.weight1 = nn.Parameter(torch.Tensor(in_ft, out_ft))
-        nn.init.xavier_uniform_(self.weight)
-        nn.init.xavier_uniform_(self.weight1)
         self.edge = nn.Embedding(n_node, out_ft)
         if bias:
             self.bias = nn.Parameter(torch.Tensor(out_ft))
@@ -72,12 +70,13 @@ class HGNN2(nn.Module):
 
     def forward(self, x, G):
         x = self.fc1(x)
-        x = torch.sigmoid(x)
+        x = F.softmax(x,dim = 1)
+        # x = torch.sigmoid(x)
         x = F.relu(x,inplace = False)
         x = self.hgc1(x, G)        
         x = self.hgc2(x, G)
         # x = F.dropout(x, self.dropout)
-        x = F.softmax(x,dim = 1)
+        
         return x
 
 
