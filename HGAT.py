@@ -26,6 +26,7 @@ class HGNN_conv(nn.Module):
         self.weight1 = nn.Parameter(torch.Tensor(in_ft, out_ft))
         nn.init.xavier_uniform_(self.weight)
         nn.init.xavier_uniform_(self.weight1)
+        self.edge = nn.Embedding(n_node, out_ft)
         if bias:
             self.bias = nn.Parameter(torch.Tensor(out_ft))
         else:
@@ -44,12 +45,12 @@ class HGNN_conv(nn.Module):
 
 
     def forward(self, x, G):  # x: torch.Tensor, G: torch.Tensor
-
+        x = G.matmul(self.edge)
         x = x.matmul(self.weight)
         if self.bias is not None:
             x = x + self.bias
-        eage = G.t().matmul(x)
-        eage = eage.matmul(self.weight1)
+        edge = G.t().matmul(x)
+        edge = edge.matmul(self.weight1)
         x = G.matmul(eage)
 
         return x
