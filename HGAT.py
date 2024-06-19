@@ -73,7 +73,7 @@ class HGNN2(nn.Module):
         x = F.relu(x,inplace = False)
         x = self.hgc1(x, G)        
         x = self.hgc2(x, G)
-        # x = F.dropout(x, self.dropout)
+        x = F.dropout(x, self.dropout)
         x = F.softmax(x,dim = 1)
         return x
 
@@ -169,7 +169,7 @@ class HGNN_ATT(nn.Module):
         self.fus1 = Fusion(output_size)
         # self.hgnn = DJconv(64, 64, 1)
         # self.hgnn = HGNN_conv(input_size, output_size, True)
-        self.hgnn = HGNN2(input_size, 0.1)
+        self.hgnn = HGNN2(input_size, 0.3)
 
     def forward(self, x, hypergraph_list):
         root_emb = F.embedding(hypergraph_list[1].cuda(), x)
