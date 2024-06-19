@@ -46,7 +46,7 @@ class HGNN_conv(nn.Module):
 
     def forward(self, x, G):  # x: torch.Tensor, G: torch.Tensor
         edge_emb = nn.Embedding(984, 64)
-        edge_e = edge_emb.weight.matmul(self.weight0)
+        edge_e = edge_emb.weight.cuda().matmul(self.weight0)
         x = G.matmul(edge_e.cuda())
         x = x.matmul(self.weight)
         if self.bias is not None:
