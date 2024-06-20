@@ -17,8 +17,78 @@ import Constants
 from TransformerBlock import TransformerBlock
 from torch.autograd import Variable
 
+class HGNN_conv(nn.Module):
+    def __init__(self, in_ft, out_ft, bias=True):  #
+        super(HGNN_conv, self).__init__()
+
+        self.weight = nn.Parameter(torch.Tensor(in_ft, out_ft))
+        self.weight1 = nn.Parameter(torch.Tensor(in_ft, out_ft))
+        # self.edge = nn.Embedding(984, out_ft)
+        if bias:
+            self.bias = nn.Parameter(torch.Tensor(out_ft))
+        else:
+            self.register_parameter('bias', None)
+
+
+        self.reset_parameters()
+
+
+    def reset_parameters(self):
+        stdv = 1. / math.sqrt(self.weight.size(1))
+        self.weight.data.uniform_(-stdv, stdv)
+        self.weight1.data.uniform_(-stdv, stdv)
+        if self.bias is not None:
+            self.bias.data.uniform_(-stdv, stdv)
+
+
+    def forward(self, x, G):  # x: torch.Tensor, G: torch.Tensor
+        n_e = G.shape[1]
+        edge_emb = nn.Embedding(n_e, 64)
+        x = G.matmul(edge_emb.weight.cuda())
+        x = x.matmul(self.weight)
+        if self.bias is not None:
+            x = x + self.bias
+        edge = G.t().matmul(x)
+        edge = edge.matmul(self.weight1)
+        x = G.matmul(edge)
+
+        return x
+
+class HGNN2(nn.Module):
+    def __init__(self, emb_dim, dropout=0.15):
+        super(HGNN2, self).__init__()
+        self.dropout = dropout
+        self.hgc1 = HGNN_conv(emb_dim, emb_dim)
+        self.hgc2 = HGNN_conv(emb_dim, emb_dim)
+        # self.bn1 = nn.BatchNorm1d(emb_dim)
+        # self.bn2 = nn.BatchNorm1d(emb_dim)
+        # self.feat = nn.Embedding(n_node, emb_dim)
+        # self.feat_idx = torch.arange(n_node).cuda()
+        # nn.init.xavier_uniform_(self.feat.weight)
+        self.fc1 = nn.Linear(emb_dim, emb_dim, bias=False)
+        self.fc2 = nn.Linear(emb_dim, emb_dim, bias=False)
+        self.weight = nn.Parameter(torch.Tensor(emb_dim, emb_dim))
+        if bias:
+            self.bias = nn.Parameter(torch.Tensor(out_channels))
+
+    def forward(self, x, G):
+        final = [x]
+        x = self.fc1(x)
+        x = torch.sigmoid(x)
+        x = F.relu(x,inplace = False)
+        x = self.hgc1(x, G) 
+        final.append(x)
+        x = self.hgc2(x, G)
+        final.append(x)
+        final_tensor = torch.stack(final, dim=0)  # 将列表转换为张量列表（在额外的维度上）  
+        item_embeddings = final_tensor.sum(dim=0) / 3  # 求和并平均
+        x = torch.matmul(item_embeddings, self.weight) + self.bias
+        # x = F.dropout(x, self.dropout)
+        x = F.softmax(x,dim = 1)
+        return x
+
 class DJconv(nn.Module):
-    def __init__(self, in_channels, out_channels, bias=True):
+    def __init__(self, in_channels, out_channels, layers = 1, bias=True):
         super(DJconv, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -28,103 +98,23 @@ class DJconv(nn.Module):
         nn.init.xavier_uniform_(self.weight)
         if bias:
             self.bias = nn.Parameter(torch.Tensor(out_channels))
-
-    def forward(self, U, H):
-        Hu = torch.concat((H, torch.matmul(H, torch.matmul(H.t(), H))), dim=1)
-        Hu = torch.where(Hu >= 0.5, 1., 0.)
-        Hu = Hu.to(torch.float32)
-
-        Du_v = torch.sum(Hu, dim=1)
-        mask = Du_v.nonzero()
-        for i in mask:
-            Du_v[i] = 1 / torch.sqrt(Du_v[i])
-        Du_v = torch.diag(Du_v)
-        Du_v = Du_v.to(torch.float32)
-
-        Du_e = torch.sum(Hu, dim=0)
-        mask = Du_e.nonzero()
-        for i in mask:
-            Du_e[i] = 1 / torch.sqrt(Du_e[i])
-        Du_e = torch.diag(Du_e)
-        Du_e = Du_e.to(torch.float32)
-        
-        U = U.to(torch.float32)
-        M_u1 = Du_v.cuda().matmul(Hu.cuda())
-        M_u2 = M_u1.cuda().matmul(Du_e.cuda())
-        M_u3 = M_u2.cuda().matmul(Du_e.cuda())
-        M_u4 = M_u3.cuda().matmul(Hu.t().cuda())
-        M_u5 = M_u4.cuda().matmul(Du_v.cuda())
-        M_u6 = M_u5.cuda().matmul(U.cuda())
-
-        M_u = M_u6 + U
-
-        # M_u = torch.linalg.multi_dot([Du_v, Hu, Du_e, Du_e, Hu.t(), Du_v, U]) + U
-
-        U_out = torch.matmul(M_u.cuda(), self.weight) + self.bias
-
-        return U_out
-
-# class HGNN_conv(nn.Module):
-#     def __init__(self, in_ft, out_ft, bias=True):  #
-#         super(HGNN_conv, self).__init__()
-
-#         self.weight = nn.Parameter(torch.Tensor(in_ft, out_ft))
-#         self.weight1 = nn.Parameter(torch.Tensor(in_ft, out_ft))
-#         # self.edge = nn.Embedding(984, out_ft)
-#         if bias:
-#             self.bias = nn.Parameter(torch.Tensor(out_ft))
-#         else:
-#             self.register_parameter('bias', None)
+        self.layers = layers
 
 
-#         self.reset_parameters()
-
-
-#     def reset_parameters(self):
-#         stdv = 1. / math.sqrt(self.weight.size(1))
-#         self.weight.data.uniform_(-stdv, stdv)
-#         self.weight1.data.uniform_(-stdv, stdv)
-#         if self.bias is not None:
-#             self.bias.data.uniform_(-stdv, stdv)
-
-
-#     def forward(self, x, G):  # x: torch.Tensor, G: torch.Tensor
-#         n_e = G.shape[1]
-#         edge_emb = nn.Embedding(n_e, 64)
-#         x = G.matmul(edge_emb.weight.cuda())
-#         x = x.matmul(self.weight)
-#         if self.bias is not None:
-#             x = x + self.bias
-#         edge = G.t().matmul(x)
-#         edge = edge.matmul(self.weight1)
-#         x = G.matmul(edge)
-
-#         return x
-
-# class HGNN2(nn.Module):
-#     def __init__(self, emb_dim, dropout=0.15):
-#         super(HGNN2, self).__init__()
-#         self.dropout = dropout
-#         self.hgc1 = HGNN_conv(emb_dim, emb_dim)
-#         self.hgc2 = HGNN_conv(emb_dim, emb_dim)
-#         # self.bn1 = nn.BatchNorm1d(emb_dim)
-#         # self.bn2 = nn.BatchNorm1d(emb_dim)
-#         # self.feat = nn.Embedding(n_node, emb_dim)
-#         # self.feat_idx = torch.arange(n_node).cuda()
-#         # nn.init.xavier_uniform_(self.feat.weight)
-#         self.fc1 = nn.Linear(emb_dim, emb_dim, bias=False)
-#         self.fc2 = nn.Linear(emb_dim, emb_dim, bias=False)
-#         self.weight = nn.Parameter(torch.Tensor(emb_dim, emb_dim))
-
-#     def forward(self, x, G):
-#         x = self.fc1(x)
-#         x = torch.sigmoid(x)
-#         x = F.relu(x,inplace = False)
-#         x = self.hgc1(x, G)        
-#         x = self.hgc2(x, G)
-#         # x = F.dropout(x, self.dropout)
-#         x = F.softmax(x,dim = 1)
-#         return x
+    def forward(self, H, U):
+        adj = torch.matmul(H, H.t())
+        item_embeddings = U
+        item_embedding_layer0 = item_embeddings
+        final = [item_embedding_layer0]
+        for i in range(self.layers):
+            item_embeddings = torch.sparse.mm(adj.cuda(), item_embeddings)
+            final.append(item_embeddings)
+        #  final1 = trans_to_cuda(torch.tensor([item.cpu().detach().numpy() for item in final]))
+        #  item_embeddings = torch.sum(final1, 0)
+        final_tensor = torch.stack(final, dim=0)  # 将列表转换为张量列表（在额外的维度上）  
+        item_embeddings = final_tensor.sum(dim=0) / (self.layers + 1)  # 求和并平均
+        item_embeddings = torch.matmul(item_embeddings, self.weight) + self.bias
+        return item_embeddings
 
 
 def get_previous_user_mask(seq, user_size):
