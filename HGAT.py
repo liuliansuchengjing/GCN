@@ -50,7 +50,7 @@ class HGNN_conv(nn.Module):
         init.xavier_uniform_(self.weight)  
         init.xavier_uniform_(self.weight1)
         # self.edge = nn.Embedding(984, out_ft)
-        self.attention = self_Attention(emb_dim, hidden=8)  # 创建一个自注意力层 
+        self.attention = self_Attention(64, 8)  # 创建一个自注意力层 
         if bias:
             self.bias = nn.Parameter(torch.Tensor(out_ft))
         else:
@@ -328,4 +328,3 @@ class MSHGAT(nn.Module):
                 cas_emb += sub_cas
         pred = self.pred(dyemb)
         return pred.view(-1, pred.size(-1))
-
