@@ -32,7 +32,8 @@ class self_Attention(nn.Module):
   
         # 使用alpha对embedding进行加权聚合（但通常不会直接更新embedding）  
         # 这里的context是一个加权和，而不是embedding的更新  
-        context = torch.matmul(alpha.unsqueeze(1), embedding)  
+        repeated_tensor = torch.repeat_interleave(alpha.unsqueeze(1).T, 984, dim=0)
+        context = torch.matmul(repeated_tensor, embedding)  
   
         # 如果想要模拟“更新”embedding的效果（注意：这通常不是自注意力的目的）  
         # updated_embedding = embedding * alpha.unsqueeze(1).expand_as(embedding)  
@@ -49,6 +50,7 @@ class HGNN_conv(nn.Module):
         init.xavier_uniform_(self.weight)  
         init.xavier_uniform_(self.weight1)
         # self.edge = nn.Embedding(984, out_ft)
+        self.attention = self_Attention(emb_dim, hidden=8)  # 创建一个自注意力层 
         if bias:
             self.bias = nn.Parameter(torch.Tensor(out_ft))
         else:
@@ -73,7 +75,8 @@ class HGNN_conv(nn.Module):
         if self.bias is not None:
             x = x + self.bias
         edge = G.t().matmul(x)
-        edge = edge.matmul(self.weight1)
+        alpha, edge = self.attention(x) 
+        # edge = edge.matmul(self.weight1)
         x = G.matmul(edge)
 
         return x
@@ -92,7 +95,7 @@ class HGNN2(nn.Module):
         self.fc1 = nn.Linear(emb_dim, emb_dim, bias=False)
         self.fc2 = nn.Linear(emb_dim, emb_dim, bias=False)
         self.weight = nn.Parameter(torch.Tensor(emb_dim, emb_dim))
-        attention = self_Attention(emb_dim, hidden=8)  # 创建一个自注意力层  
+         
 
 
     def forward(self, x, G):
@@ -102,7 +105,7 @@ class HGNN2(nn.Module):
         x = self.hgc1(x, G)        
         x = self.hgc2(x, G)
         # x = F.dropout(x, self.dropout)
-        alpha, x = attention(x) 
+        
         x = F.softmax(x,dim = 1)
         return x
 
