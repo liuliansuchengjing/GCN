@@ -314,8 +314,12 @@ class MSHGAT(nn.Module):
 
                 dyemb += sub_emb
                 cas_emb += sub_cas
+            sub_emb = sub_emb.view(-1, pred.size(-1))
+            # dyemb = torch.stack(dyemb, dim=1) 
+            dyemb = torch.stack(sub_emb, dim=1)  
         
         GRUoutput, h = self.GRU(dyemb, h)
         pred = self.pred(GRUoutput)
         # pred = self.pred(dyemb)
-        return pred.view(-1, pred.size(-1))
+        # return pred.view(-1, pred.size(-1))
+        return pred
