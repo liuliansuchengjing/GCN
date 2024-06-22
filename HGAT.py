@@ -315,7 +315,7 @@ class MSHGAT(nn.Module):
                 dyemb += sub_emb
                 cas_emb += sub_cas
         
-        GRUoutput, h = model(dyemb, h)
+        GRUoutput, h = self.GRU(dyemb, h)
         pred = self.pred(GRUoutput)
         # pred = self.pred(dyemb)
         return pred.view(-1, pred.size(-1))
