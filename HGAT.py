@@ -10,6 +10,39 @@ import Constants
 from TransformerBlock import TransformerBlock
 from torch.autograd import Variable
 
+class self_Attention(nn.Module):  
+    def __init__(self, num_nodes, num_in, num_hidden):  
+        super(self_Attention, self).__init__()  
+        self.num_nodes = num_nodes  
+        self.num_in = num_in  
+        self.hidden = num_hidden  
+        self.act1 = F.tanh  
+        self.Wr = nn.Parameter(torch.zeros(size=(self.num_in, self.hidden), dtype=torch.float))  
+        nn.init.xavier_uniform_(self.Wr.data, gain=0)  
+        self.b1 = nn.Parameter(torch.zeros(self.hidden, dtype=torch.float))  
+        self.P = nn.Parameter(torch.zeros(size=(self.hidden, 1), dtype=torch.float))  
+        nn.init.xavier_uniform_(self.P.data, gain=0)  
+          
+        # 这里我们假设Mr是用于后续计算的某种矩阵，但在本例中我们不会使用它  
+        # self.Mr = nn.Parameter(torch.zeros(size=(self.num_nodes, self.num_nodes), dtype=torch.float))  
+  
+    def forward(self, embedding):  
+        # 计算注意力分数  
+        hidden = self.act1(embedding.matmul(self.Wr) + self.b1)  
+        attention_scores = hidden.matmul(self.P).squeeze(dim=-1)  
+          
+        # 应用softmax进行归一化  
+        alpha = F.softmax(attention_scores, dim=0)  # 假设embedding的第一维度是节点维度  
+  
+        # 使用alpha对embedding进行加权聚合（但通常不会直接更新embedding）  
+        # 这里的context是一个加权和，而不是embedding的更新  
+        context = torch.matmul(alpha.unsqueeze(1), embedding)  
+  
+        # 如果想要模拟“更新”embedding的效果（注意：这通常不是自注意力的目的）  
+        # updated_embedding = embedding * alpha.unsqueeze(1).expand_as(embedding)  
+  
+        # 返回加权聚合的上下文或者alpha  
+        return alpha, context
 
 class HGNN_conv(nn.Module):
     def __init__(self, in_ft, out_ft, bias=True):  #
