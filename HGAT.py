@@ -166,7 +166,7 @@ class GRUNet(nn.Module):
         
     def forward(self, x, h):
         out, h = self.gru(x, h)
-        out = self.fc(self.relu(out[:,-1]))
+        # out = self.fc(self.relu(out[:,-1]))
         return out, h
     
     def init_hidden(self, batch_size):
@@ -246,7 +246,7 @@ class MSHGAT(nn.Module):
         self.embedding = nn.Embedding(self.n_node, self.initial_feature, padding_idx=0)
         self.reset_parameters()
         self.readout = MLPReadout(self.hidden_size, self.n_node, None)
-        self.GRU = GRUNet(self.hidden_size, self.hidden_size, self.hidden_size, 1)
+        self.GRU = GRUNet(self.hidden_size, self.hidden_size, self.n_node, 1)
 
     def reset_parameters(self):
         stdv = 1.0 / math.sqrt(self.hidden_size)
@@ -275,8 +275,11 @@ class MSHGAT(nn.Module):
         zero_vec = torch.zeros_like(input)
         dyemb = torch.zeros(batch_size, max_len, self.hidden_size).cuda()
         cas_emb = torch.zeros(batch_size, max_len, self.hidden_size).cuda()
-        
-        h = self.GRU.init_hidden(64)
+        # print("batch_size", batch_size)
+        # print("max_len", max_len)
+        h = self.GRU.init_hidden(batch_size*max_len)
+        sub_emb_list = []
+        dy_emb_list = []
 
         for ind, time in enumerate(sorted(memory_emb_list.keys())):
             if ind == 0:
@@ -314,12 +317,20 @@ class MSHGAT(nn.Module):
 
                 dyemb += sub_emb
                 cas_emb += sub_cas
-            sub_emb = sub_emb.view(-1, pred.size(-1))
-            # dyemb = torch.stack(dyemb, dim=1) 
-            dyemb = torch.stack(sub_emb, dim=1)  
+            
+            sub_emb_ = sub_emb.view(-1, sub_emb.size(-1))
+            dy_emb_ = dyemb.view(-1, dyemb.size(-1))
+            sub_emb_list.append(sub_emb_)
+            dy_emb_list.append(dy_emb_)
+            
+            dy_emb = torch.stack(dy_emb_list, dim=1) 
+            # dy_emb = torch.stack(sub_emb_list, dim=1)  
         
-        GRUoutput, h = self.GRU(dyemb, h)
-        pred = self.pred(GRUoutput)
+        GRUoutput, h = self.GRU(dy_emb, h)   
+        pre = GRUoutput.sum(dim=1)  
+        
+        # pred = self.pred(GRUoutput)
+        # print("pred.shape:", pred.size())
         # pred = self.pred(dyemb)
         # return pred.view(-1, pred.size(-1))
-        return pred
+        return GRUoutput
