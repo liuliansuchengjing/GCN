@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Jan 18 22:30:16 2021
-
-@author: Ling Sun
-"""
-
 import math
 import numpy as np
 import torch
@@ -24,8 +17,9 @@ class HGNN_conv(nn.Module):
 
         self.weight = nn.Parameter(torch.Tensor(in_ft, out_ft))
         self.weight1 = nn.Parameter(torch.Tensor(in_ft, out_ft))
-        self.edge = nn.Embedding(984, out_ft)
-        self.edge_idx = torch.arange(984).cuda()
+        init.xavier_uniform_(self.weight)  
+        init.xavier_uniform_(self.weight1)
+        # self.edge = nn.Embedding(984, out_ft)
         if bias:
             self.bias = nn.Parameter(torch.Tensor(out_ft))
         else:
@@ -44,9 +38,8 @@ class HGNN_conv(nn.Module):
 
 
     def forward(self, x, G):  # x: torch.Tensor, G: torch.Tensor
-        # edge_emb = nn.Embedding(984, 64)
-        edge_emb = self.edge(self.edge_idx)
-        x = G.matmul(edge_emb)
+        edge_emb = nn.Embedding(984, 64)
+        x = G.matmul(edge_emb.weight.cuda())
         x = x.matmul(self.weight)
         if self.bias is not None:
             x = x + self.bias
