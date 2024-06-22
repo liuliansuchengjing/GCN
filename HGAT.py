@@ -1,3 +1,10 @@
+hits@10 0.5890340323135098
+map@10 0.38910571734136534
+hits@50 0.639051220350636
+map@50 0.39166724710277645
+hits@100 0.6557236163630114
+map@100 0.39190598010847905
+
 # -*- coding: utf-8 -*-
 """
 Created on Mon Jan 18 22:30:16 2021
@@ -17,6 +24,7 @@ import Constants
 from TransformerBlock import TransformerBlock
 from torch.autograd import Variable
 
+
 class HGNN_conv(nn.Module):
     def __init__(self, in_ft, out_ft, bias=True):  #
         super(HGNN_conv, self).__init__()
@@ -24,6 +32,7 @@ class HGNN_conv(nn.Module):
         self.weight = nn.Parameter(torch.Tensor(in_ft, out_ft))
         self.weight1 = nn.Parameter(torch.Tensor(in_ft, out_ft))
         self.edge = nn.Embedding(984, out_ft)
+        self.edge_idx = torch.arange(984).cuda()
         if bias:
             self.bias = nn.Parameter(torch.Tensor(out_ft))
         else:
@@ -42,8 +51,9 @@ class HGNN_conv(nn.Module):
 
 
     def forward(self, x, G):  # x: torch.Tensor, G: torch.Tensor
-        edge_embeddings = self.edge_emb(G[:, 1])
-        x = G.matmul(edge_embeddings.cuda())
+        # edge_emb = nn.Embedding(984, 64)
+        edge_emb = self.edge(self.edge_idx)
+        x = G.matmul(edge_emb)
         x = x.matmul(self.weight)
         if self.bias is not None:
             x = x + self.bias
@@ -67,52 +77,16 @@ class HGNN2(nn.Module):
         self.fc1 = nn.Linear(emb_dim, emb_dim, bias=False)
         self.fc2 = nn.Linear(emb_dim, emb_dim, bias=False)
         self.weight = nn.Parameter(torch.Tensor(emb_dim, emb_dim))
-        self.bias = nn.Parameter(torch.Tensor(emb_dim))
 
     def forward(self, x, G):
-        final = [x]
         x = self.fc1(x)
         x = torch.sigmoid(x)
         x = F.relu(x,inplace = False)
-        x = self.hgc1(x, G) 
-        final.append(x)
+        x = self.hgc1(x, G)        
         x = self.hgc2(x, G)
-        final.append(x)
-        final_tensor = torch.stack(final, dim=0)  # 将列表转换为张量列表（在额外的维度上）  
-        item_embeddings = final_tensor.sum(dim=0) / 3  # 求和并平均
-        x = torch.matmul(item_embeddings, self.weight) + self.bias
         # x = F.dropout(x, self.dropout)
         x = F.softmax(x,dim = 1)
         return x
-
-# class DJconv(nn.Module):
-#     def __init__(self, in_channels, out_channels, layers = 1, bias=True):
-#         super(DJconv, self).__init__()
-#         self.in_channels = in_channels
-#         self.out_channels = out_channels
-
-#         self.weight = nn.Parameter(torch.Tensor(in_channels, out_channels))
-#         # use xavier initialization
-#         nn.init.xavier_uniform_(self.weight)
-#         if bias:
-#             self.bias = nn.Parameter(torch.Tensor(out_channels))
-#         self.layers = layers
-
-
-#     def forward(self, H, U):
-#         adj = torch.matmul(H, H.t())
-#         item_embeddings = U
-#         item_embedding_layer0 = item_embeddings
-#         final = [item_embedding_layer0]
-#         for i in range(self.layers):
-#             item_embeddings = torch.sparse.mm(adj.cuda(), item_embeddings)
-#             final.append(item_embeddings)
-#         #  final1 = trans_to_cuda(torch.tensor([item.cpu().detach().numpy() for item in final]))
-#         #  item_embeddings = torch.sum(final1, 0)
-#         final_tensor = torch.stack(final, dim=0)  # 将列表转换为张量列表（在额外的维度上）  
-#         item_embeddings = final_tensor.sum(dim=0) / (self.layers + 1)  # 求和并平均
-#         item_embeddings = torch.matmul(item_embeddings, self.weight) + self.bias
-#         return item_embeddings
 
 
 def get_previous_user_mask(seq, user_size):
