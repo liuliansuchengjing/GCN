@@ -11,9 +11,8 @@ from TransformerBlock import TransformerBlock
 from torch.autograd import Variable
 
 class self_Attention(nn.Module):  
-    def __init__(self, num_nodes, num_in, num_hidden):  
+    def __init__(self, num_in, num_hidden):  
         super(self_Attention, self).__init__()  
-        self.num_nodes = num_nodes  
         self.num_in = num_in  
         self.hidden = num_hidden  
         self.act1 = F.tanh  
@@ -22,9 +21,6 @@ class self_Attention(nn.Module):
         self.b1 = nn.Parameter(torch.zeros(self.hidden, dtype=torch.float))  
         self.P = nn.Parameter(torch.zeros(size=(self.hidden, 1), dtype=torch.float))  
         nn.init.xavier_uniform_(self.P.data, gain=0)  
-          
-        # 这里我们假设Mr是用于后续计算的某种矩阵，但在本例中我们不会使用它  
-        # self.Mr = nn.Parameter(torch.zeros(size=(self.num_nodes, self.num_nodes), dtype=torch.float))  
   
     def forward(self, embedding):  
         # 计算注意力分数  
