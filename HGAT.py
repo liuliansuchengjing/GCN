@@ -10,36 +10,6 @@ import Constants
 from TransformerBlock import TransformerBlock
 from torch.autograd import Variable
 
-class self_Attention(nn.Module):  
-    def __init__(self, num_in, num_hidden):  
-        super(self_Attention, self).__init__()  
-        self.num_in = num_in  
-        self.hidden = num_hidden  
-        self.act1 = F.tanh  
-        self.Wr = nn.Parameter(torch.zeros(size=(self.num_in, self.hidden), dtype=torch.float))  
-        nn.init.xavier_uniform_(self.Wr.data, gain=0)  
-        self.b1 = nn.Parameter(torch.zeros(self.hidden, dtype=torch.float))  
-        self.P = nn.Parameter(torch.zeros(size=(self.hidden, 1), dtype=torch.float))  
-        nn.init.xavier_uniform_(self.P.data, gain=0)  
-  
-    def forward(self, embedding):  
-        # 计算注意力分数  
-        hidden = self.act1(embedding.matmul(self.Wr) + self.b1)  
-        attention_scores = hidden.matmul(self.P).squeeze(dim=-1)  
-          
-        # 应用softmax进行归一化  
-        alpha = F.softmax(attention_scores, dim=0)  # 假设embedding的第一维度是节点维度  
-  
-        # 使用alpha对embedding进行加权聚合（但通常不会直接更新embedding）  
-        # 这里的context是一个加权和，而不是embedding的更新  
-        repeated_tensor = torch.repeat_interleave(alpha.unsqueeze(1).T, 984, dim=0)
-        context = torch.matmul(repeated_tensor, embedding)  
-  
-        # 如果想要模拟“更新”embedding的效果（注意：这通常不是自注意力的目的）  
-        # updated_embedding = embedding * alpha.unsqueeze(1).expand_as(embedding)  
-  
-        # 返回加权聚合的上下文或者alpha  
-        return alpha, context
 
 class HGNN_conv(nn.Module):
     def __init__(self, in_ft, out_ft, bias=True):  #
@@ -50,7 +20,6 @@ class HGNN_conv(nn.Module):
         init.xavier_uniform_(self.weight)  
         init.xavier_uniform_(self.weight1)
         # self.edge = nn.Embedding(984, out_ft)
-        self.attention = self_Attention(64, 8)  # 创建一个自注意力层 
         if bias:
             self.bias = nn.Parameter(torch.Tensor(out_ft))
         else:
@@ -75,8 +44,7 @@ class HGNN_conv(nn.Module):
         if self.bias is not None:
             x = x + self.bias
         edge = G.t().matmul(x)
-        alpha, edge = self.attention(x) 
-        # edge = edge.matmul(self.weight1)
+        edge = edge.matmul(self.weight1)
         x = G.matmul(edge)
 
         return x
@@ -95,8 +63,6 @@ class HGNN2(nn.Module):
         self.fc1 = nn.Linear(emb_dim, emb_dim, bias=False)
         self.fc2 = nn.Linear(emb_dim, emb_dim, bias=False)
         self.weight = nn.Parameter(torch.Tensor(emb_dim, emb_dim))
-         
-
 
     def forward(self, x, G):
         x = self.fc1(x)
@@ -105,7 +71,6 @@ class HGNN2(nn.Module):
         x = self.hgc1(x, G)        
         x = self.hgc2(x, G)
         # x = F.dropout(x, self.dropout)
-        
         x = F.softmax(x,dim = 1)
         return x
 
@@ -189,6 +154,26 @@ class GraphNN(nn.Module):
 
 '''Learn diffusion network'''
 
+class GRUNet(nn.Module):
+    def __init__(self, input_dim, hidden_dim, output_dim, n_layers, drop_prob=0.2):
+        super(GRUNet, self).__init__()
+        self.hidden_dim = hidden_dim
+        self.n_layers = n_layers
+        
+        self.gru = nn.GRU(input_dim, hidden_dim, n_layers, batch_first=True, dropout=drop_prob)
+        self.fc = nn.Linear(hidden_dim, output_dim)
+        self.relu = nn.ReLU()
+        
+    def forward(self, x, h):
+        out, h = self.gru(x, h)
+        out = self.fc(self.relu(out[:,-1]))
+        return out, h
+    
+    def init_hidden(self, batch_size):
+        weight = next(self.parameters()).data
+        hidden = weight.new(self.n_layers, batch_size, self.hidden_dim).zero_().to(device)
+        return hidden
+
 
 class HGNN_ATT(nn.Module):
     def __init__(self, input_size, n_hid, output_size, dropout=0.3, is_norm=True):
@@ -261,6 +246,7 @@ class MSHGAT(nn.Module):
         self.embedding = nn.Embedding(self.n_node, self.initial_feature, padding_idx=0)
         self.reset_parameters()
         self.readout = MLPReadout(self.hidden_size, self.n_node, None)
+        self.GRU = GRUNet(self.hidden_size, self.hidden_size, self.hidden_size, 1)
 
     def reset_parameters(self):
         stdv = 1.0 / math.sqrt(self.hidden_size)
@@ -289,6 +275,8 @@ class MSHGAT(nn.Module):
         zero_vec = torch.zeros_like(input)
         dyemb = torch.zeros(batch_size, max_len, self.hidden_size).cuda()
         cas_emb = torch.zeros(batch_size, max_len, self.hidden_size).cuda()
+        
+        h = self.GRU.init_hidden(64)
 
         for ind, time in enumerate(sorted(memory_emb_list.keys())):
             if ind == 0:
@@ -326,5 +314,9 @@ class MSHGAT(nn.Module):
 
                 dyemb += sub_emb
                 cas_emb += sub_cas
-        pred = self.pred(dyemb)
+            
+            GRUoutput, h = model(dyemb, h)
+        
+        pred = self.pred(GRUoutput)
+        # pred = self.pred(dyemb)
         return pred.view(-1, pred.size(-1))
