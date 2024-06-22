@@ -92,6 +92,8 @@ class HGNN2(nn.Module):
         self.fc1 = nn.Linear(emb_dim, emb_dim, bias=False)
         self.fc2 = nn.Linear(emb_dim, emb_dim, bias=False)
         self.weight = nn.Parameter(torch.Tensor(emb_dim, emb_dim))
+        attention = self_Attention(emb_dim, hidden=8)  # 创建一个自注意力层  
+
 
     def forward(self, x, G):
         x = self.fc1(x)
@@ -100,6 +102,7 @@ class HGNN2(nn.Module):
         x = self.hgc1(x, G)        
         x = self.hgc2(x, G)
         # x = F.dropout(x, self.dropout)
+        alpha, x = attention(x) 
         x = F.softmax(x,dim = 1)
         return x
 
