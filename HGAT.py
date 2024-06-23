@@ -102,7 +102,7 @@ def get_previous_user_mask(seq, user_size):
 
 # Fusion gate
 class Fusion(nn.Module):
-    def __init__(self, input_size, out=1, dropout=0.2):
+    def __init__(self, input_size, out=1, dropout=0.1):
         super(Fusion, self).__init__()
         self.linear1 = nn.Linear(input_size, input_size)
         self.linear2 = nn.Linear(input_size, out)
@@ -125,7 +125,7 @@ class Fusion(nn.Module):
 
 
 class GraphNN(nn.Module):
-    def __init__(self, ntoken, ninp, dropout=0.5, is_norm=True):
+    def __init__(self, ntoken, ninp, dropout=0.1, is_norm=True):
         super(GraphNN, self).__init__()
         self.embedding = nn.Embedding(ntoken, ninp, padding_idx=0)
         # in:inp,out:nip*2
@@ -155,7 +155,7 @@ class GraphNN(nn.Module):
 '''Learn diffusion network'''
 
 class GRUNet(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, n_layers, drop_prob=0.2):
+    def __init__(self, input_dim, hidden_dim, output_dim, n_layers, drop_prob=0.1):
         super(GRUNet, self).__init__()
         self.hidden_dim = hidden_dim
         self.n_layers = n_layers
@@ -177,7 +177,7 @@ class GRUNet(nn.Module):
 
 
 class HGNN_ATT(nn.Module):
-    def __init__(self, input_size, n_hid, output_size, dropout=0.3, is_norm=True):
+    def __init__(self, input_size, n_hid, output_size, dropout=0.1, is_norm=True):
         super(HGNN_ATT, self).__init__()
         self.dropout = dropout
         self.is_norm = is_norm
@@ -227,7 +227,7 @@ class MLPReadout(nn.Module):
 
 
 class MSHGAT(nn.Module):
-    def __init__(self, opt, dropout=0.2):
+    def __init__(self, opt, dropout=0.1):
         super(MSHGAT, self).__init__()
         self.hidden_size = opt.d_word_vec
         self.n_node = opt.user_size
