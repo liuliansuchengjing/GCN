@@ -1,3 +1,4 @@
+
 import math
 import numpy as np
 import torch
@@ -50,7 +51,7 @@ class HGNN_conv(nn.Module):
         return x
 
 class HGNN2(nn.Module):
-    def __init__(self, emb_dim, dropout=0.15):
+    def __init__(self, emb_dim, dropout=0.1):
         super(HGNN2, self).__init__()
         self.dropout = dropout
         self.hgc1 = HGNN_conv(emb_dim, emb_dim)
@@ -70,7 +71,7 @@ class HGNN2(nn.Module):
         x = F.relu(x,inplace = False)
         x = self.hgc1(x, G)        
         x = self.hgc2(x, G)
-        # x = F.dropout(x, self.dropout)
+        x = F.dropout(x, self.dropout)
         x = F.softmax(x,dim = 1)
         return x
 
@@ -102,7 +103,7 @@ def get_previous_user_mask(seq, user_size):
 
 # Fusion gate
 class Fusion(nn.Module):
-    def __init__(self, input_size, out=1, dropout=0.1):
+    def __init__(self, input_size, out=1, dropout=0.2):
         super(Fusion, self).__init__()
         self.linear1 = nn.Linear(input_size, input_size)
         self.linear2 = nn.Linear(input_size, out)
@@ -125,7 +126,7 @@ class Fusion(nn.Module):
 
 
 class GraphNN(nn.Module):
-    def __init__(self, ntoken, ninp, dropout=0.1, is_norm=True):
+    def __init__(self, ntoken, ninp, dropout=0.2, is_norm=True):
         super(GraphNN, self).__init__()
         self.embedding = nn.Embedding(ntoken, ninp, padding_idx=0)
         # in:inp,out:nip*2
@@ -144,7 +145,6 @@ class GraphNN(nn.Module):
     def forward(self, graph):
         graph_edge_index = graph.edge_index.cuda()
         graph_x_embeddings = self.gnn1(self.embedding.weight, graph_edge_index)
-        # graph_x_embeddings = F.softmax(graph_x_embeddings,dim = 1)
         graph_x_embeddings = self.dropout(graph_x_embeddings)
         graph_output = self.gnn2(graph_x_embeddings, graph_edge_index)
         if self.is_norm:
@@ -178,7 +178,7 @@ class GRUNet(nn.Module):
 
 
 class HGNN_ATT(nn.Module):
-    def __init__(self, input_size, n_hid, output_size, dropout=0.1, is_norm=True):
+    def __init__(self, input_size, n_hid, output_size, dropout=0.2, is_norm=True):
         super(HGNN_ATT, self).__init__()
         self.dropout = dropout
         self.is_norm = is_norm
@@ -188,7 +188,7 @@ class HGNN_ATT(nn.Module):
         self.fus1 = Fusion(output_size)
         # self.hgnn = DJconv(64, 64, 1)
         # self.hgnn = HGNN_conv(input_size, output_size, True)
-        self.hgnn = HGNN2(input_size, 0.3)
+        self.hgnn = HGNN2(input_size, 0.1)
 
     def forward(self, x, hypergraph_list):
         root_emb = F.embedding(hypergraph_list[1].cuda(), x)
@@ -228,7 +228,7 @@ class MLPReadout(nn.Module):
 
 
 class MSHGAT(nn.Module):
-    def __init__(self, opt, dropout=0.1):
+    def __init__(self, opt, dropout=0.2):
         super(MSHGAT, self).__init__()
         self.hidden_size = opt.d_word_vec
         self.n_node = opt.user_size
@@ -248,7 +248,7 @@ class MSHGAT(nn.Module):
         self.embedding = nn.Embedding(self.n_node, self.initial_feature, padding_idx=0)
         self.reset_parameters()
         self.readout = MLPReadout(self.hidden_size, self.n_node, None)
-        self.GRU = GRUNet(self.hidden_size, 2*self.hidden_size, self.hidden_size, 1)
+        self.GRU = GRUNet(self.hidden_size, self.hidden_size, self.hidden_size, 1)
 
     def reset_parameters(self):
         stdv = 1.0 / math.sqrt(self.hidden_size)
