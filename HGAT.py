@@ -227,7 +227,7 @@ class MLPReadout(nn.Module):
 
 
 class MSHGAT(nn.Module):
-    def __init__(self, opt, dropout=0.3):
+    def __init__(self, opt, dropout=0.2):
         super(MSHGAT, self).__init__()
         self.hidden_size = opt.d_word_vec
         self.n_node = opt.user_size
