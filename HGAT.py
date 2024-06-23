@@ -144,7 +144,8 @@ class GraphNN(nn.Module):
     def forward(self, graph):
         graph_edge_index = graph.edge_index.cuda()
         graph_x_embeddings = self.gnn1(self.embedding.weight, graph_edge_index)
-        graph_x_embeddings = self.dropout(graph_x_embeddings)
+        graph_x_embeddings = F.softmax(graph_x_embeddings,dim = 1)
+        # graph_x_embeddings = self.dropout(graph_x_embeddings)
         graph_output = self.gnn2(graph_x_embeddings, graph_edge_index)
         if self.is_norm:
             graph_output = self.batch_norm(graph_output)
