@@ -302,7 +302,7 @@ class MSHGAT(nn.Module):
             sub_cas[temp] = 0
             sub_emb[temp] = 0
             dyemb += sub_emb
-            cas_emb += sub_cas
+            casemb += sub_cas
 
             if ind == len(memory_emb_list) - 1:
                 sub_input = input - sub_input
