@@ -16,7 +16,6 @@ from dataLoader import Split_data, DataLoader
 from Metrics import Metrics
 from HGAT import MSHGAT
 from Optim import ScheduledOptim
-from torch.optim.lr_scheduler import StepLR 
 
 
 torch.backends.cudnn.deterministic = True
@@ -117,7 +116,7 @@ def train_model(MSHGAT, data_path):
     params = model.parameters()
     optimizerAdam = torch.optim.Adam(params, betas=(0.9, 0.98), eps=1e-09)
     optimizer = ScheduledOptim(optimizerAdam, opt.d_model, opt.n_warmup_steps)
-    scheduler = StepLR(optimizer, step_size=10, gamma=0.1) #更新学习率
+    
 
     if torch.cuda.is_available():
         model = model.cuda()
@@ -155,7 +154,7 @@ def train_model(MSHGAT, data_path):
                 print("Save best model!!!")
                 torch.save(model.state_dict(), opt.save_path)
 
-        scheduler.step() #更新学习率
+        optimizer.update_learning_rate()  #更新学习率
                 
     print(" -(Finished!!) \n Best scores: ")        
     for metric in best_scores.keys():
