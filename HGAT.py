@@ -333,4 +333,4 @@ class MSHGAT(nn.Module):
         # print("pred.shape:", pred.size())
         # pred = self.pred(dyemb)
         # return pred.view(-1, pred.size(-1))
-        return pre
+        return pred
