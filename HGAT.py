@@ -1,3 +1,10 @@
+hits@10 0.56651770367824
+map@10 0.37555561012075284
+hits@50 0.6232382261945686
+map@50 0.3783837989689363
+hits@100 0.6405981436919904
+map@100 0.3786246632098087
+
 import math
 import numpy as np
 import torch
@@ -166,8 +173,8 @@ class GRUNet(nn.Module):
         
     def forward(self, x, h):
         out, h = self.gru(x, h)
-        # out = self.fc(self.relu(out))
-        out = self.fc(self.relu(out[:,-1]))
+        out = self.fc(self.relu(out))
+        # out = self.fc(self.relu(out[:,-1]))
         return out, h
     
     def init_hidden(self, batch_size):
@@ -238,7 +245,7 @@ class MSHGAT(nn.Module):
         self.hgnn = HGNN_ATT(self.initial_feature, self.hidden_size * 2, self.hidden_size, dropout=dropout)
         self.gnn = GraphNN(self.n_node, self.initial_feature, dropout=dropout)
         self.fus = Fusion(self.hidden_size + self.pos_dim)
-        self.fus2 = Fusion(self.hidden_size, self.hidden_size)
+        self.fus2 = Fusion(self.hidden_size)
         self.pos_embedding = nn.Embedding(1000, self.pos_dim)
         self.decoder_attention1 = TransformerBlock(input_size=self.hidden_size + self.pos_dim, n_heads=8)
         self.decoder_attention2 = TransformerBlock(input_size=self.hidden_size + self.pos_dim, n_heads=8)
@@ -280,7 +287,7 @@ class MSHGAT(nn.Module):
         # print("max_len", max_len)
         h = self.GRU.init_hidden(batch_size*max_len)
         sub_emb_list = []
-        cas_emb_list = []
+        dy_emb_list = []
 
         for ind, time in enumerate(sorted(memory_emb_list.keys())):
             if ind == 0:
@@ -319,22 +326,16 @@ class MSHGAT(nn.Module):
                 dyemb += sub_emb
                 cas_emb += sub_cas
             
-            sub_cas_ = cas_emb.view(-1, cas_emb.size(-1))
+            sub_emb_ = sub_emb.view(-1, sub_emb.size(-1))
             dy_emb_ = dyemb.view(-1, dyemb.size(-1))
+            sub_emb_list.append(sub_emb_)
+            dy_emb_list.append(dy_emb_)
             
-            # dy_emb_list.append(dy_emb_)
-            cas_emb_list.append(sub_cas_)
             
-            # dy_emb = torch.stack(dy_emb_list, dim=1) 
-            cas_emb_sta = torch.stack(cas_emb_list, dim=1) 
-            
-
-        
-        
-        GRUoutput, h = self.GRU(cas_emb_sta, h)   
-        # dy_output = GRUoutput.sum(dim=1)  
-        
-        output =  self.fus2(dy_emb_,GRUoutput)
+            # dy_emb = torch.stack(sub_emb_list, dim=1)  
+        dy_emb = torch.stack(dy_emb_list, dim=1) 
+        GRUoutput, h = self.GRU(dy_emb, h)   
+        output = GRUoutput.sum(dim=1)  
         pred = self.pred(output)
         # print("pred.shape:", pred.size())
         # pred = self.pred(dyemb)
