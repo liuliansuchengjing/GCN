@@ -334,7 +334,7 @@ class MSHGAT(nn.Module):
         GRUoutput, h = self.GRU(cas_emb_sta, h)   
         # dy_output = GRUoutput.sum(dim=1)  
         print("GRUoutput.shape:", GRUoutput.size())
-        output =  Fusion(dy_emb_,GRUoutput)
+        output =  self.fus2(dy_emb_,GRUoutput)
         pred = self.pred(output)
         # print("pred.shape:", pred.size())
         # pred = self.pred(dyemb)
