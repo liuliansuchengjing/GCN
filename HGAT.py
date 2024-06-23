@@ -166,6 +166,7 @@ class GRUNet(nn.Module):
         
     def forward(self, x, h):
         out, h = self.gru(x, h)
+        out = self.fc(self.relu(out))
         # out = self.fc(self.relu(out[:,-1]))
         return out, h
     
@@ -245,7 +246,7 @@ class MSHGAT(nn.Module):
         self.linear2 = nn.Linear(self.hidden_size + self.pos_dim, self.n_node)
         self.embedding = nn.Embedding(self.n_node, self.initial_feature, padding_idx=0)
         self.reset_parameters()
-        self.readout = MLPReadout(self.hidden_size, self.n_node, None)
+        self.readout = MLPReadout(self.n_node, self.n_node, None)
         self.GRU = GRUNet(self.hidden_size, self.hidden_size, self.n_node, 1)
 
     def reset_parameters(self):
@@ -327,10 +328,9 @@ class MSHGAT(nn.Module):
             # dy_emb = torch.stack(sub_emb_list, dim=1)  
         
         GRUoutput, h = self.GRU(dy_emb, h)   
-        pre = GRUoutput.sum(dim=1)  
-        
-        # pred = self.pred(GRUoutput)
+        output = GRUoutput.sum(dim=1)  
+        pred = self.pred(output)
         # print("pred.shape:", pred.size())
         # pred = self.pred(dyemb)
         # return pred.view(-1, pred.size(-1))
-        return GRUoutput
+        return pre
