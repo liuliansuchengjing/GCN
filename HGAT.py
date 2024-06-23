@@ -327,8 +327,11 @@ class MSHGAT(nn.Module):
             
             # dy_emb = torch.stack(dy_emb_list, dim=1) 
             cas_emb = torch.stack(cas_emb_list, dim=1) 
-            emb =  Fusion(dy_emb_,cas_emb)
-        
+            
+
+        print("dy_emb.shape:", dy_emb.size())
+        print("cas_emb.shape:", cas_emb.size())
+        emb =  Fusion(dy_emb_,cas_emb)
         GRUoutput, h = self.GRU(emb, h)   
         dy_output = GRUoutput.sum(dim=1)  
         pred = self.pred(output)
