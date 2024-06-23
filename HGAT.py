@@ -302,7 +302,7 @@ class MSHGAT(nn.Module):
             sub_cas[temp] = 0
             sub_emb[temp] = 0
             dyemb += sub_emb
-            casemb += sub_cas
+            cas_emb += sub_cas
 
             if ind == len(memory_emb_list) - 1:
                 sub_input = input - sub_input
@@ -317,7 +317,7 @@ class MSHGAT(nn.Module):
                 sub_emb[temp] = 0
 
                 dyemb += sub_emb
-                casemb += sub_cas
+                cas_emb += sub_cas
             
             sub_cas_ = sub_cas.view(-1, sub_cas.size(-1))
             dy_emb_ = dyemb.view(-1, dyemb.size(-1))
@@ -326,12 +326,12 @@ class MSHGAT(nn.Module):
             cas_emb_list.append(sub_cas_)
             
             # dy_emb = torch.stack(dy_emb_list, dim=1) 
-            cas_emb = torch.stack(cas_emb_list, dim=1) 
+            cas_emb_sta = torch.stack(cas_emb_list, dim=1) 
             
 
         print("dy_emb.shape:", dy_emb.size())
-        print("cas_emb.shape:", cas_emb.size())
-        emb =  Fusion(dy_emb_,cas_emb)
+        print("cas_emb.shape:", cas_emb_sta.size())
+        emb =  Fusion(dy_emb_,cas_emb_sta)
         GRUoutput, h = self.GRU(emb, h)   
         dy_output = GRUoutput.sum(dim=1)  
         pred = self.pred(output)
