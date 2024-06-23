@@ -319,14 +319,15 @@ class MSHGAT(nn.Module):
                 dyemb += sub_emb
                 casemb += sub_cas
             
-            sub_emb_ = sub_emb.view(-1, sub_emb.size(-1))
+            sub_cas_ = sub_cas.view(-1, sub_cas.size(-1))
             dy_emb_ = dyemb.view(-1, dyemb.size(-1))
-            sub_emb_list.append(sub_emb_)
-            dy_emb_list.append(dy_emb_)
             
-            dy_emb = torch.stack(dy_emb_list, dim=1) 
+            # dy_emb_list.append(dy_emb_)
+            cas_emb_list.append(sub_cas_)
+            
+            # dy_emb = torch.stack(dy_emb_list, dim=1) 
             cas_emb = torch.stack(cas_emb_list, dim=1) 
-            emb =  Fusion(dyemb,cas_emb)
+            emb =  Fusion(dy_emb_,cas_emb)
         
         GRUoutput, h = self.GRU(emb, h)   
         dy_output = GRUoutput.sum(dim=1)  
