@@ -1,3 +1,11 @@
+hits@10 0.5756273633551049
+map@10 0.36883576966938947
+hits@50 0.6320041251289102
+map@50 0.3716973259571588
+hits@100 0.6510828463389481
+map@100 0.3719769643749965
+
+
 import math
 import numpy as np
 import torch
@@ -248,7 +256,7 @@ class MSHGAT(nn.Module):
         self.embedding = nn.Embedding(self.n_node, self.initial_feature, padding_idx=0)
         self.reset_parameters()
         self.readout = MLPReadout(self.hidden_size, self.n_node, None)
-        self.GRU = GRUNet(self.hidden_size, self.hidden_size, self.hidden_size, 1)
+        self.GRU = GRUNet(self.hidden_size, self.hidden_size, self.hidden_size, 2)
 
     def reset_parameters(self):
         stdv = 1.0 / math.sqrt(self.hidden_size)
@@ -332,9 +340,9 @@ class MSHGAT(nn.Module):
         dy_emb = torch.stack(dy_emb_list, dim=1) 
         sub_cas_t = torch.stack(sub_cas_list, dim=1) 
         
-        GRUoutput_emb, h = self.GRU(dy_emb, h)   
-        GRUoutput_cas, h = self.GRU(sub_cas_t, h)
-        output = self.fus2(GRUoutput_emb, GRUoutput_emb)
+        # GRUoutput, h = self.GRU(dy_emb, h)   
+        GRUoutput, h = self.GRU(sub_cas_t, h)
+        output = self.fus2(dy_emb_, GRUoutput)
         # output = GRUoutput.sum(dim=1)  
         pred = self.pred(output)
         # print("pred.shape:", pred.size())
