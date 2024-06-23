@@ -166,6 +166,7 @@ class GRUNet(nn.Module):
         
     def forward(self, x, h):
         out, h = self.gru(x, h)
+        out = out.sum(dim=1) 
         out = self.fc(self.relu(out))
         # out = self.fc(self.relu(out[:,-1]))
         return out, h
@@ -281,6 +282,7 @@ class MSHGAT(nn.Module):
         h = self.GRU.init_hidden(batch_size*max_len)
         sub_emb_list = []
         dy_emb_list = []
+        sub_cas_list = []
 
         for ind, time in enumerate(sorted(memory_emb_list.keys())):
             if ind == 0:
@@ -321,15 +323,18 @@ class MSHGAT(nn.Module):
             
             sub_emb_ = sub_emb.view(-1, sub_emb.size(-1))
             dy_emb_ = dyemb.view(-1, dyemb.size(-1))
+            sub_cas_1 = sub_cas.view(-1, sub_cas.size(-1))
+            
             sub_emb_list.append(sub_emb_)
             dy_emb_list.append(dy_emb_)
+            sub_cas_list.append(sub_cas_1)
             
-            
-            # dy_emb = torch.stack(sub_emb_list, dim=1)  
         dy_emb = torch.stack(dy_emb_list, dim=1) 
+        sub_cas_t = torch.stack(sub_cas_list, dim=1) 
+        
         GRUoutput, h = self.GRU(dy_emb, h)   
-        output = GRUoutput.sum(dim=1)  
-        pred = self.pred(output)
+        # GRUoutput = GRUoutput.sum(dim=1)  
+        pred = self.pred(GRUoutput)
         # print("pred.shape:", pred.size())
         # pred = self.pred(dyemb)
         # return pred.view(-1, pred.size(-1))
