@@ -166,8 +166,8 @@ class GRUNet(nn.Module):
         
     def forward(self, x, h):
         out, h = self.gru(x, h)
-        out = self.fc(self.relu(out))
-        # out = self.fc(self.relu(out[:,-1]))
+        # out = self.fc(self.relu(out))
+        out = self.fc(self.relu(out[:,-1]))
         return out, h
     
     def init_hidden(self, batch_size):
@@ -329,11 +329,11 @@ class MSHGAT(nn.Module):
             cas_emb_sta = torch.stack(cas_emb_list, dim=1) 
             
 
-        print("dy_emb_.shape:", dy_emb_.size())
-        print("cas_emb.shape:", cas_emb_sta.size())
-        emb =  Fusion(dy_emb_,cas_emb_sta)
-        GRUoutput, h = self.GRU(emb, h)   
-        dy_output = GRUoutput.sum(dim=1)  
+        
+        
+        GRUoutput, h = self.GRU(cas_emb_sta, h)   
+        # dy_output = GRUoutput.sum(dim=1)  
+        output =  Fusion(dy_emb_,GRUoutput)
         pred = self.pred(output)
         # print("pred.shape:", pred.size())
         # pred = self.pred(dyemb)
