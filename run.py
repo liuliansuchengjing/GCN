@@ -36,7 +36,7 @@ parser.add_argument('-initialFeatureSize', type=int, default=64)
 parser.add_argument('-train_rate', type=float, default=0.8)
 parser.add_argument('-valid_rate', type=float, default=0.1)
 parser.add_argument('-n_warmup_steps', type=int, default=1000)
-parser.add_argument('-dropout', type=float, default=0.2)
+parser.add_argument('-dropout', type=float, default=0.3)
 parser.add_argument('-log', default=None)
 parser.add_argument('-save_path', default= "./checkpoint/DiffusionPrediction.pt")
 parser.add_argument('-save_mode', type=str, choices=['all', 'best'], default='best')
@@ -153,8 +153,6 @@ def train_model(MSHGAT, data_path):
                 best_scores = scores
                 print("Save best model!!!")
                 torch.save(model.state_dict(), opt.save_path)
-
-        optimizer.update_learning_rate()  #更新学习率
                 
     print(" -(Finished!!) \n Best scores: ")        
     for metric in best_scores.keys():
