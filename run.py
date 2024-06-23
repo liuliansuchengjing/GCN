@@ -113,10 +113,11 @@ def train_model(MSHGAT, data_path):
     # ========= Preparing Model =========#
     model = MSHGAT(opt, dropout = opt.dropout)
     loss_func = nn.CrossEntropyLoss(size_average=False, ignore_index=Constants.PAD)
-    scheduler = StepLR(optimizer, step_size=10, gamma=0.1) #更新学习率
+    
     params = model.parameters()
     optimizerAdam = torch.optim.Adam(params, betas=(0.9, 0.98), eps=1e-09)
     optimizer = ScheduledOptim(optimizerAdam, opt.d_model, opt.n_warmup_steps)
+    scheduler = StepLR(optimizer, step_size=10, gamma=0.1) #更新学习率
 
     if torch.cuda.is_available():
         model = model.cuda()
@@ -154,7 +155,7 @@ def train_model(MSHGAT, data_path):
                 print("Save best model!!!")
                 torch.save(model.state_dict(), opt.save_path)
 
-        scheduler.step() 
+        scheduler.step() #更新学习率
                 
     print(" -(Finished!!) \n Best scores: ")        
     for metric in best_scores.keys():
