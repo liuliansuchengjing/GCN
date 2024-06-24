@@ -38,8 +38,8 @@ class HGNN_conv(nn.Module):
 
 
     def forward(self, x, G):  # x: torch.Tensor, G: torch.Tensor
-        edge_emb = nn.Embedding(984, 64)
-        x = G.matmul(edge_emb.weight.cuda())
+        # edge_emb = nn.Embedding(984, 64)
+        # x = G.matmul(edge_emb.weight.cuda())
         x = x.matmul(self.weight)
         if self.bias is not None:
             x = x + self.bias
@@ -166,8 +166,9 @@ class GRUNet(nn.Module):
         
     def forward(self, x, h):
         out, h = self.gru(x, h)
-        out = out.sum(dim=1) 
+         
         out = self.fc(self.relu(out))
+        out = out.sum(dim=1)
         # out = self.fc(self.relu(out[:,-1]))
         return out, h
     
@@ -248,7 +249,7 @@ class MSHGAT(nn.Module):
         self.embedding = nn.Embedding(self.n_node, self.initial_feature, padding_idx=0)
         self.reset_parameters()
         self.readout = MLPReadout(self.hidden_size, self.n_node, None)
-        self.GRU = GRUNet(self.hidden_size, self.hidden_size, self.hidden_size, 2)
+        self.GRU = GRUNet(self.hidden_size, self.hidden_size, self.hidden_size, 4)
 
     def reset_parameters(self):
         stdv = 1.0 / math.sqrt(self.hidden_size)
@@ -323,7 +324,7 @@ class MSHGAT(nn.Module):
             
             sub_emb_ = sub_emb.view(-1, sub_emb.size(-1))
             dy_emb_ = dyemb.view(-1, dyemb.size(-1))
-            sub_cas_1 = sub_cas.view(-1, sub_cas.size(-1))
+            sub_cas_1 = cas_emb.view(-1, sub_cas.size(-1))
             
             sub_emb_list.append(sub_emb_)
             dy_emb_list.append(dy_emb_)
@@ -335,9 +336,8 @@ class MSHGAT(nn.Module):
         # GRUoutput, h = self.GRU(dy_emb, h)   
         GRUoutput, h = self.GRU(sub_cas_t, h)
         output = self.fus2(dy_emb_, GRUoutput)
-        pred = output
         # output = GRUoutput.sum(dim=1)  
-        # pred = self.pred(output)
+        pred = self.pred(output)
         # print("pred.shape:", pred.size())
         # pred = self.pred(dyemb)
         # return pred.view(-1, pred.size(-1))
