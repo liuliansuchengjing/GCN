@@ -338,7 +338,9 @@ class MSHGAT(nn.Module):
         output = self.fus2(dy_emb_, GRUoutput)
         # output = GRUoutput.sum(dim=1)  
         pred = self.pred(output)
+        mask = get_previous_user_mask(input.cpu(), self.n_node)
+        mask = mask.view(-1, mask.size(-1))
         # print("pred.shape:", pred.size())
         # pred = self.pred(dyemb)
         # return pred.view(-1, pred.size(-1))
-        return pred
+        return pred+mask
