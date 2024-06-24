@@ -195,9 +195,11 @@ class HGNN_ATT(nn.Module):
         root_emb = F.embedding(hypergraph_list[1].cuda(), x)
 
         hypergraph_list = hypergraph_list[0]
+        sub_graph_list = []
         embedding_list = {}
         for sub_key in hypergraph_list.keys():
             sub_graph = hypergraph_list[sub_key]
+            sub_graph_list.append(sub_graph)
             sub_node_embed, sub_edge_embed = self.gat1(x, sub_graph.cuda(), root_emb)
             sub_node_embed = self.hgnn(x, sub_graph.cuda())
             sub_node_embed = F.dropout(sub_node_embed, self.dropout, training=self.training)
@@ -209,7 +211,8 @@ class HGNN_ATT(nn.Module):
             x = self.fus1(x, sub_node_embed)
             embedding_list[sub_key] = [x.cpu(), sub_edge_embed.cpu()]
 
-        return embedding_list
+        graph_gru = torch.stack(sub_graph_list, dim=1) 
+        return embedding_list, graph_gru
 
 
 class MLPReadout(nn.Module):
@@ -267,7 +270,7 @@ class MSHGAT(nn.Module):
         # print(input_timestamp)
         input_timestamp = input_timestamp[:, :-1]
         hidden = self.dropout(self.gnn(graph))
-        memory_emb_list = self.hgnn(hidden, hypergraph_list)
+        memory_emb_list, graph_gru = self.hgnn(hidden, hypergraph_list)
         # print(sorted(memory_emb_list.keys()))
 
         mask = (input == Constants.PAD)
@@ -334,13 +337,11 @@ class MSHGAT(nn.Module):
         sub_cas_t = torch.stack(sub_cas_list, dim=1) 
         
         # GRUoutput, h = self.GRU(dy_emb, h)   
-        GRUoutput, h = self.GRU(sub_cas_t, h)
+        GRUoutput, h = self.GRU(graph_gru, h)
         output = self.fus2(dy_emb_, GRUoutput)
         # output = GRUoutput.sum(dim=1)  
         pred = self.pred(output)
-        mask = get_previous_user_mask(input.cpu(), self.n_node)
-        mask = mask.view(-1, mask.size(-1))
         # print("pred.shape:", pred.size())
         # pred = self.pred(dyemb)
         # return pred.view(-1, pred.size(-1))
-        return pred+mask
+        return pred
