@@ -248,7 +248,8 @@ class MSHGAT(nn.Module):
         self.embedding = nn.Embedding(self.n_node, self.initial_feature, padding_idx=0)
         self.reset_parameters()
         self.readout = MLPReadout(self.hidden_size, self.n_node, None)
-        self.GRU = GRUNet(self.hidden_size, self.hidden_size, self.hidden_size, 4)
+        self.GRU = GRUNet(self.hidden_size, self.hidden_size, self.hidden_size, 3)
+        self.GRU2 = GRUNet(self.hidden_size, self.hidden_size, self.hidden_size, 3)
 
     def reset_parameters(self):
         stdv = 1.0 / math.sqrt(self.hidden_size)
@@ -280,6 +281,7 @@ class MSHGAT(nn.Module):
         # print("batch_size", batch_size)
         # print("max_len", max_len)
         h = self.GRU.init_hidden(batch_size*max_len)
+        h2 = self.GRU2.init_hidden(batch_size*max_len)
         sub_emb_list = []
         dy_emb_list = []
         sub_cas_list = []
@@ -332,9 +334,9 @@ class MSHGAT(nn.Module):
         dy_emb = torch.stack(dy_emb_list, dim=1) 
         sub_cas_t = torch.stack(sub_cas_list, dim=1) 
         
-        # GRUoutput, h = self.GRU(dy_emb, h)   
-        GRUoutput, h = self.GRU(sub_cas_t, h)
-        output = self.fus2(dy_emb_, GRUoutput)
+        GRUoutput2, h2 = self.GRU2(dy_emb, h)   
+        GRUoutput, h = self.GRU1(sub_cas_t, h)
+        output = self.fus2(GRUoutput2, GRUoutput)
         # output = GRUoutput.sum(dim=1)  
         pred = self.pred(output)
         # print("pred.shape:", pred.size())
