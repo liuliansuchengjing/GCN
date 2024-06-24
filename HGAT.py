@@ -283,7 +283,7 @@ class MSHGAT(nn.Module):
         cas_emb = torch.zeros(batch_size, max_len, self.hidden_size).cuda()
         # print("batch_size", batch_size)
         # print("max_len", max_len)
-        h = self.GRU.init_hidden(batch_size*max_len)
+        h = self.GRU.init_hidden(15001)
         sub_emb_list = []
         dy_emb_list = []
         sub_cas_list = []
