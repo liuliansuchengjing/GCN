@@ -335,7 +335,7 @@ class MSHGAT(nn.Module):
         sub_cas_t = torch.stack(sub_cas_list, dim=1) 
         
         GRUoutput2, h2 = self.GRU2(dy_emb, h)   
-        GRUoutput, h = self.GRU1(sub_cas_t, h)
+        GRUoutput, h = self.GRU(sub_cas_t, h)
         output = self.fus2(GRUoutput2, GRUoutput)
         # output = GRUoutput.sum(dim=1)  
         pred = self.pred(output)
