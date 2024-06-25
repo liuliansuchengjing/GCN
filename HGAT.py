@@ -47,7 +47,7 @@ class HGNN_conv(nn.Module):
         edge = edge.matmul(self.weight1)
         x = G.matmul(edge)
 
-        return x
+        return x, edge
 
 class HGNN2(nn.Module):
     def __init__(self, emb_dim, dropout=0.15):
@@ -68,11 +68,11 @@ class HGNN2(nn.Module):
         x = self.fc1(x)
         x = torch.sigmoid(x)
         x = F.relu(x,inplace = False)
-        x = self.hgc1(x, G)        
-        x = self.hgc2(x, G)
+        x, edge = self.hgc1(x, G)        
+        x, edge = self.hgc2(x, G)
         # x = F.dropout(x, self.dropout)
         x = F.softmax(x,dim = 1)
-        return x
+        return x, edge
 
 
 def get_previous_user_mask(seq, user_size):
@@ -197,8 +197,8 @@ class HGNN_ATT(nn.Module):
         embedding_list = {}
         for sub_key in hypergraph_list.keys():
             sub_graph = hypergraph_list[sub_key]
-            sub_node_embed, sub_edge_embed = self.gat1(x, sub_graph.cuda(), root_emb)
-            # sub_node_embed = self.hgnn(x, sub_graph.cuda())
+            # sub_node_embed, sub_edge_embed = self.gat1(x, sub_graph.cuda(), root_emb)
+            sub_node_embed, sub_edge_embed = self.hgnn(x, sub_graph.cuda())
             sub_node_embed = F.dropout(sub_node_embed, self.dropout, training=self.training)
 
             if self.is_norm:
