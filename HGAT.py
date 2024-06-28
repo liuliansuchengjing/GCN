@@ -9,6 +9,35 @@ import torch.nn.init as init
 import Constants
 from TransformerBlock import TransformerBlock
 from torch.autograd import Variable
+from sklearn.metrics.pairwise import cosine_similarity
+
+
+def item_based_collaborative_filtering_binary(H):  
+    # 假设 H 是一个 PyTorch 张量  
+    n_user, n_item = H.shape  
+      
+    # 计算物品之间的余弦相似度  
+    item_similarity = cosine_similarity(H.T.numpy())  
+    item_similarity = torch.from_numpy(item_similarity).float()  
+  
+    # 创建一个布尔张量来标识哪些元素是0（未交互）  
+    non_interacted = H == 0  
+  
+    # 计算分子部分，使用广播机制  
+    numerator = torch.matmul(item_similarity, H.T)  
+    numerator = numerator.T  # 转置回原形状  
+  
+    # 计算分母部分  
+    denominator = torch.sum(torch.abs(item_similarity), dim=0)  
+      
+    # 为了避免除以0，设置分母为0的地方为无穷小值（例如，1e-10）  
+    denominator[denominator == 0] = 1e-10  
+      
+    # 计算预测值，只计算未交互的部分  
+    H_pred = torch.zeros_like(H, dtype=torch.float32)  
+    H_pred[non_interacted] = numerator[non_interacted] / denominator[non_interacted.nonzero()[:, 1]]  
+      
+    return H_pred  
 
 
 class HGNN_conv(nn.Module):
@@ -38,13 +67,13 @@ class HGNN_conv(nn.Module):
 
 
     def forward(self, x, G):  # x: torch.Tensor, G: torch.Tensor
-        edge_emb = nn.Embedding(984, 64)
-        x = G.matmul(edge_emb.weight.cuda())
-        x = x.matmul(self.weight)
+        # edge_emb = nn.Embedding(984, 64)
+        # x = G.matmul(edge_emb.weight.cuda())
+        # x = x.matmul(self.weight)
         if self.bias is not None:
             x = x + self.bias
         edge = G.t().matmul(x)
-        edge = edge.matmul(self.weight1)
+        # edge = edge.matmul(self.weight1)
         x = G.matmul(edge)
 
         return x, edge
@@ -55,6 +84,7 @@ class HGNN2(nn.Module):
         self.dropout = dropout
         self.hgc1 = HGNN_conv(emb_dim, emb_dim)
         self.hgc2 = HGNN_conv(emb_dim, emb_dim)
+        self.hgc3 = HGNN_conv(emb_dim, emb_dim)
         # self.bn1 = nn.BatchNorm1d(emb_dim)
         # self.bn2 = nn.BatchNorm1d(emb_dim)
         # self.feat = nn.Embedding(n_node, emb_dim)
@@ -65,13 +95,13 @@ class HGNN2(nn.Module):
         self.weight = nn.Parameter(torch.Tensor(emb_dim, emb_dim))
 
     def forward(self, x, G):
-        x = self.fc1(x)
-        x = torch.sigmoid(x)
+        # x = self.fc1(x)
         x = F.relu(x,inplace = False)
         x, edge = self.hgc1(x, G)        
         x, edge = self.hgc2(x, G)
         # x = F.dropout(x, self.dropout)
         x = F.softmax(x,dim = 1)
+        x = self.fc1(x)
         return x, edge
 
 
@@ -146,8 +176,8 @@ class GraphNN(nn.Module):
         graph_x_embeddings = self.gnn1(self.embedding.weight, graph_edge_index)
         graph_x_embeddings = self.dropout(graph_x_embeddings)
         graph_output = self.gnn2(graph_x_embeddings, graph_edge_index)
-        if self.is_norm:
-            graph_output = self.batch_norm(graph_output)
+        # if self.is_norm:
+        #     graph_output = self.batch_norm(graph_output)
         # print(graph_output.shape)
         return graph_output.cuda()
 
@@ -194,18 +224,21 @@ class HGNN_ATT(nn.Module):
         root_emb = F.embedding(hypergraph_list[1].cuda(), x)
 
         hypergraph_list = hypergraph_list[0]
+        
         embedding_list = {}
         for sub_key in hypergraph_list.keys():
+            
             sub_graph = hypergraph_list[sub_key]
+            sub_graph = item_based_collaborative_filtering_binary(sub_graph)
             # sub_node_embed, sub_edge_embed = self.gat1(x, sub_graph.cuda(), root_emb)
             sub_node_embed, sub_edge_embed = self.hgnn(x, sub_graph.cuda())
             sub_node_embed = F.dropout(sub_node_embed, self.dropout, training=self.training)
 
-            if self.is_norm:
-                sub_node_embed = self.batch_norm1(sub_node_embed)
-                sub_edge_embed = self.batch_norm1(sub_edge_embed)
+            # if self.is_norm:
+            #     sub_node_embed = self.batch_norm1(sub_node_embed)
+            #     sub_edge_embed = self.batch_norm1(sub_edge_embed)
 
-            x = self.fus1(x, sub_node_embed)
+            # x = self.fus1(x, sub_node_embed)
             embedding_list[sub_key] = [x.cpu(), sub_edge_embed.cpu()]
 
         return embedding_list
