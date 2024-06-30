@@ -176,8 +176,8 @@ class GraphNN(nn.Module):
         graph_x_embeddings = self.gnn1(self.embedding.weight, graph_edge_index)
         graph_x_embeddings = self.dropout(graph_x_embeddings)
         graph_output = self.gnn2(graph_x_embeddings, graph_edge_index)
-        # if self.is_norm:
-        #     graph_output = self.batch_norm(graph_output)
+        if self.is_norm:
+            graph_output = self.batch_norm(graph_output)
         # print(graph_output.shape)
         return graph_output.cuda()
 
@@ -234,11 +234,11 @@ class HGNN_ATT(nn.Module):
             sub_node_embed, sub_edge_embed1 = self.hgnn(x, sub_graph.cuda())
             sub_node_embed = F.dropout(sub_node_embed, self.dropout, training=self.training)
 
-            # if self.is_norm:
-            #     sub_node_embed = self.batch_norm1(sub_node_embed)
-            #     sub_edge_embed = self.batch_norm1(sub_edge_embed)
+            if self.is_norm:
+                sub_node_embed = self.batch_norm1(sub_node_embed)
+                sub_edge_embed = self.batch_norm1(sub_edge_embed)
 
-            # x = self.fus1(x, sub_node_embed)
+            x = self.fus1(x, sub_node_embed)
             embedding_list[sub_key] = [x.cpu(), sub_edge_embed.cpu()]
 
         return embedding_list
