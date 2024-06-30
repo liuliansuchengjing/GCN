@@ -230,8 +230,8 @@ class HGNN_ATT(nn.Module):
             
             sub_graph = hypergraph_list[sub_key]
             # sub_graph = item_based_collaborative_filtering_binary(sub_graph)
-            # sub_node_embed, sub_edge_embed = self.gat1(x, sub_graph.cuda(), root_emb)
-            sub_node_embed, sub_edge_embed = self.hgnn(x, sub_graph.cuda())
+            sub_node_embed, sub_edge_embed = self.gat1(x, sub_graph.cuda(), root_emb)
+            # sub_node_embed, sub_edge_embed = self.hgnn(x, sub_graph.cuda())
             sub_node_embed = F.dropout(sub_node_embed, self.dropout, training=self.training)
 
             # if self.is_norm:
