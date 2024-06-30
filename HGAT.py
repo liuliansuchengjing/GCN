@@ -354,23 +354,23 @@ class MSHGAT(nn.Module):
                 dyemb += sub_emb
                 cas_emb += sub_cas
             
-            sub_emb_ = sub_emb.view(-1, sub_emb.size(-1))
-            dy_emb_ = dyemb.view(-1, dyemb.size(-1))
-            sub_cas_1 = sub_cas.view(-1, sub_cas.size(-1))
+        #     sub_emb_ = sub_emb.view(-1, sub_emb.size(-1))
+        #     dy_emb_ = dyemb.view(-1, dyemb.size(-1))
+        #     sub_cas_1 = sub_cas.view(-1, sub_cas.size(-1))
             
-            sub_emb_list.append(sub_emb_)
-            dy_emb_list.append(dy_emb_)
-            sub_cas_list.append(sub_cas_1)
+        #     sub_emb_list.append(sub_emb_)
+        #     dy_emb_list.append(dy_emb_)
+        #     sub_cas_list.append(sub_cas_1)
             
-        dy_emb = torch.stack(dy_emb_list, dim=1) 
-        sub_cas_t = torch.stack(sub_cas_list, dim=1) 
+        # dy_emb = torch.stack(dy_emb_list, dim=1) 
+        # sub_cas_t = torch.stack(sub_cas_list, dim=1) 
         
-        # GRUoutput, h = self.GRU(dy_emb, h)   
-        GRUoutput, h = self.GRU(sub_cas_t, h)
-        output = self.fus2(dy_emb_, GRUoutput)
-        # output = GRUoutput.sum(dim=1)  
-        pred = self.pred(output)
+        # # GRUoutput, h = self.GRU(dy_emb, h)   
+        # GRUoutput, h = self.GRU(sub_cas_t, h)
+        # output = self.fus2(dy_emb_, GRUoutput)
+        # # output = GRUoutput.sum(dim=1)  
+        # pred = self.pred(output)
         # print("pred.shape:", pred.size())
-        # pred = self.pred(dyemb)
-        # return pred.view(-1, pred.size(-1))
-        return pred
+        pred = self.pred(dyemb)
+        return pred.view(-1, pred.size(-1))
+        # return pred
