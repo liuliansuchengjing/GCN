@@ -39,21 +39,21 @@ def item_based_collaborative_filtering_binary(H):
       
     return H_pred  
 
-def useritemcf(input, userid, numrecommendations):
-    usersimilarity = {}
-    for i in range(len(input)):
-        for j in range(i + 1, len(input)):
-            usersimilarity[i, j] = cosine(input[i], input[j])
+# def useritemcf(input, userid, numrecommendations):
+#     usersimilarity = {}
+#     for i in range(len(input)):
+#         for j in range(i + 1, len(input)):
+#             usersimilarity[i, j] = cosine(input[i], input[j])
             
-    userindex = userid - 1
-    similarusers = sorted(usersimilarity[userindex].items(), key=lambda x: usersimilarity[userindex][x[0]])[:numrecommendations]
-    recommendeditems = []
-    for similaruser, similarity in similarusers:
-        for i in range(len(input[similaruser])):
-            if input[similaruser][i] == 0:
-                recommendeditems.append(i)
+#     userindex = userid - 1
+#     similarusers = sorted(usersimilarity[userindex].items(), key=lambda x: usersimilarity[userindex][x[0]])[:numrecommendations]
+#     recommendeditems = []
+#     for similaruser, similarity in similarusers:
+#         for i in range(len(input[similaruser])):
+#             if input[similaruser][i] == 0:
+#                 recommendeditems.append(i)
                 
-    return recommendeditems
+#     return recommendeditems
 
 
 class HGNN_conv(nn.Module):
@@ -347,7 +347,7 @@ class MSHGAT(nn.Module):
                 sub_cas[~temp] = 1
                 sub_cas = torch.einsum('ij,i->ij', sub_cas, input_idx)
                 sub_cas = F.embedding(sub_cas.cuda(), list(memory_emb_list.values())[ind - 1][1].cuda())
-                sub_emb = F.embedding(cur.cuda(), list(memory_emb_list.values())[ind - 1][0].cuda())
+                sub_emb = F.embedding(cur.cuda(), hidden.cuda())
                 sub_input = cur + sub_input
 
             sub_cas[temp] = 0
