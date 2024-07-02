@@ -10,7 +10,7 @@ import Constants
 from TransformerBlock import TransformerBlock
 from torch.autograd import Variable
 from sklearn.metrics.pairwise import cosine_similarity
-
+from scipy.spatial.distance import cosine
 
 def item_based_collaborative_filtering_binary(H):  
     # 假设 H 是一个 PyTorch 张量  
@@ -38,6 +38,22 @@ def item_based_collaborative_filtering_binary(H):
     H_pred[non_interacted] = numerator[non_interacted] / denominator[non_interacted.nonzero()[:, 1]]  
       
     return H_pred  
+
+def useritemcf(input, userid, numrecommendations):
+    usersimilarity = {}
+    for i in range(len(input)):
+        for j in range(i + 1, len(input)):
+            usersimilarity[i, j] = cosine(input[i], input[j])
+            
+    userindex = userid - 1
+    similarusers = sorted(usersimilarity[userindex].items(), key=lambda x: usersimilarity[userindex][x[0]])[:numrecommendations]
+    recommendeditems = []
+    for similaruser, similarity in similarusers:
+        for i in range(len(input[similaruser])):
+            if input[similaruser][i] == 0:
+                recommendeditems.append(i)
+                
+    return recommendeditems
 
 
 class HGNN_conv(nn.Module):
