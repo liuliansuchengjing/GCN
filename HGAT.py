@@ -19,7 +19,7 @@ def useritemcf_with_probabilities(input):
             usersimilarity[i, j] = cosine(input[i], input[j])
 
     # 初始化概率矩阵，与输入矩阵形状相同，所有元素为0
-    # recommended_probabilities = np.zeros_like(input)
+    #recommended_probabilities = np.zeros_like(input)
     recommended_probabilities = np.array(input)
 
     # 遍历每个用户
@@ -46,15 +46,13 @@ def useritemcf_with_probabilities(input):
     return recommended_probabilities
 
 
-
-
 class HGNN_conv(nn.Module):
     def __init__(self, in_ft, out_ft, bias=True):  #
         super(HGNN_conv, self).__init__()
 
         self.weight = nn.Parameter(torch.Tensor(in_ft, out_ft))
         self.weight1 = nn.Parameter(torch.Tensor(in_ft, out_ft))
-        init.xavier_uniform_(self.weight)  
+        init.xavier_uniform_(self.weight)
         init.xavier_uniform_(self.weight1)
         # self.edge = nn.Embedding(984, out_ft)
         if bias:
@@ -62,9 +60,7 @@ class HGNN_conv(nn.Module):
         else:
             self.register_parameter('bias', None)
 
-
         self.reset_parameters()
-
 
     def reset_parameters(self):
         stdv = 1. / math.sqrt(self.weight.size(1))
@@ -72,7 +68,6 @@ class HGNN_conv(nn.Module):
         self.weight1.data.uniform_(-stdv, stdv)
         if self.bias is not None:
             self.bias.data.uniform_(-stdv, stdv)
-
 
     def forward(self, x, G):  # x: torch.Tensor, G: torch.Tensor
         # edge_emb = nn.Embedding(984, 64)
@@ -85,6 +80,7 @@ class HGNN_conv(nn.Module):
         x = G.matmul(edge)
 
         return x, edge
+
 
 class HGNN2(nn.Module):
     def __init__(self, emb_dim, dropout=0.15):
@@ -104,11 +100,11 @@ class HGNN2(nn.Module):
 
     def forward(self, x, G):
         # x = self.fc1(x)
-        x = F.relu(x,inplace = False)
-        x, edge = self.hgc1(x, G)        
+        x = F.relu(x, inplace=False)
+        x, edge = self.hgc1(x, G)
         x, edge = self.hgc2(x, G)
         # x = F.dropout(x, self.dropout)
-        x = F.softmax(x,dim = 1)
+        x = F.softmax(x, dim=1)
         x = self.fc1(x)
         return x, edge
 
@@ -192,23 +188,24 @@ class GraphNN(nn.Module):
 
 '''Learn diffusion network'''
 
+
 class GRUNet(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim, n_layers, drop_prob=0.1):
         super(GRUNet, self).__init__()
         self.hidden_dim = hidden_dim
         self.n_layers = n_layers
-        
+
         self.gru = nn.GRU(input_dim, hidden_dim, n_layers, batch_first=True, dropout=drop_prob)
         self.fc = nn.Linear(hidden_dim, output_dim)
         self.relu = nn.ReLU()
-        
+
     def forward(self, x, h):
         out, h = self.gru(x, h)
-        out = out.sum(dim=1) 
+        out = out.sum(dim=1)
         out = self.fc(self.relu(out))
         # out = self.fc(self.relu(out[:,-1]))
         return out, h
-    
+
     def init_hidden(self, batch_size):
         weight = next(self.parameters()).data
         hidden = weight.new(self.n_layers, batch_size, self.hidden_dim).zero_().cuda()
@@ -304,8 +301,8 @@ class MSHGAT(nn.Module):
         # print(input_timestamp)
         input_timestamp = input_timestamp[:, :-1]
         hidden = self.dropout(self.gnn(graph))
-	CF_pred = useritemcf_with_probabilities(hypergraph_list.cpu().numpy())
-	CF_pred = CF_pred.float()
+        CF_pred = useritemcf_with_probabilities(hypergraph_list.cpu().numpy())
+        CF_pred = CF_pred.float()
 
         memory_emb_list = self.hgnn(hidden, CF_pred)
         # print(sorted(memory_emb_list.keys()))
@@ -320,7 +317,7 @@ class MSHGAT(nn.Module):
         cas_emb = torch.zeros(batch_size, max_len, self.hidden_size).cuda()
         # print("batch_size", batch_size)
         # print("max_len", max_len)
-        h = self.GRU.init_hidden(batch_size*max_len)
+        h = self.GRU.init_hidden(batch_size * max_len)
         sub_emb_list = []
         dy_emb_list = []
         sub_cas_list = []
@@ -361,18 +358,18 @@ class MSHGAT(nn.Module):
 
                 dyemb += sub_emb
                 cas_emb += sub_cas
-            
+
             sub_emb_ = sub_emb.view(-1, sub_emb.size(-1))
             dy_emb_ = dyemb.view(-1, dyemb.size(-1))
             sub_cas_1 = sub_cas.view(-1, sub_cas.size(-1))
-            
+
             sub_emb_list.append(sub_emb_)
             dy_emb_list.append(dy_emb_)
             sub_cas_list.append(sub_cas_1)
-            
-        dy_emb = torch.stack(dy_emb_list, dim=1) 
-        sub_cas_t = torch.stack(sub_cas_list, dim=1) 
-        
+
+        dy_emb = torch.stack(dy_emb_list, dim=1)
+        sub_cas_t = torch.stack(sub_cas_list, dim=1)
+
         # GRUoutput, h = self.GRU(dy_emb, h)   
         GRUoutput, h = self.GRU(sub_cas_t, h)
         output = self.fus2(dy_emb_, GRUoutput)
