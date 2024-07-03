@@ -10,39 +10,36 @@ import Constants
 from TransformerBlock import TransformerBlock
 from torch.autograd import Variable
 from scipy.spatial.distance import cosine
+from sklearn.metrics.pairwise import cosine_similarity
 
 
-def useritemcf_with_probabilities(input):
-    usersimilarity = {}
-    for i in range(len(input)):
-        for j in range(i + 1, len(input)):
-            usersimilarity[i, j] = cosine(input[i], input[j])
-
-    # 初始化概率矩阵，与输入矩阵形状相同，所有元素为0
-    #recommended_probabilities = np.zeros_like(input)
-    recommended_probabilities = np.array(input)
-
-    # 遍历每个用户
-    for user in range(len(input)):
-        user_similarities = {}  # 初始化一个字典，用于存储当前用户与其他用户的相似度
-
-        # 获取当前用户与其他用户的相似度
-        for j in range(len(input)):
-            if j != user:  # 排除当前用户
-                user_similarities[j] = usersimilarity[min(user, j), max(user, j)]
-
-        # 遍历所有项目
-        for item in range(len(input[user])):
-            for similaruser, similarity in user_similarities.items():
-                if input[similaruser][item] != 0:  # 如果相似用户与该项目有交互
-                    recommended_probabilities[user][item] += similarity
-
-    # # 将概率归一化，使得每个用户的所有推荐项目概率之和为1
-    # total_probability = np.sum(recommended_probabilities, axis=1, keepdims=True)
-    # recommended_probabilities /= total_probability
-    recommended_probabilities = torch.from_numpy(recommended_probabilities)
-
-    # 返回每个用户的推荐项目概率分布
+def useritemcf_with_probabilities(input_matrix):  
+    # 计算用户之间的余弦相似度，注意这里使用cosine_similarity函数而不是自己编写cosine函数  
+    usersimilarity = cosine_similarity(input_matrix)  
+  
+    # 初始化概率矩阵，与输入矩阵形状相同，所有元素为0  
+    recommended_probabilities = np.zeros_like(input_matrix, dtype=np.float32)  
+  
+    # 遍历每个用户  
+    for user in range(len(input_matrix)):  
+        # 获取当前用户与其他用户的相似度（排除自相似性）  
+        user_similarities = usersimilarity[user, :user] + usersimilarity[user, user+1:]  
+  
+        # 遍历所有项目  
+        for item in range(len(input_matrix[user])):  
+            # 累加相似用户的相似度，但只考虑那些与该项目有交互的相似用户  
+            for similar_user_idx, similarity in enumerate(user_similarities):  
+                if similarity != 0 and input_matrix[similar_user_idx + (similar_user_idx >= user)][item] != 0:  
+                    recommended_probabilities[user][item] += similarity  
+  
+    # 将概率归一化，使得每个用户的所有推荐项目概率之和为1  
+    total_probability = np.sum(recommended_probabilities, axis=1, keepdims=True)  
+    recommended_probabilities = np.where(total_probability == 0, 0, recommended_probabilities / total_probability)  
+  
+    # 将numpy数组转换为torch张量  
+    recommended_probabilities = torch.from_numpy(recommended_probabilities)  
+  
+    # 返回每个用户的推荐项目概率分布  
     return recommended_probabilities
 
 
