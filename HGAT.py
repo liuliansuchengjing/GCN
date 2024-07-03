@@ -11,33 +11,67 @@ from TransformerBlock import TransformerBlock
 from torch.autograd import Variable
 from sklearn.metrics.pairwise import cosine_similarity
 from scipy.spatial.distance import cosine
+import numpy as np
 
-def item_based_collaborative_filtering_binary(H):  
-    # 假设 H 是一个 PyTorch 张量  
-    n_user, n_item = H.shape  
+
+def useritemcf_with_probabilities(input):
+    usersimilarity = {}
+    for i in range(len(input)):
+        for j in range(i + 1, len(input)):
+            usersimilarity[i, j] = cosine(input[i], input[j])
+
+    # 初始化概率矩阵，与输入矩阵形状相同，所有元素为0
+    recommended_probabilities = np.zeros_like(input)
+
+    # 遍历每个用户
+    for user in range(len(input)):
+        user_similarities = {}  # 初始化一个字典，用于存储当前用户与其他用户的相似度
+
+        # 获取当前用户与其他用户的相似度
+        for j in range(len(input)):
+            if j != user:  # 排除当前用户
+                user_similarities[j] = usersimilarity[min(user, j), max(user, j)]
+
+        # 遍历所有项目
+        for item in range(len(input[user])):
+            for similaruser, similarity in user_similarities.items():
+                if input[similaruser][item] != 0:  # 如果相似用户与该项目有交互
+                    recommended_probabilities[user][item] += similarity
+
+    # 将概率归一化，使得每个用户的所有推荐项目概率之和为1
+    total_probability = np.sum(recommended_probabilities, axis=1, keepdims=True)
+    recommended_probabilities /= total_probability
+
+    # 返回每个用户的推荐项目概率分布
+    return recommended_probabilities
+
+
+# def item_based_collaborative_filtering_binary(H):  
+#     # 假设 H 是一个 PyTorch 张量  
+#     n_user, n_item = H.shape  
       
-    # 计算物品之间的余弦相似度  
-    item_similarity = cosine_similarity(H.T.numpy())  
-    item_similarity = torch.from_numpy(item_similarity).float()  
+#     # 计算物品之间的余弦相似度  
+#     item_similarity = cosine_similarity(H.T.numpy())  
+#     item_similarity = torch.from_numpy(item_similarity).float()  
   
-    # 创建一个布尔张量来标识哪些元素是0（未交互）  
-    non_interacted = H == 0  
+#     # 创建一个布尔张量来标识哪些元素是0（未交互）  
+#     non_interacted = H == 0  
   
-    # 计算分子部分，使用广播机制  
-    numerator = torch.matmul(item_similarity, H.T)  
-    numerator = numerator.T  # 转置回原形状  
+#     # 计算分子部分，使用广播机制  
+#     numerator = torch.matmul(item_similarity, H.T)  
+#     numerator = numerator.T  # 转置回原形状  
   
-    # 计算分母部分  
-    denominator = torch.sum(torch.abs(item_similarity), dim=0)  
+#     # 计算分母部分  
+#     denominator = torch.sum(torch.abs(item_similarity), dim=0)  
       
-    # 为了避免除以0，设置分母为0的地方为无穷小值（例如，1e-10）  
-    denominator[denominator == 0] = 1e-10  
+#     # 为了避免除以0，设置分母为0的地方为无穷小值（例如，1e-10）  
+#     denominator[denominator == 0] = 1e-10  
       
-    # 计算预测值，只计算未交互的部分  
-    H_pred = torch.zeros_like(H, dtype=torch.float32)  
-    H_pred[non_interacted] = numerator[non_interacted] / denominator[non_interacted.nonzero()[:, 1]]  
+#     # 计算预测值，只计算未交互的部分  
+#     H_pred = torch.zeros_like(H, dtype=torch.float32)  
+#     H_pred[non_interacted] = numerator[non_interacted] / denominator[non_interacted.nonzero()[:, 1]]  
       
-    return H_pred  
+#     return H_pred  
 
 # def useritemcf(input, userid, numrecommendations):
 #     usersimilarity = {}
@@ -350,6 +384,8 @@ class MSHGAT(nn.Module):
                 sub_emb = F.embedding(cur.cuda(), hidden.cuda())
                 sub_input = cur + sub_input
 
+            CF_pred = useritemcf_with_probabilities(sub_input)
+            
             sub_cas[temp] = 0
             sub_emb[temp] = 0
             dyemb += sub_emb
@@ -387,6 +423,7 @@ class MSHGAT(nn.Module):
         # # output = GRUoutput.sum(dim=1)  
         # pred = self.pred(output)
         # print("pred.shape:", pred.size())
-        pred = self.pred(dyemb)
+        pred = self.pred(CF_pred)
+        # pred = self.pred(dyemb)
         return pred.view(-1, pred.size(-1))
         # return pred
