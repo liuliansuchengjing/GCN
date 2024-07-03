@@ -19,7 +19,7 @@ def useritemcf_with_probabilities(input):
             usersimilarity[i, j] = cosine(input[i], input[j])
 
     # 初始化概率矩阵，与输入矩阵形状相同，所有元素为0
-    #recommended_probabilities = np.zeros_like(input)
+    # recommended_probabilities = np.zeros_like(input)
     recommended_probabilities = np.array(input)
 
     # 遍历每个用户
@@ -44,6 +44,8 @@ def useritemcf_with_probabilities(input):
 
     # 返回每个用户的推荐项目概率分布
     return recommended_probabilities
+
+
 
 
 class HGNN_conv(nn.Module):
@@ -302,7 +304,6 @@ class MSHGAT(nn.Module):
         # print(input_timestamp)
         input_timestamp = input_timestamp[:, :-1]
         hidden = self.dropout(self.gnn(graph))
-	    
 	CF_pred = useritemcf_with_probabilities(hypergraph_list.cpu().numpy())
 	CF_pred = CF_pred.float()
 
