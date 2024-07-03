@@ -302,7 +302,7 @@ class MSHGAT(nn.Module):
         # print(input_timestamp)
         input_timestamp = input_timestamp[:, :-1]
         hidden = self.dropout(self.gnn(graph))
-
+	    
 	CF_pred = useritemcf_with_probabilities(hypergraph_list.cpu().numpy())
 	CF_pred = CF_pred.float()
 
