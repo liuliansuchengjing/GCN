@@ -14,32 +14,38 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 
 def useritemcf_with_probabilities(input_matrix):  
-    # 计算用户之间的余弦相似度，注意这里使用cosine_similarity函数而不是自己编写cosine函数  
+    # 假设 input_matrix 是一个二维numpy数组，其中每一行代表一个用户  
+    # 计算用户之间的余弦相似度（注意这里使用 cosine_similarity 函数）  
     usersimilarity = cosine_similarity(input_matrix)  
   
-    # 初始化概率矩阵，与输入矩阵形状相同，所有元素为0  
+    # 初始化概率矩阵  
     recommended_probabilities = np.zeros_like(input_matrix, dtype=np.float32)  
   
     # 遍历每个用户  
     for user in range(len(input_matrix)):  
-        # 获取当前用户与其他用户的相似度（排除自相似性）  
-        user_similarities = usersimilarity[user, :user] + usersimilarity[user, user+1:]  
+        # 获取当前用户与其他用户的相似度（不包括自己）  
+        user_similarities = usersimilarity[user, user+1:]  # 直接从user+1开始，跳过自己  
+  
+        # 如果没有相似用户（理论上不应该发生，除非只有一个用户），则跳过当前用户  
+        if len(user_similarities) == 0:  
+            continue  
   
         # 遍历所有项目  
         for item in range(len(input_matrix[user])):  
             # 累加相似用户的相似度，但只考虑那些与该项目有交互的相似用户  
             for similar_user_idx, similarity in enumerate(user_similarities):  
-                if similarity != 0 and input_matrix[similar_user_idx + (similar_user_idx >= user)][item] != 0:  
+                # 注意这里要调整索引以匹配实际的用户ID  
+                similar_user_actual_idx = similar_user_idx + user + 1  
+                if input_matrix[similar_user_actual_idx][item] != 0:  
                     recommended_probabilities[user][item] += similarity  
   
-    # 将概率归一化，使得每个用户的所有推荐项目概率之和为1  
+    # 归一化概率  
     total_probability = np.sum(recommended_probabilities, axis=1, keepdims=True)  
     recommended_probabilities = np.where(total_probability == 0, 0, recommended_probabilities / total_probability)  
   
-    # 将numpy数组转换为torch张量  
+    # 转换为torch张量（如果需要）  
     recommended_probabilities = torch.from_numpy(recommended_probabilities)  
   
-    # 返回每个用户的推荐项目概率分布  
     return recommended_probabilities
 
 
