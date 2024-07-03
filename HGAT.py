@@ -9,9 +9,7 @@ import torch.nn.init as init
 import Constants
 from TransformerBlock import TransformerBlock
 from torch.autograd import Variable
-from sklearn.metrics.pairwise import cosine_similarity
 from scipy.spatial.distance import cosine
-import numpy as np
 
 
 def useritemcf_with_probabilities(input):
@@ -21,7 +19,8 @@ def useritemcf_with_probabilities(input):
             usersimilarity[i, j] = cosine(input[i], input[j])
 
     # 初始化概率矩阵，与输入矩阵形状相同，所有元素为0
-    recommended_probabilities = np.zeros_like(input)
+    #recommended_probabilities = np.zeros_like(input)
+    recommended_probabilities = np.array(input)
 
     # 遍历每个用户
     for user in range(len(input)):
@@ -38,56 +37,13 @@ def useritemcf_with_probabilities(input):
                 if input[similaruser][item] != 0:  # 如果相似用户与该项目有交互
                     recommended_probabilities[user][item] += similarity
 
-    # 将概率归一化，使得每个用户的所有推荐项目概率之和为1
-    total_probability = np.sum(recommended_probabilities, axis=1, keepdims=True)
-    recommended_probabilities /= total_probability
+    # # 将概率归一化，使得每个用户的所有推荐项目概率之和为1
+    # total_probability = np.sum(recommended_probabilities, axis=1, keepdims=True)
+    # recommended_probabilities /= total_probability
+    recommended_probabilities = torch.from_numpy(recommended_probabilities)
 
     # 返回每个用户的推荐项目概率分布
     return recommended_probabilities
-
-
-# def item_based_collaborative_filtering_binary(H):  
-#     # 假设 H 是一个 PyTorch 张量  
-#     n_user, n_item = H.shape  
-      
-#     # 计算物品之间的余弦相似度  
-#     item_similarity = cosine_similarity(H.T.numpy())  
-#     item_similarity = torch.from_numpy(item_similarity).float()  
-  
-#     # 创建一个布尔张量来标识哪些元素是0（未交互）  
-#     non_interacted = H == 0  
-  
-#     # 计算分子部分，使用广播机制  
-#     numerator = torch.matmul(item_similarity, H.T)  
-#     numerator = numerator.T  # 转置回原形状  
-  
-#     # 计算分母部分  
-#     denominator = torch.sum(torch.abs(item_similarity), dim=0)  
-      
-#     # 为了避免除以0，设置分母为0的地方为无穷小值（例如，1e-10）  
-#     denominator[denominator == 0] = 1e-10  
-      
-#     # 计算预测值，只计算未交互的部分  
-#     H_pred = torch.zeros_like(H, dtype=torch.float32)  
-#     H_pred[non_interacted] = numerator[non_interacted] / denominator[non_interacted.nonzero()[:, 1]]  
-      
-#     return H_pred  
-
-# def useritemcf(input, userid, numrecommendations):
-#     usersimilarity = {}
-#     for i in range(len(input)):
-#         for j in range(i + 1, len(input)):
-#             usersimilarity[i, j] = cosine(input[i], input[j])
-            
-#     userindex = userid - 1
-#     similarusers = sorted(usersimilarity[userindex].items(), key=lambda x: usersimilarity[userindex][x[0]])[:numrecommendations]
-#     recommendeditems = []
-#     for similaruser, similarity in similarusers:
-#         for i in range(len(input[similaruser])):
-#             if input[similaruser][i] == 0:
-#                 recommendeditems.append(i)
-                
-#     return recommendeditems
 
 
 class HGNN_conv(nn.Module):
@@ -119,11 +75,11 @@ class HGNN_conv(nn.Module):
     def forward(self, x, G):  # x: torch.Tensor, G: torch.Tensor
         # edge_emb = nn.Embedding(984, 64)
         # x = G.matmul(edge_emb.weight.cuda())
-        # x = x.matmul(self.weight)
+        x = x.matmul(self.weight)
         if self.bias is not None:
             x = x + self.bias
         edge = G.t().matmul(x)
-        # edge = edge.matmul(self.weight1)
+        edge = edge.matmul(self.weight1)
         x = G.matmul(edge)
 
         return x, edge
@@ -274,19 +230,16 @@ class HGNN_ATT(nn.Module):
         root_emb = F.embedding(hypergraph_list[1].cuda(), x)
 
         hypergraph_list = hypergraph_list[0]
-        
         embedding_list = {}
         for sub_key in hypergraph_list.keys():
-            
             sub_graph = hypergraph_list[sub_key]
-            # sub_graph = item_based_collaborative_filtering_binary(sub_graph)
-            sub_node_embed, sub_edge_embed = self.gat1(x, sub_graph.cuda(), root_emb)
-            sub_node_embed, sub_edge_embed1 = self.hgnn(x, sub_graph.cuda())
+            # sub_node_embed, sub_edge_embed = self.gat1(x, sub_graph.cuda(), root_emb)
+            sub_node_embed, sub_edge_embed = self.hgnn(x, sub_graph.cuda())
             sub_node_embed = F.dropout(sub_node_embed, self.dropout, training=self.training)
 
-            if self.is_norm:
-                sub_node_embed = self.batch_norm1(sub_node_embed)
-                sub_edge_embed = self.batch_norm1(sub_edge_embed)
+            # if self.is_norm:
+            #     sub_node_embed = self.batch_norm1(sub_node_embed)
+            #     sub_edge_embed = self.batch_norm1(sub_edge_embed)
 
             x = self.fus1(x, sub_node_embed)
             embedding_list[sub_key] = [x.cpu(), sub_edge_embed.cpu()]
@@ -349,7 +302,11 @@ class MSHGAT(nn.Module):
         # print(input_timestamp)
         input_timestamp = input_timestamp[:, :-1]
         hidden = self.dropout(self.gnn(graph))
-        memory_emb_list = self.hgnn(hidden, hypergraph_list)
+
+	CF_pred = useritemcf_with_probabilities(hypergraph_list.cpu().numpy())
+	CF_pred = CF_pred.float()
+
+        memory_emb_list = self.hgnn(hidden, CF_pred)
         # print(sorted(memory_emb_list.keys()))
 
         mask = (input == Constants.PAD)
@@ -381,11 +338,9 @@ class MSHGAT(nn.Module):
                 sub_cas[~temp] = 1
                 sub_cas = torch.einsum('ij,i->ij', sub_cas, input_idx)
                 sub_cas = F.embedding(sub_cas.cuda(), list(memory_emb_list.values())[ind - 1][1].cuda())
-                sub_emb = F.embedding(cur.cuda(), hidden.cuda())
+                sub_emb = F.embedding(cur.cuda(), list(memory_emb_list.values())[ind - 1][0].cuda())
                 sub_input = cur + sub_input
 
-            CF_pred = useritemcf_with_probabilities(sub_input)
-            
             sub_cas[temp] = 0
             sub_emb[temp] = 0
             dyemb += sub_emb
@@ -406,24 +361,23 @@ class MSHGAT(nn.Module):
                 dyemb += sub_emb
                 cas_emb += sub_cas
             
-        #     sub_emb_ = sub_emb.view(-1, sub_emb.size(-1))
-        #     dy_emb_ = dyemb.view(-1, dyemb.size(-1))
-        #     sub_cas_1 = sub_cas.view(-1, sub_cas.size(-1))
+            sub_emb_ = sub_emb.view(-1, sub_emb.size(-1))
+            dy_emb_ = dyemb.view(-1, dyemb.size(-1))
+            sub_cas_1 = sub_cas.view(-1, sub_cas.size(-1))
             
-        #     sub_emb_list.append(sub_emb_)
-        #     dy_emb_list.append(dy_emb_)
-        #     sub_cas_list.append(sub_cas_1)
+            sub_emb_list.append(sub_emb_)
+            dy_emb_list.append(dy_emb_)
+            sub_cas_list.append(sub_cas_1)
             
-        # dy_emb = torch.stack(dy_emb_list, dim=1) 
-        # sub_cas_t = torch.stack(sub_cas_list, dim=1) 
+        dy_emb = torch.stack(dy_emb_list, dim=1) 
+        sub_cas_t = torch.stack(sub_cas_list, dim=1) 
         
-        # # GRUoutput, h = self.GRU(dy_emb, h)   
-        # GRUoutput, h = self.GRU(sub_cas_t, h)
-        # output = self.fus2(dy_emb_, GRUoutput)
-        # # output = GRUoutput.sum(dim=1)  
-        # pred = self.pred(output)
+        # GRUoutput, h = self.GRU(dy_emb, h)   
+        GRUoutput, h = self.GRU(sub_cas_t, h)
+        output = self.fus2(dy_emb_, GRUoutput)
+        # output = GRUoutput.sum(dim=1)  
+        pred = self.pred(output)
         # print("pred.shape:", pred.size())
-        pred = self.pred(CF_pred)
         # pred = self.pred(dyemb)
-        return pred.view(-1, pred.size(-1))
-        # return pred
+        # return pred.view(-1, pred.size(-1))
+        return pred
