@@ -231,9 +231,12 @@ class HGNN_ATT(nn.Module):
         hypergraph_list = hypergraph_list[0]
         embedding_list = {}
         for sub_key in hypergraph_list.keys():
+            
             sub_graph = hypergraph_list[sub_key]
+            CF_pred = useritemcf_with_probabilities(sub_graph.cpu().numpy())
+            CF_pred = CF_pred.float()
             # sub_node_embed, sub_edge_embed = self.gat1(x, sub_graph.cuda(), root_emb)
-            sub_node_embed, sub_edge_embed = self.hgnn(x, sub_graph.cuda())
+            sub_node_embed, sub_edge_embed = self.hgnn(x, CF_pred.cuda())
             sub_node_embed = F.dropout(sub_node_embed, self.dropout, training=self.training)
 
             # if self.is_norm:
@@ -301,10 +304,9 @@ class MSHGAT(nn.Module):
         # print(input_timestamp)
         input_timestamp = input_timestamp[:, :-1]
         hidden = self.dropout(self.gnn(graph))
-        CF_pred = useritemcf_with_probabilities(hypergraph_list.cpu().numpy())
-        CF_pred = CF_pred.float()
+        
 
-        memory_emb_list = self.hgnn(hidden, CF_pred)
+        memory_emb_list = self.hgnn(hidden, hypergraph_list)
         # print(sorted(memory_emb_list.keys()))
 
         mask = (input == Constants.PAD)
