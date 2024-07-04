@@ -429,9 +429,10 @@ class MSHGAT(nn.Module):
         # print("pred.shape:", pred.size())
         # pred = self.pred(dyemb)
         # return pred.view(-1, pred.size(-1))
+        extracted_rows = self.Line(extracted_rows)
         n1, n2 = extracted_rows.shape
         repeated_tensor = extracted_rows.repeat(199, 1)  # 重复199次行，列不变  
         reshaped_tensor = repeated_tensor.view(n1 * 199, n2)  # 重新调整形状
-        reshaped_tensor = self.Line(reshaped_tensor)
+        # reshaped_tensor = self.Line(reshaped_tensor)
         pred = pred + reshaped_tensor
         return pred
