@@ -36,7 +36,7 @@ def item_based_collaborative_filtering_binary(H):
 
     # # 计算预测值
     # H_pred = numerator / denominator_expanded
-    H_pred = numerator + H
+    H_pred = numerator + 1000*H
 
     # 返回完整的预测矩阵
     return H_pred
