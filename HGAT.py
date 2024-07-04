@@ -104,11 +104,11 @@ class HGNN_conv(nn.Module):
     def forward(self, x, G):  # x: torch.Tensor, G: torch.Tensor
         # edge_emb = nn.Embedding(984, 64)
         # x = G.matmul(edge_emb.weight.cuda())
-        x = x.matmul(self.weight)
+        # x = x.matmul(self.weight)
         if self.bias is not None:
             x = x + self.bias
         edge = G.t().matmul(x)
-        edge = edge.matmul(self.weight1)
+        # edge = edge.matmul(self.weight1)
         x = G.matmul(edge)
 
         return x, edge
@@ -282,7 +282,7 @@ class HGNN_ATT(nn.Module):
             #     sub_node_embed = self.batch_norm1(sub_node_embed)
             #     sub_edge_embed = self.batch_norm1(sub_edge_embed)
 
-            x = self.fus1(x, sub_node_embed)
+            # x = self.fus1(x, sub_node_embed)
             embedding_list[sub_key] = [x.cpu(), sub_edge_embed.cpu()]
             last_graph = sub_graph
 
