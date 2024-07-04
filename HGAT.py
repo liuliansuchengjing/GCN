@@ -261,12 +261,17 @@ class HGNN_ATT(nn.Module):
 
         hypergraph_list = hypergraph_list[0]
         embedding_list = {}
+        graph = torch.zeros(15001, 984)  
+        IBR_graph = torch.zeros_like(graph)
         for sub_key in hypergraph_list.keys():
             
             sub_graph = hypergraph_list[sub_key]
+            # if(sub_key == 1703192018)
+            #     IBR_graph = torch.zeros_like(sub_graph)
+            IBR_graph = IBR_graph + sub_graph
             # CF_pred = useritemcf_with_probabilities(sub_graph.cpu().numpy())
             # CF_pred = CF_pred.float()
-            IBR_graph = sub_graph
+            
             CF_pred = item_based_collaborative_filtering_binary(IBR_graph)
             # sub_node_embed, sub_edge_embed = self.gat1(x, sub_graph.cuda(), root_emb)
             sub_node_embed, sub_edge_embed = self.hgnn(x, CF_pred.cuda())
@@ -278,6 +283,7 @@ class HGNN_ATT(nn.Module):
 
             x = self.fus1(x, sub_node_embed)
             embedding_list[sub_key] = [x.cpu(), sub_edge_embed.cpu()]
+            last_graph = sub_graph
 
         return embedding_list
 
