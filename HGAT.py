@@ -13,6 +13,34 @@ from scipy.spatial.distance import cosine
 from sklearn.metrics.pairwise import cosine_similarity
 
 
+def item_based_collaborative_filtering_binary(H):
+    # 假设 H 是一个 PyTorch 张量
+    n_user, n_item = H.shape
+
+    # 计算物品之间的余弦相似度
+    item_similarity = cosine_similarity(H.T.numpy())
+    item_similarity = torch.from_numpy(item_similarity).float()
+
+    # 计算分子部分，使用广播机制
+    numerator = torch.matmul(item_similarity, H.T)
+    numerator = numerator.T  # 转置回原形状
+
+    # 计算分母部分
+    denominator = torch.sum(torch.abs(item_similarity), dim=0)
+
+    # 为了避免除以0，设置分母为0的地方为无穷小值（例如，1e-10）
+    denominator[denominator == 0] = 1e-10
+
+    # 创建一个与numerator形状相同的分母张量
+    denominator_expanded = denominator.unsqueeze(0).expand_as(numerator)
+
+    # 计算预测值
+    H_pred = numerator / denominator_expanded
+
+    # 返回完整的预测矩阵
+    return H_pred
+
+
 def useritemcf_with_probabilities(input_matrix):  
     # 假设 input_matrix 是一个二维numpy数组，其中每一行代表一个用户  
     # 计算用户之间的余弦相似度（注意这里使用 cosine_similarity 函数）  
@@ -236,8 +264,10 @@ class HGNN_ATT(nn.Module):
         for sub_key in hypergraph_list.keys():
             
             sub_graph = hypergraph_list[sub_key]
-            CF_pred = useritemcf_with_probabilities(sub_graph.cpu().numpy())
-            CF_pred = CF_pred.float()
+            # CF_pred = useritemcf_with_probabilities(sub_graph.cpu().numpy())
+            # CF_pred = CF_pred.float()
+            IBR_graph = sub_graph
+            CF_pred = item_based_collaborative_filtering_binary(IBR_graph)
             # sub_node_embed, sub_edge_embed = self.gat1(x, sub_graph.cuda(), root_emb)
             sub_node_embed, sub_edge_embed = self.hgnn(x, CF_pred.cuda())
             sub_node_embed = F.dropout(sub_node_embed, self.dropout, training=self.training)
