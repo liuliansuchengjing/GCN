@@ -330,6 +330,7 @@ class MSHGAT(nn.Module):
         self.embedding = nn.Embedding(self.n_node, self.initial_feature, padding_idx=0)
         self.reset_parameters()
         self.readout = MLPReadout(self.hidden_size, self.n_node, None)
+        self.Line = nn.Linear(self.n_node, self.n_node)
         self.GRU = GRUNet(self.hidden_size, self.hidden_size, self.hidden_size, 4)
 
     def reset_parameters(self):
@@ -431,5 +432,6 @@ class MSHGAT(nn.Module):
         n1, n2 = extracted_rows.shape
         repeated_tensor = extracted_rows.repeat(199, 1)  # 重复199次行，列不变  
         reshaped_tensor = repeated_tensor.view(n1 * 199, n2)  # 重新调整形状
+        reshaped_tensor = self.Line(reshaped_tensor)
         pred = pred + reshaped_tensor
         return pred
