@@ -25,17 +25,18 @@ def item_based_collaborative_filtering_binary(H):
     numerator = torch.matmul(item_similarity, H.T)
     numerator = numerator.T  # 转置回原形状
 
-    # 计算分母部分
-    denominator = torch.sum(torch.abs(item_similarity), dim=0)
+    # # 计算分母部分
+    # denominator = torch.sum(torch.abs(item_similarity), dim=0)
 
-    # 为了避免除以0，设置分母为0的地方为无穷小值（例如，1e-10）
-    denominator[denominator == 0] = 1e-10
+    # # 为了避免除以0，设置分母为0的地方为无穷小值（例如，1e-10）
+    # denominator[denominator == 0] = 1e-10
 
-    # 创建一个与numerator形状相同的分母张量
-    denominator_expanded = denominator.unsqueeze(0).expand_as(numerator)
+    # # 创建一个与numerator形状相同的分母张量
+    # denominator_expanded = denominator.unsqueeze(0).expand_as(numerator)
 
-    # 计算预测值
-    H_pred = numerator / denominator_expanded
+    # # 计算预测值
+    # H_pred = numerator / denominator_expanded
+    H_pred = numerator + H
 
     # 返回完整的预测矩阵
     return H_pred
