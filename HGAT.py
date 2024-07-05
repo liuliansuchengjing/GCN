@@ -59,8 +59,8 @@ def item_based_collaborative_filtering_binary(H):
     # 计算预测值
     H_pred = numerator / denominator_expanded
     fus = Fusion(n_item)
-    H_pred = fus(H_pred, 1000*H)
-    # H_pred = H_pred + 1000*H
+    # H_pred = fus(H_pred, 1000*H)
+    H_pred = H_pred + 1000*H
 
     # 返回完整的预测矩阵
     return H_pred
@@ -317,7 +317,7 @@ class HGNN_ATT(nn.Module):
             # CF_pred = useritemcf_with_probabilities(sub_graph.cpu().numpy())
             # CF_pred = CF_pred.float()
             
-            CF_pred = item_based_collaborative_filtering_binary(IBR_graph)
+            CF_pred = user_based_collaborative_filtering_binary(IBR_graph)
             # sub_node_embed, sub_edge_embed = self.gat1(x, sub_graph.cuda(), root_emb)
             sub_node_embed, sub_edge_embed = self.hgnn(x, CF_pred.cuda())
             sub_node_embed = F.dropout(sub_node_embed, self.dropout, training=self.training)
