@@ -25,18 +25,18 @@ def item_based_collaborative_filtering_binary(H):
     numerator = torch.matmul(item_similarity, H.T)
     numerator = numerator.T  # 转置回原形状
 
-    # 计算分母部分
-    denominator = torch.sum(torch.abs(item_similarity), dim=0)
+    # # 计算分母部分
+    # denominator = torch.sum(torch.abs(item_similarity), dim=0)
 
-    # 为了避免除以0，设置分母为0的地方为无穷小值（例如，1e-10）
-    denominator[denominator == 0] = 1e-10
+    # # 为了避免除以0，设置分母为0的地方为无穷小值（例如，1e-10）
+    # denominator[denominator == 0] = 1e-10
 
-    # 创建一个与numerator形状相同的分母张量
-    denominator_expanded = denominator.unsqueeze(0).expand_as(numerator)
+    # # 创建一个与numerator形状相同的分母张量
+    # denominator_expanded = denominator.unsqueeze(0).expand_as(numerator)
 
-    # 计算预测值
-    H_pred = numerator / denominator_expanded
-    H_pred = H_pred + H
+    # # 计算预测值
+    # H_pred = numerator / denominator_expanded
+    H_pred = numerator + H
 
     # 返回完整的预测矩阵
     return H_pred
@@ -263,13 +263,10 @@ class HGNN_ATT(nn.Module):
         hypergraph_list = hypergraph_list[0]
         embedding_list = {}
         graph = torch.zeros(15001, 984)  
-        timegraph_list = []
         IBR_graph = torch.zeros_like(graph)
         for sub_key in hypergraph_list.keys():
             
             sub_graph = hypergraph_list[sub_key]
-            
-
             # if(sub_key == 1703192018)
             #     IBR_graph = torch.zeros_like(sub_graph)
             IBR_graph = IBR_graph + sub_graph
@@ -277,9 +274,8 @@ class HGNN_ATT(nn.Module):
             # CF_pred = CF_pred.float()
             
             CF_pred = item_based_collaborative_filtering_binary(IBR_graph)
-            timegraph_list.append(CF_pred.t().cuda())
             # sub_node_embed, sub_edge_embed = self.gat1(x, sub_graph.cuda(), root_emb)
-            sub_node_embed, sub_edge_embed = self.hgnn(x, sub_graph.cuda())
+            sub_node_embed, sub_edge_embed = self.hgnn(x, CF_pred.cuda())
             sub_node_embed = F.dropout(sub_node_embed, self.dropout, training=self.training)
 
             # if self.is_norm:
@@ -290,7 +286,7 @@ class HGNN_ATT(nn.Module):
             embedding_list[sub_key] = [x.cpu(), sub_edge_embed.cpu()]
             last_graph = sub_graph
 
-        return embedding_list, timegraph_list
+        return embedding_list
 
 
 class MLPReadout(nn.Module):
@@ -322,7 +318,6 @@ class MSHGAT(nn.Module):
         self.gnn = GraphNN(self.n_node, self.initial_feature, dropout=dropout)
         self.fus = Fusion(self.hidden_size + self.pos_dim)
         self.fus2 = Fusion(self.hidden_size)
-        self.fus3 = Fusion(self.n_node)
         self.pos_embedding = nn.Embedding(1000, self.pos_dim)
         self.decoder_attention1 = TransformerBlock(input_size=self.hidden_size + self.pos_dim, n_heads=8)
         self.decoder_attention2 = TransformerBlock(input_size=self.hidden_size + self.pos_dim, n_heads=8)
@@ -331,8 +326,6 @@ class MSHGAT(nn.Module):
         self.embedding = nn.Embedding(self.n_node, self.initial_feature, padding_idx=0)
         self.reset_parameters()
         self.readout = MLPReadout(self.hidden_size, self.n_node, None)
-        self.readout2 = MLPReadout(self.n_node, self.n_node, None)
-        # self.Line = nn.Linear(self.n_node, self.n_node)
         self.GRU = GRUNet(self.hidden_size, self.hidden_size, self.hidden_size, 4)
 
     def reset_parameters(self):
@@ -347,13 +340,13 @@ class MSHGAT(nn.Module):
     def forward(self, input, input_timestamp, input_idx, graph, hypergraph_list):
 
         input = input[:, :-1]
-        # print(input_idx)
+        # print(input)
         # print(input_timestamp)
         input_timestamp = input_timestamp[:, :-1]
         hidden = self.dropout(self.gnn(graph))
         
 
-        memory_emb_list, timegraph_list = self.hgnn(hidden, hypergraph_list)
+        memory_emb_list = self.hgnn(hidden, hypergraph_list)
         # print(sorted(memory_emb_list.keys()))
 
         mask = (input == Constants.PAD)
@@ -372,14 +365,12 @@ class MSHGAT(nn.Module):
         sub_cas_list = []
 
         for ind, time in enumerate(sorted(memory_emb_list.keys())):
-            
             if ind == 0:
                 sub_input = torch.where(input_timestamp <= time, input, zero_vec)
                 sub_emb = F.embedding(sub_input.cuda(), hidden.cuda())
                 temp = sub_input == 0
                 sub_cas = sub_emb.clone()
             else:
-                extracted_rows = timegraph_list[ind - 1][input_idx]
                 cur = torch.where(input_timestamp <= time, input, zero_vec) - sub_input
                 temp = cur == 0
 
@@ -409,7 +400,6 @@ class MSHGAT(nn.Module):
 
                 dyemb += sub_emb
                 cas_emb += sub_cas
-                extracted_rows +=extracted_rows
 
             sub_emb_ = sub_emb.view(-1, sub_emb.size(-1))
             dy_emb_ = dyemb.view(-1, dyemb.size(-1))
@@ -425,17 +415,9 @@ class MSHGAT(nn.Module):
         # GRUoutput, h = self.GRU(dy_emb, h)   
         GRUoutput, h = self.GRU(sub_cas_t, h)
         output = self.fus2(dy_emb_, GRUoutput)
-        # output = GRUoutput.sum(dim=1) 
-          
+        # output = GRUoutput.sum(dim=1)  
         pred = self.pred(output)
         # print("pred.shape:", pred.size())
         # pred = self.pred(dyemb)
         # return pred.view(-1, pred.size(-1))
-        extracted_rows = self.readout2(extracted_rows)
-        n1, n2 = extracted_rows.shape
-        repeated_tensor = extracted_rows.repeat(199, 1)  # 重复199次行，列不变  
-        reshaped_tensor = repeated_tensor.view(n1 * 199, n2)  # 重新调整形状
-        # reshaped_tensor = self.Line(reshaped_tensor)
-        # pred = pred + reshaped_tensor
-        pred =self.fus3(pred, reshaped_tensor)
         return pred
