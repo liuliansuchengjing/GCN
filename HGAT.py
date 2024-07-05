@@ -322,6 +322,7 @@ class MSHGAT(nn.Module):
         self.gnn = GraphNN(self.n_node, self.initial_feature, dropout=dropout)
         self.fus = Fusion(self.hidden_size + self.pos_dim)
         self.fus2 = Fusion(self.hidden_size)
+        self.fus3 = Fusion(self.n_node)
         self.pos_embedding = nn.Embedding(1000, self.pos_dim)
         self.decoder_attention1 = TransformerBlock(input_size=self.hidden_size + self.pos_dim, n_heads=8)
         self.decoder_attention2 = TransformerBlock(input_size=self.hidden_size + self.pos_dim, n_heads=8)
@@ -435,5 +436,6 @@ class MSHGAT(nn.Module):
         repeated_tensor = extracted_rows.repeat(199, 1)  # 重复199次行，列不变  
         reshaped_tensor = repeated_tensor.view(n1 * 199, n2)  # 重新调整形状
         # reshaped_tensor = self.Line(reshaped_tensor)
-        pred = pred + reshaped_tensor
+        # pred = pred + reshaped_tensor
+        pred =self.fus3(pred, reshaped_tensor)
         return pred
