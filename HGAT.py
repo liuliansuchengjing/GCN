@@ -14,6 +14,27 @@ from scipy.spatial.distance import cosine
 from sklearn.metrics.pairwise import cosine_similarity
 
 
+# Fusion gate
+class Fusion(nn.Module):
+    def __init__(self, input_size, out=1, dropout=0.1):
+        super(Fusion, self).__init__()
+        self.linear1 = nn.Linear(input_size, input_size)
+        self.linear2 = nn.Linear(input_size, out)
+        self.dropout = nn.Dropout(dropout)
+        self.init_weights()
+
+    def init_weights(self):
+        init.xavier_normal_(self.linear1.weight)
+        init.xavier_normal_(self.linear2.weight)
+
+    def forward(self, hidden, dy_emb):
+        emb = torch.cat([hidden.unsqueeze(dim=0), dy_emb.unsqueeze(dim=0)], dim=0)
+        emb_score = F.softmax(self.linear2(torch.tanh(self.linear1(emb))), dim=0)
+        emb_score = self.dropout(emb_score)
+        out = torch.sum(emb_score * emb, dim=0)
+        return out
+
+
 def item_based_collaborative_filtering_binary(H):
     # 假设 H 是一个 PyTorch 张量
     n_user, n_item = H.shape
@@ -37,9 +58,50 @@ def item_based_collaborative_filtering_binary(H):
 
     # 计算预测值
     H_pred = numerator / denominator_expanded
-    H_pred = H_pred + 1000*H
+    fus = Fusion(n_item)
+    H_pred = fus(H_pred, 1000*H)
+    # H_pred = H_pred + 1000*H
 
     # 返回完整的预测矩阵
+    return H_pred
+
+def user_based_collaborative_filtering_binary(H):  
+    # 假设 H 是一个 PyTorch 张量  
+    n_user, n_item = H.shape  
+  
+    # 计算用户之间的余弦相似度  
+    user_similarity = cosine_similarity(H.numpy())  
+    user_similarity = torch.from_numpy(user_similarity).float()  
+  
+    # 初始化预测矩阵  
+    H_pred = torch.zeros_like(H)  
+  
+    # 对每个用户进行遍历  
+    for u in range(n_user):  
+        # 获取当前用户的相似度向量（排除自身）  
+        sim_scores = user_similarity[u, :]  
+        sim_scores[u] = 0  # 排除自身相似度  
+  
+        # 计算分子部分  
+        numerator = torch.matmul(sim_scores.unsqueeze(0), H)  
+  
+        # 计算分母部分  
+        denominator = torch.sum(torch.abs(sim_scores))  
+  
+        # 避免除以0  
+        if denominator == 0:  
+            continue  
+  
+        # 创建分母张量，扩展以匹配numerator的形状  
+        denominator_expanded = denominator.unsqueeze(1).expand_as(numerator)  
+  
+        # 计算预测值并添加到H_pred中  
+        H_pred[u, :] = numerator / denominator_expanded  
+  
+    # 注意：这里没有像原始函数那样添加一个很大的H，因为基于用户的协同过滤  
+    # 预测应该仅基于相似用户的评分。如果需要，可以添加一些正则化或偏置项。  
+  
+    # 返回完整的预测矩阵  
     return H_pred
 
 
@@ -167,25 +229,6 @@ def get_previous_user_mask(seq, user_size):
     return masked_seq.cuda()
 
 
-# Fusion gate
-class Fusion(nn.Module):
-    def __init__(self, input_size, out=1, dropout=0.1):
-        super(Fusion, self).__init__()
-        self.linear1 = nn.Linear(input_size, input_size)
-        self.linear2 = nn.Linear(input_size, out)
-        self.dropout = nn.Dropout(dropout)
-        self.init_weights()
-
-    def init_weights(self):
-        init.xavier_normal_(self.linear1.weight)
-        init.xavier_normal_(self.linear2.weight)
-
-    def forward(self, hidden, dy_emb):
-        emb = torch.cat([hidden.unsqueeze(dim=0), dy_emb.unsqueeze(dim=0)], dim=0)
-        emb_score = F.softmax(self.linear2(torch.tanh(self.linear1(emb))), dim=0)
-        emb_score = self.dropout(emb_score)
-        out = torch.sum(emb_score * emb, dim=0)
-        return out
 
 
 '''Learn friendship network'''
