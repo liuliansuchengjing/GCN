@@ -93,42 +93,6 @@ def user_based_collaborative_filtering_binary(H):
     return H_pred
 
 
-def useritemcf_with_probabilities(input_matrix):  
-    # 假设 input_matrix 是一个二维numpy数组，其中每一行代表一个用户  
-    # 计算用户之间的余弦相似度（注意这里使用 cosine_similarity 函数）  
-    usersimilarity = cosine_similarity(input_matrix)  
-  
-    # 初始化概率矩阵  
-    recommended_probabilities = np.zeros_like(input_matrix, dtype=np.float32)  
-  
-    # 遍历每个用户  
-    for user in range(len(input_matrix)):  
-        # 获取当前用户与其他用户的相似度（不包括自己）  
-        user_similarities = usersimilarity[user, user+1:]  # 直接从user+1开始，跳过自己  
-  
-        # 如果没有相似用户（理论上不应该发生，除非只有一个用户），则跳过当前用户  
-        if len(user_similarities) == 0:  
-            continue  
-  
-        # 遍历所有项目  
-        for item in range(len(input_matrix[user])):  
-            # 累加相似用户的相似度，但只考虑那些与该项目有交互的相似用户  
-            for similar_user_idx, similarity in enumerate(user_similarities):  
-                # 注意这里要调整索引以匹配实际的用户ID  
-                similar_user_actual_idx = similar_user_idx + user + 1  
-                if input_matrix[similar_user_actual_idx][item] != 0:  
-                    recommended_probabilities[user][item] += similarity  
-  
-    # 归一化概率  
-    total_probability = np.sum(recommended_probabilities, axis=1, keepdims=True)  
-    recommended_probabilities = np.where(total_probability == 0, 0, recommended_probabilities / total_probability)  
-  
-    # 转换为torch张量（如果需要）  
-    recommended_probabilities = torch.from_numpy(recommended_probabilities)  
-  
-    return recommended_probabilities
-
-
 class HGNN_conv(nn.Module):
     def __init__(self, in_ft, out_ft, bias=True):  #
         super(HGNN_conv, self).__init__()
@@ -254,10 +218,12 @@ class GraphNN(nn.Module):
 
 
 class GRUNet(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, n_layers, drop_prob=0.1):
+    def __init__(self, input_dim, hidden_dim, output_dim, n_layers, dropout=0.1):
         super(GRUNet, self).__init__()
         self.hidden_dim = hidden_dim
         self.n_layers = n_layers
+
+        self.dropout = nn.Dropout(dropout)
 
         self.gru = nn.GRU(input_dim, hidden_dim, n_layers, batch_first=True, dropout=drop_prob)
         self.fc = nn.Linear(hidden_dim, output_dim)
@@ -265,6 +231,7 @@ class GRUNet(nn.Module):
 
     def forward(self, x, h):
         out, h = self.gru(x, h)
+        out = F.dropout(out, self.dropout)
         out = out.sum(dim=1)
         out = self.fc(self.relu(out))
         # out = self.fc(self.relu(out[:,-1]))
@@ -305,7 +272,7 @@ class HGNN_ATT(nn.Module):
             # CF_pred = useritemcf_with_probabilities(sub_graph.cpu().numpy())
             # CF_pred = CF_pred.float()
             
-            CF_pred = user_based_collaborative_filtering_binary(IBR_graph)
+            CF_pred = item_based_collaborative_filtering_binary(IBR_graph)
             # sub_node_embed, sub_edge_embed = self.gat1(x, sub_graph.cuda(), root_emb)
             sub_node_embed, sub_edge_embed = self.hgnn(x, CF_pred.cuda())
             sub_node_embed = F.dropout(sub_node_embed, self.dropout, training=self.training)
@@ -358,7 +325,7 @@ class MSHGAT(nn.Module):
         self.embedding = nn.Embedding(self.n_node, self.initial_feature, padding_idx=0)
         self.reset_parameters()
         self.readout = MLPReadout(self.hidden_size, self.n_node, None)
-        self.GRU = GRUNet(self.hidden_size, self.hidden_size, self.hidden_size, 4)
+        self.GRU = GRUNet(self.hidden_size, self.hidden_size, self.hidden_size, 4, dropout)
 
     def reset_parameters(self):
         stdv = 1.0 / math.sqrt(self.hidden_size)
