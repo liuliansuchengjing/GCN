@@ -218,12 +218,10 @@ class GraphNN(nn.Module):
 
 
 class GRUNet(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, n_layers, dropout=0.1):
+    def __init__(self, input_dim, hidden_dim, output_dim, n_layers, drop_prob=0.1):
         super(GRUNet, self).__init__()
         self.hidden_dim = hidden_dim
         self.n_layers = n_layers
-
-        self.dropout = nn.Dropout(dropout)
 
         self.gru = nn.GRU(input_dim, hidden_dim, n_layers, batch_first=True, dropout=drop_prob)
         self.fc = nn.Linear(hidden_dim, output_dim)
@@ -231,7 +229,7 @@ class GRUNet(nn.Module):
 
     def forward(self, x, h):
         out, h = self.gru(x, h)
-        out = F.dropout(out, self.dropout)
+        
         out = out.sum(dim=1)
         out = self.fc(self.relu(out))
         # out = self.fc(self.relu(out[:,-1]))
