@@ -65,43 +65,31 @@ def item_based_collaborative_filtering_binary(H):
     # 返回完整的预测矩阵
     return H_pred
 
-def user_based_collaborative_filtering_binary(H):  
-    # 假设 H 是一个 PyTorch 张量  
-    n_user, n_item = H.shape  
-  
-    # 计算用户之间的余弦相似度  
-    user_similarity = cosine_similarity(H.numpy())  
-    user_similarity = torch.from_numpy(user_similarity).float()  
-  
-    # 初始化预测矩阵  
-    H_pred = torch.zeros_like(H)  
-  
-    # 对每个用户进行遍历  
-    for u in range(n_user):  
-        # 获取当前用户的相似度向量（排除自身）  
-        sim_scores = user_similarity[u, :]  
-        sim_scores[u] = 0  # 排除自身相似度  
-  
-        # 计算分子部分  
-        numerator = torch.matmul(sim_scores.unsqueeze(0), H)  
-  
-        # 计算分母部分  
-        denominator = torch.sum(torch.abs(sim_scores))  
-  
-        # 避免除以0  
-        if denominator == 0:  
-            continue  
-  
-        # 创建分母张量，扩展以匹配numerator的形状  
-        denominator_expanded = denominator.unsqueeze(1).expand_as(numerator)  
-  
-        # 计算预测值并添加到H_pred中  
-        H_pred[u, :] = numerator / denominator_expanded  
-  
-    # 注意：这里没有像原始函数那样添加一个很大的H，因为基于用户的协同过滤  
-    H_pred = H_pred + 1000*H  
-  
-    # 返回完整的预测矩阵  
+def user_based_collaborative_filtering_binary(H):
+    # 假设 H 是一个 PyTorch 张量，表示用户对物品的评分
+    n_user, n_item = H.shape
+
+    # 计算用户之间的余弦相似度
+    user_similarity = cosine_similarity(H.numpy())
+    user_similarity = torch.from_numpy(user_similarity).float()
+
+    # 计算分子部分，使用广播机制
+    numerator = torch.matmul(user_similarity, H)
+
+    # 计算分母部分
+    denominator = torch.sum(torch.abs(user_similarity), dim=1)
+
+    # 为了避免除以0，设置分母为0的地方为无穷小值（例如，1e-10）
+    denominator[denominator == 0] = 1e-10
+
+    # 创建一个与numerator形状相同的分母张量
+    denominator_expanded = denominator.unsqueeze(1).expand_as(numerator)
+
+    # 计算预测值
+    H_pred = numerator / denominator_expanded
+    H_pred = H_pred + 1000*H
+
+    # 返回完整的预测矩阵
     return H_pred
 
 
