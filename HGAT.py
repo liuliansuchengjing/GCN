@@ -99,7 +99,7 @@ def user_based_collaborative_filtering_binary(H):
         H_pred[u, :] = numerator / denominator_expanded  
   
     # 注意：这里没有像原始函数那样添加一个很大的H，因为基于用户的协同过滤  
-    # 预测应该仅基于相似用户的评分。如果需要，可以添加一些正则化或偏置项。  
+    H_pred = H_pred + 1000*H  
   
     # 返回完整的预测矩阵  
     return H_pred
