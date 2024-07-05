@@ -25,18 +25,18 @@ def item_based_collaborative_filtering_binary(H):
     numerator = torch.matmul(item_similarity, H.T)
     numerator = numerator.T  # 转置回原形状
 
-    # # 计算分母部分
-    # denominator = torch.sum(torch.abs(item_similarity), dim=0)
+    # 计算分母部分
+    denominator = torch.sum(torch.abs(item_similarity), dim=0)
 
-    # # 为了避免除以0，设置分母为0的地方为无穷小值（例如，1e-10）
-    # denominator[denominator == 0] = 1e-10
+    # 为了避免除以0，设置分母为0的地方为无穷小值（例如，1e-10）
+    denominator[denominator == 0] = 1e-10
 
-    # # 创建一个与numerator形状相同的分母张量
-    # denominator_expanded = denominator.unsqueeze(0).expand_as(numerator)
+    # 创建一个与numerator形状相同的分母张量
+    denominator_expanded = denominator.unsqueeze(0).expand_as(numerator)
 
-    # # 计算预测值
-    # H_pred = numerator / denominator_expanded
-    H_pred = numerator + H
+    # 计算预测值
+    H_pred = numerator / denominator_expanded
+    H_pred = H_pred + H
 
     # 返回完整的预测矩阵
     return H_pred
@@ -330,7 +330,8 @@ class MSHGAT(nn.Module):
         self.embedding = nn.Embedding(self.n_node, self.initial_feature, padding_idx=0)
         self.reset_parameters()
         self.readout = MLPReadout(self.hidden_size, self.n_node, None)
-        self.Line = nn.Linear(self.n_node, self.n_node)
+        self.readout2 = MLPReadout(self.n_node, self.n_node, None)
+        # self.Line = nn.Linear(self.n_node, self.n_node)
         self.GRU = GRUNet(self.hidden_size, self.hidden_size, self.hidden_size, 4)
 
     def reset_parameters(self):
@@ -429,7 +430,7 @@ class MSHGAT(nn.Module):
         # print("pred.shape:", pred.size())
         # pred = self.pred(dyemb)
         # return pred.view(-1, pred.size(-1))
-        extracted_rows = self.Line(extracted_rows)
+        extracted_rows = self.readout2(extracted_rows)
         n1, n2 = extracted_rows.shape
         repeated_tensor = extracted_rows.repeat(199, 1)  # 重复199次行，列不变  
         reshaped_tensor = repeated_tensor.view(n1 * 199, n2)  # 重新调整形状
