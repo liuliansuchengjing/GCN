@@ -14,27 +14,6 @@ from scipy.spatial.distance import cosine
 from sklearn.metrics.pairwise import cosine_similarity
 
 
-# Fusion gate
-class Fusion(nn.Module):
-    def __init__(self, input_size, out=1, dropout=0.1):
-        super(Fusion, self).__init__()
-        self.linear1 = nn.Linear(input_size, input_size)
-        self.linear2 = nn.Linear(input_size, out)
-        self.dropout = nn.Dropout(dropout)
-        self.init_weights()
-
-    def init_weights(self):
-        init.xavier_normal_(self.linear1.weight)
-        init.xavier_normal_(self.linear2.weight)
-
-    def forward(self, hidden, dy_emb):
-        emb = torch.cat([hidden.unsqueeze(dim=0), dy_emb.unsqueeze(dim=0)], dim=0)
-        emb_score = F.softmax(self.linear2(torch.tanh(self.linear1(emb))), dim=0)
-        emb_score = self.dropout(emb_score)
-        out = torch.sum(emb_score * emb, dim=0)
-        return out
-
-
 def item_based_collaborative_filtering_binary(H):
     # 假设 H 是一个 PyTorch 张量
     n_user, n_item = H.shape
@@ -47,50 +26,57 @@ def item_based_collaborative_filtering_binary(H):
     numerator = torch.matmul(item_similarity, H.T)
     numerator = numerator.T  # 转置回原形状
 
-    # 计算分母部分
-    denominator = torch.sum(torch.abs(item_similarity), dim=0)
+    # # 计算分母部分
+    # denominator = torch.sum(torch.abs(item_similarity), dim=0)
 
-    # 为了避免除以0，设置分母为0的地方为无穷小值（例如，1e-10）
-    denominator[denominator == 0] = 1e-10
+    # # 为了避免除以0，设置分母为0的地方为无穷小值（例如，1e-10）
+    # denominator[denominator == 0] = 1e-10
 
-    # 创建一个与numerator形状相同的分母张量
-    denominator_expanded = denominator.unsqueeze(0).expand_as(numerator)
+    # # 创建一个与numerator形状相同的分母张量
+    # denominator_expanded = denominator.unsqueeze(0).expand_as(numerator)
 
-    # 计算预测值
-    H_pred = numerator / denominator_expanded
-    fus = Fusion(n_item)
-    # H_pred = fus(H_pred, 1000*H)
-    H_pred = H_pred + 1000*H
+    # # 计算预测值
+    # H_pred = numerator / denominator_expanded
+    H_pred = numerator + 1000*H
 
     # 返回完整的预测矩阵
     return H_pred
 
-def user_based_collaborative_filtering_binary(H):
-    # 假设 H 是一个 PyTorch 张量，表示用户对物品的评分
-    n_user, n_item = H.shape
 
-    # 计算用户之间的余弦相似度
-    user_similarity = cosine_similarity(H.numpy())
-    user_similarity = torch.from_numpy(user_similarity).float()
-
-    # 计算分子部分，使用广播机制
-    numerator = torch.matmul(user_similarity, H)
-
-    # 计算分母部分
-    denominator = torch.sum(torch.abs(user_similarity), dim=1)
-
-    # 为了避免除以0，设置分母为0的地方为无穷小值（例如，1e-10）
-    denominator[denominator == 0] = 1e-10
-
-    # 创建一个与numerator形状相同的分母张量
-    denominator_expanded = denominator.unsqueeze(1).expand_as(numerator)
-
-    # 计算预测值
-    H_pred = numerator / denominator_expanded
-    H_pred = H_pred + 1000*H
-
-    # 返回完整的预测矩阵
-    return H_pred
+def useritemcf_with_probabilities(input_matrix):  
+    # 假设 input_matrix 是一个二维numpy数组，其中每一行代表一个用户  
+    # 计算用户之间的余弦相似度（注意这里使用 cosine_similarity 函数）  
+    usersimilarity = cosine_similarity(input_matrix)  
+  
+    # 初始化概率矩阵  
+    recommended_probabilities = np.zeros_like(input_matrix, dtype=np.float32)  
+  
+    # 遍历每个用户  
+    for user in range(len(input_matrix)):  
+        # 获取当前用户与其他用户的相似度（不包括自己）  
+        user_similarities = usersimilarity[user, user+1:]  # 直接从user+1开始，跳过自己  
+  
+        # 如果没有相似用户（理论上不应该发生，除非只有一个用户），则跳过当前用户  
+        if len(user_similarities) == 0:  
+            continue  
+  
+        # 遍历所有项目  
+        for item in range(len(input_matrix[user])):  
+            # 累加相似用户的相似度，但只考虑那些与该项目有交互的相似用户  
+            for similar_user_idx, similarity in enumerate(user_similarities):  
+                # 注意这里要调整索引以匹配实际的用户ID  
+                similar_user_actual_idx = similar_user_idx + user + 1  
+                if input_matrix[similar_user_actual_idx][item] != 0:  
+                    recommended_probabilities[user][item] += similarity  
+  
+    # 归一化概率  
+    total_probability = np.sum(recommended_probabilities, axis=1, keepdims=True)  
+    recommended_probabilities = np.where(total_probability == 0, 0, recommended_probabilities / total_probability)  
+  
+    # 转换为torch张量（如果需要）  
+    recommended_probabilities = torch.from_numpy(recommended_probabilities)  
+  
+    return recommended_probabilities
 
 
 class HGNN_conv(nn.Module):
@@ -181,6 +167,25 @@ def get_previous_user_mask(seq, user_size):
     return masked_seq.cuda()
 
 
+# Fusion gate
+class Fusion(nn.Module):
+    def __init__(self, input_size, out=1, dropout=0.1):
+        super(Fusion, self).__init__()
+        self.linear1 = nn.Linear(input_size, input_size)
+        self.linear2 = nn.Linear(input_size, out)
+        self.dropout = nn.Dropout(dropout)
+        self.init_weights()
+
+    def init_weights(self):
+        init.xavier_normal_(self.linear1.weight)
+        init.xavier_normal_(self.linear2.weight)
+
+    def forward(self, hidden, dy_emb):
+        emb = torch.cat([hidden.unsqueeze(dim=0), dy_emb.unsqueeze(dim=0)], dim=0)
+        emb_score = F.softmax(self.linear2(torch.tanh(self.linear1(emb))), dim=0)
+        emb_score = self.dropout(emb_score)
+        out = torch.sum(emb_score * emb, dim=0)
+        return out
 
 
 '''Learn friendship network'''
@@ -229,7 +234,6 @@ class GRUNet(nn.Module):
 
     def forward(self, x, h):
         out, h = self.gru(x, h)
-        
         out = out.sum(dim=1)
         out = self.fc(self.relu(out))
         # out = self.fc(self.relu(out[:,-1]))
@@ -287,18 +291,23 @@ class HGNN_ATT(nn.Module):
 
 
 class MLPReadout(nn.Module):
-    def __init__(self, in_dim, out_dim, act):
+    def __init__(self, in_dim, inter_dim, out_dim, act, dropout):
         """
         out_dim: the final prediction dim, usually 1
         act: the final activation, if rating then None, if CTR then sigmoid
         """
         super(MLPReadout, self).__init__()
-        self.layer1 = nn.Linear(in_dim, out_dim)
+        self.layer1 = nn.Linear(in_dim, inter_dim)
         self.act = nn.ReLU()
-        self.out_act = act
+        self.dropout = nn.Dropout(dropout)
+        self.layer2 = nn.Linear(inter_dim, out_dim)
+        # self.out_act = act
 
     def forward(self, x):
         ret = self.layer1(x)
+        ret = self.act(ret)
+        ret = self.dropout(ret)
+        ret = self.layer2(ret)
         return ret
 
 
@@ -322,8 +331,8 @@ class MSHGAT(nn.Module):
         self.linear2 = nn.Linear(self.hidden_size + self.pos_dim, self.n_node)
         self.embedding = nn.Embedding(self.n_node, self.initial_feature, padding_idx=0)
         self.reset_parameters()
-        self.readout = MLPReadout(self.hidden_size, self.n_node, None)
-        self.GRU = GRUNet(self.hidden_size, self.hidden_size, self.hidden_size, 3, dropout)
+        self.readout = MLPReadout(self.hidden_size,self.hidden_size*4, self.n_node, None, dropout)
+        self.GRU = GRUNet(self.hidden_size, self.hidden_size, self.hidden_size, 4)
 
     def reset_parameters(self):
         stdv = 1.0 / math.sqrt(self.hidden_size)
