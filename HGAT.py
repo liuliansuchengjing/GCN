@@ -1,4 +1,3 @@
-
 import math
 import numpy as np
 import torch
@@ -291,23 +290,18 @@ class HGNN_ATT(nn.Module):
 
 
 class MLPReadout(nn.Module):
-    def __init__(self, in_dim, inter_dim, out_dim, act, dropout):
+    def __init__(self, in_dim, out_dim, act):
         """
         out_dim: the final prediction dim, usually 1
         act: the final activation, if rating then None, if CTR then sigmoid
         """
         super(MLPReadout, self).__init__()
-        self.layer1 = nn.Linear(in_dim, inter_dim)
+        self.layer1 = nn.Linear(in_dim, out_dim)
         self.act = nn.ReLU()
-        self.dropout = nn.Dropout(dropout)
-        self.layer2 = nn.Linear(inter_dim, out_dim)
-        # self.out_act = act
+        self.out_act = act
 
     def forward(self, x):
         ret = self.layer1(x)
-        ret = self.act(ret)
-        ret = self.dropout(ret)
-        ret = self.layer2(ret)
         return ret
 
 
@@ -331,7 +325,7 @@ class MSHGAT(nn.Module):
         self.linear2 = nn.Linear(self.hidden_size + self.pos_dim, self.n_node)
         self.embedding = nn.Embedding(self.n_node, self.initial_feature, padding_idx=0)
         self.reset_parameters()
-        self.readout = MLPReadout(self.hidden_size,self.hidden_size*4, self.n_node, None, dropout)
+        self.readout = MLPReadout(self.hidden_size, self.n_node, None)
         self.GRU = GRUNet(self.hidden_size, self.hidden_size, self.hidden_size, 4)
 
     def reset_parameters(self):
