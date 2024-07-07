@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Jan 18 22:30:16 2021
+
+@author: Ling Sun
+"""
+
 import math
 import numpy as np
 import torch
@@ -10,27 +17,6 @@ import Constants
 from TransformerBlock import TransformerBlock
 from torch.autograd import Variable
 
-class GRUNet(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, n_layers, drop_prob=0.1):
-        super(GRUNet, self).__init__()
-        self.hidden_dim = hidden_dim
-        self.n_layers = n_layers
-
-        self.gru = nn.GRU(input_dim, hidden_dim, n_layers, batch_first=True, dropout=drop_prob)
-        self.fc = nn.Linear(hidden_dim, output_dim)
-        self.relu = nn.ReLU()
-
-    def forward(self, x, h):
-        out, h = self.gru(x, h)
-        out = out.sum(dim=1)
-        out = self.fc(self.relu(out))
-        # out = self.fc(self.relu(out[:,-1]))
-        return out, h
-
-    def init_hidden(self, batch_size):
-        weight = next(self.parameters()).data
-        hidden = weight.new(self.n_layers, batch_size, self.hidden_dim).zero_().cuda()
-        return hidden
 
 def get_previous_user_mask(seq, user_size):
     ''' Mask previous activated users.'''
@@ -136,26 +122,10 @@ class HGNN_ATT(nn.Module):
                 sub_node_embed = self.batch_norm1(sub_node_embed)
                 sub_edge_embed = self.batch_norm1(sub_edge_embed)
 
-            # x = self.fus1(x, sub_node_embed)
+            x = self.fus1(x, sub_node_embed)
             embedding_list[sub_key] = [x.cpu(), sub_edge_embed.cpu()]
 
         return embedding_list
-
-
-class MLPReadout(nn.Module):
-    def __init__(self, in_dim, out_dim, act):
-        """
-        out_dim: the final prediction dim, usually 1
-        act: the final activation, if rating then None, if CTR then sigmoid
-        """
-        super(MLPReadout, self).__init__()
-        self.layer1 = nn.Linear(in_dim, out_dim)
-        self.act = nn.ReLU()
-        self.out_act = act
-
-    def forward(self, x):
-        ret = self.layer1(x)
-        return ret
 
 
 class MSHGAT(nn.Module):
@@ -170,7 +140,7 @@ class MSHGAT(nn.Module):
         self.hgnn = HGNN_ATT(self.initial_feature, self.hidden_size * 2, self.hidden_size, dropout=dropout)
         self.gnn = GraphNN(self.n_node, self.initial_feature, dropout=dropout)
         self.fus = Fusion(self.hidden_size + self.pos_dim)
-        self.fus2 = Fusion(self.n_node)
+        self.fus2 = Fusion(self.hidden_size)
         self.pos_embedding = nn.Embedding(1000, self.pos_dim)
         self.decoder_attention1 = TransformerBlock(input_size=self.hidden_size + self.pos_dim, n_heads=8)
         self.decoder_attention2 = TransformerBlock(input_size=self.hidden_size + self.pos_dim, n_heads=8)
@@ -179,18 +149,10 @@ class MSHGAT(nn.Module):
         self.embedding = nn.Embedding(self.n_node, self.initial_feature, padding_idx=0)
         self.reset_parameters()
 
-        self.readout = MLPReadout(self.hidden_size + self.pos_dim, self.n_node, None)
-        self.GRU = GRUNet(self.hidden_size, self.hidden_size, self.hidden_size, 4)
-        self.LineGRU = nn.Linear(self.hidden_size, self.n_node)
-
     def reset_parameters(self):
         stdv = 1.0 / math.sqrt(self.hidden_size)
         for weight in self.parameters():
             weight.data.uniform_(-stdv, stdv)
-
-    def pred(self, pred_logits):
-        predictions = self.readout(pred_logits)
-        return predictions
 
     def forward(self, input, input_timestamp, input_idx, graph, hypergraph_list):
 
@@ -210,8 +172,6 @@ class MSHGAT(nn.Module):
         zero_vec = torch.zeros_like(input)
         dyemb = torch.zeros(batch_size, max_len, self.hidden_size).cuda()
         cas_emb = torch.zeros(batch_size, max_len, self.hidden_size).cuda()
-        h = self.GRU.init_hidden(batch_size * max_len)
-        sub_cas_list = []
 
         for ind, time in enumerate(sorted(memory_emb_list.keys())):
             if ind == 0:
@@ -249,15 +209,7 @@ class MSHGAT(nn.Module):
 
                 dyemb += sub_emb
                 cas_emb += sub_cas
-
-            sub_cas_1 = sub_cas.view(-1, sub_cas.size(-1))
-
-            sub_cas_list.append(sub_cas_1)
-
-        sub_cas_t = torch.stack(sub_cas_list, dim=1)
-
-        GRUoutput, h = self.GRU(sub_cas_t, h)
-        GRUoutput = self.LineGRU(GRUoutput)
+        # dyemb = self.fus2(dyemb,cas_emb)
 
         diff_embed = torch.cat([dyemb, order_embed], dim=-1).cuda()
         fri_embed = torch.cat([F.embedding(input.cuda(), hidden.cuda()), order_embed], dim=-1).cuda()
@@ -272,14 +224,7 @@ class MSHGAT(nn.Module):
         att_out = self.fus(diff_att_out, fri_att_out)
 
         # conbine users and cascades
-        # output_u = self.linear2(att_out.cuda())  # (bsz, user_len, |U|)
+        output_u = self.linear2(att_out.cuda())  # (bsz, user_len, |U|)
+        # mask = get_previous_user_mask(input.cpu(), self.n_node)
 
-        pred = self.pred(att_out)
-        mask = get_previous_user_mask(input.cpu(), self.n_node)
-        pred = ((pred + mask).view(-1, pred.size(-1)))
-        # print("pred.shape:", pred.size())
-        # print("GRUoutput.shape:", GRUoutput.size())
-        pred = self.fus2(pred, GRUoutput)
-
-        return pred.cuda()
-        
+        return (output_u).view(-1, output_u.size(-1)).cuda()
