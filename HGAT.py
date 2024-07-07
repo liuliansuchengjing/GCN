@@ -259,6 +259,6 @@ class MSHGAT(nn.Module):
 
         # conbine users and cascades
         output_u = self.linear2(att_out.cuda())  # (bsz, user_len, |U|)
-        # mask = get_previous_user_mask(input.cpu(), self.n_node)
+        mask = get_previous_user_mask(input.cpu(), self.n_node)
 
-        return (output_u).view(-1, output_u.size(-1)).cuda()
+        return (output_u + mask).view(-1, output_u.size(-1)).cuda()
