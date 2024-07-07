@@ -16,7 +16,7 @@ import torch.nn.init as init
 import Constants
 from TransformerBlock import TransformerBlock
 from torch.autograd import Variable
-
+from sklearn.metrics.pairwise import cosine_similarity
 
 def item_based_collaborative_filtering_binary(H):
     # 假设 H 是一个 PyTorch 张量
