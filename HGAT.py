@@ -128,6 +128,22 @@ class HGNN_ATT(nn.Module):
         return embedding_list
 
 
+class MLPReadout(nn.Module):
+    def __init__(self, in_dim, out_dim, act):
+        """
+        out_dim: the final prediction dim, usually 1
+        act: the final activation, if rating then None, if CTR then sigmoid
+        """
+        super(MLPReadout, self).__init__()
+        self.layer1 = nn.Linear(in_dim, out_dim)
+        self.act = nn.ReLU()
+        self.out_act = act
+
+    def forward(self, x):
+        ret = self.layer1(x)
+        return ret
+
+
 class MSHGAT(nn.Module):
     def __init__(self, opt, dropout=0.3):
         super(MSHGAT, self).__init__()
@@ -149,10 +165,16 @@ class MSHGAT(nn.Module):
         self.embedding = nn.Embedding(self.n_node, self.initial_feature, padding_idx=0)
         self.reset_parameters()
 
+        self.readout = MLPReadout(self.hidden_size + self.pos_dim, self.n_node, None)
+
     def reset_parameters(self):
         stdv = 1.0 / math.sqrt(self.hidden_size)
         for weight in self.parameters():
             weight.data.uniform_(-stdv, stdv)
+
+    def pred(self, pred_logits):
+        predictions = self.readout(pred_logits)
+        return predictions
 
     def forward(self, input, input_timestamp, input_idx, graph, hypergraph_list):
 
@@ -224,7 +246,8 @@ class MSHGAT(nn.Module):
         att_out = self.fus(diff_att_out, fri_att_out)
 
         # conbine users and cascades
-        output_u = self.linear2(att_out.cuda())  # (bsz, user_len, |U|)
+        # output_u = self.linear2(att_out.cuda())  # (bsz, user_len, |U|)
+        pred = self.pred(att_out)
         mask = get_previous_user_mask(input.cpu(), self.n_node)
 
-        return (output_u + mask).view(-1, output_u.size(-1)).cuda()
+        return (pred + mask).view(-1, pred.size(-1)).cuda()
