@@ -181,6 +181,7 @@ class MSHGAT(nn.Module):
 
         self.readout = MLPReadout(self.hidden_size + self.pos_dim, self.n_node, None)
         self.GRU = GRUNet(self.hidden_size, self.hidden_size, self.hidden_size, 4)
+        self.LineGRU = nn.Linear(self.hidden_size, self.n_node)
 
     def reset_parameters(self):
         stdv = 1.0 / math.sqrt(self.hidden_size)
@@ -256,6 +257,7 @@ class MSHGAT(nn.Module):
         sub_cas_t = torch.stack(sub_cas_list, dim=1)
 
         GRUoutput, h = self.GRU(sub_cas_t, h)
+        GRUoutput = self.LineGRU(GRUoutput)
 
         diff_embed = torch.cat([dyemb, order_embed], dim=-1).cuda()
         fri_embed = torch.cat([F.embedding(input.cuda(), hidden.cuda()), order_embed], dim=-1).cuda()
