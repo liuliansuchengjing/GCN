@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Jan 18 22:30:16 2021
-
-@author: Ling Sun
-"""
-
 import math
 import numpy as np
 import torch
@@ -17,6 +10,27 @@ import Constants
 from TransformerBlock import TransformerBlock
 from torch.autograd import Variable
 
+class GRUNet(nn.Module):
+    def __init__(self, input_dim, hidden_dim, output_dim, n_layers, drop_prob=0.1):
+        super(GRUNet, self).__init__()
+        self.hidden_dim = hidden_dim
+        self.n_layers = n_layers
+
+        self.gru = nn.GRU(input_dim, hidden_dim, n_layers, batch_first=True, dropout=drop_prob)
+        self.fc = nn.Linear(hidden_dim, output_dim)
+        self.relu = nn.ReLU()
+
+    def forward(self, x, h):
+        out, h = self.gru(x, h)
+        out = out.sum(dim=1)
+        out = self.fc(self.relu(out))
+        # out = self.fc(self.relu(out[:,-1]))
+        return out, h
+
+    def init_hidden(self, batch_size):
+        weight = next(self.parameters()).data
+        hidden = weight.new(self.n_layers, batch_size, self.hidden_dim).zero_().cuda()
+        return hidden
 
 def get_previous_user_mask(seq, user_size):
     ''' Mask previous activated users.'''
@@ -166,6 +180,7 @@ class MSHGAT(nn.Module):
         self.reset_parameters()
 
         self.readout = MLPReadout(self.hidden_size, self.n_node, None)
+        self.GRU = GRUNet(self.hidden_size, self.hidden_size, self.hidden_size, 4)
 
     def reset_parameters(self):
         stdv = 1.0 / math.sqrt(self.hidden_size)
@@ -194,6 +209,8 @@ class MSHGAT(nn.Module):
         zero_vec = torch.zeros_like(input)
         dyemb = torch.zeros(batch_size, max_len, self.hidden_size).cuda()
         cas_emb = torch.zeros(batch_size, max_len, self.hidden_size).cuda()
+        h = self.GRU.init_hidden(batch_size * max_len)
+        sub_cas_list = []
 
         for ind, time in enumerate(sorted(memory_emb_list.keys())):
             if ind == 0:
@@ -232,11 +249,33 @@ class MSHGAT(nn.Module):
                 dyemb += sub_emb
                 cas_emb += sub_cas
 
+            sub_cas_1 = sub_cas.view(-1, sub_cas.size(-1))
+
+            sub_cas_list.append(sub_cas_1)
+
+        sub_cas_t = torch.stack(sub_cas_list, dim=1)
+
+        GRUoutput, h = self.GRU(sub_cas_t, h)
+
+        diff_embed = torch.cat([dyemb, order_embed], dim=-1).cuda()
+        fri_embed = torch.cat([F.embedding(input.cuda(), hidden.cuda()), order_embed], dim=-1).cuda()
+
+        diff_att_out = self.decoder_attention1(diff_embed.cuda(), diff_embed.cuda(), diff_embed.cuda(),
+                                               mask=mask.cuda())
+        diff_att_out = self.dropout(diff_att_out.cuda())
+
+        fri_att_out = self.decoder_attention2(fri_embed.cuda(), fri_embed.cuda(), fri_embed.cuda(), mask=mask.cuda())
+        fri_att_out = self.dropout(fri_att_out.cuda())
+
+        att_out = self.fus(diff_att_out, fri_att_out)
 
         # conbine users and cascades
         # output_u = self.linear2(att_out.cuda())  # (bsz, user_len, |U|)
 
-        pred = self.pred(dyemb)
+        pred = self.pred(att_out)
         mask = get_previous_user_mask(input.cpu(), self.n_node)
+        pred = ((pred + mask).view(-1, pred.size(-1))).view(-1, sub_cas.size(-1))
+        pred = self.fus2(pred, GRUoutput)
 
-        return (pred + mask).view(-1, pred.size(-1)).cuda()
+        return pred.cuda()
+        
