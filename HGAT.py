@@ -18,6 +18,36 @@ from TransformerBlock import TransformerBlock
 from torch.autograd import Variable
 
 
+def item_based_collaborative_filtering_binary(H):
+    # 假设 H 是一个 PyTorch 张量
+    n_user, n_item = H.shape
+
+    # 计算物品之间的余弦相似度
+    item_similarity = cosine_similarity(H.T.numpy())
+    item_similarity = torch.from_numpy(item_similarity).float()
+
+    # 计算分子部分，使用广播机制
+    numerator = torch.matmul(item_similarity, H.T)
+    numerator = numerator.T  # 转置回原形状
+
+    # 计算分母部分
+    denominator = torch.sum(torch.abs(item_similarity), dim=0)
+
+    # 为了避免除以0，设置分母为0的地方为无穷小值（例如，1e-10）
+    denominator[denominator == 0] = 1e-10
+
+    # 创建一个与numerator形状相同的分母张量
+    denominator_expanded = denominator.unsqueeze(0).expand_as(numerator)
+
+    # 计算预测值
+    H_pred = numerator / denominator_expanded
+    # H_pred = numerator + 1000*H
+
+    # 返回完整的预测矩阵
+    return H_pred
+
+
+
 def get_previous_user_mask(seq, user_size):
     ''' Mask previous activated users.'''
     assert seq.dim() == 2
@@ -115,7 +145,11 @@ class HGNN_ATT(nn.Module):
         embedding_list = {}
         for sub_key in hypergraph_list.keys():
             sub_graph = hypergraph_list[sub_key]
-            sub_node_embed, sub_edge_embed = self.gat1(x, sub_graph.cuda(), root_emb)
+            IBR_graph = IBR_graph + sub_graph
+            CF_pred = item_based_collaborative_filtering_binary(IBR_graph)
+            sub_node_embed, sub_edge_embed = self.gat1(x, CF_pred.cuda())
+
+            # sub_node_embed, sub_edge_embed = self.gat1(x, sub_graph.cuda(), root_emb)
             sub_node_embed = F.dropout(sub_node_embed, self.dropout, training=self.training)
 
             if self.is_norm:
