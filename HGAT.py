@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Jan 18 22:30:16 2021
+
+@author: Ling Sun
+"""
+
 import math
 import numpy as np
 import torch
@@ -9,136 +16,6 @@ import torch.nn.init as init
 import Constants
 from TransformerBlock import TransformerBlock
 from torch.autograd import Variable
-from scipy.spatial.distance import cosine
-from sklearn.metrics.pairwise import cosine_similarity
-
-
-def item_based_collaborative_filtering_binary(H):
-    # 假设 H 是一个 PyTorch 张量
-    n_user, n_item = H.shape
-
-    # 计算物品之间的余弦相似度
-    item_similarity = cosine_similarity(H.T.numpy())
-    item_similarity = torch.from_numpy(item_similarity).float()
-
-    # 计算分子部分，使用广播机制
-    numerator = torch.matmul(item_similarity, H.T)
-    numerator = numerator.T  # 转置回原形状
-
-    # # 计算分母部分
-    # denominator = torch.sum(torch.abs(item_similarity), dim=0)
-
-    # # 为了避免除以0，设置分母为0的地方为无穷小值（例如，1e-10）
-    # denominator[denominator == 0] = 1e-10
-
-    # # 创建一个与numerator形状相同的分母张量
-    # denominator_expanded = denominator.unsqueeze(0).expand_as(numerator)
-
-    # # 计算预测值
-    # H_pred = numerator / denominator_expanded
-    H_pred = numerator + 1000*H
-
-    # 返回完整的预测矩阵
-    return H_pred
-
-
-def useritemcf_with_probabilities(input_matrix):  
-    # 假设 input_matrix 是一个二维numpy数组，其中每一行代表一个用户  
-    # 计算用户之间的余弦相似度（注意这里使用 cosine_similarity 函数）  
-    usersimilarity = cosine_similarity(input_matrix)  
-  
-    # 初始化概率矩阵  
-    recommended_probabilities = np.zeros_like(input_matrix, dtype=np.float32)  
-  
-    # 遍历每个用户  
-    for user in range(len(input_matrix)):  
-        # 获取当前用户与其他用户的相似度（不包括自己）  
-        user_similarities = usersimilarity[user, user+1:]  # 直接从user+1开始，跳过自己  
-  
-        # 如果没有相似用户（理论上不应该发生，除非只有一个用户），则跳过当前用户  
-        if len(user_similarities) == 0:  
-            continue  
-  
-        # 遍历所有项目  
-        for item in range(len(input_matrix[user])):  
-            # 累加相似用户的相似度，但只考虑那些与该项目有交互的相似用户  
-            for similar_user_idx, similarity in enumerate(user_similarities):  
-                # 注意这里要调整索引以匹配实际的用户ID  
-                similar_user_actual_idx = similar_user_idx + user + 1  
-                if input_matrix[similar_user_actual_idx][item] != 0:  
-                    recommended_probabilities[user][item] += similarity  
-  
-    # 归一化概率  
-    total_probability = np.sum(recommended_probabilities, axis=1, keepdims=True)  
-    recommended_probabilities = np.where(total_probability == 0, 0, recommended_probabilities / total_probability)  
-  
-    # 转换为torch张量（如果需要）  
-    recommended_probabilities = torch.from_numpy(recommended_probabilities)  
-  
-    return recommended_probabilities
-
-
-class HGNN_conv(nn.Module):
-    def __init__(self, in_ft, out_ft, bias=True):  #
-        super(HGNN_conv, self).__init__()
-
-        self.weight = nn.Parameter(torch.Tensor(in_ft, out_ft))
-        self.weight1 = nn.Parameter(torch.Tensor(in_ft, out_ft))
-        init.xavier_uniform_(self.weight)
-        init.xavier_uniform_(self.weight1)
-        # self.edge = nn.Embedding(984, out_ft)
-        if bias:
-            self.bias = nn.Parameter(torch.Tensor(out_ft))
-        else:
-            self.register_parameter('bias', None)
-
-        self.reset_parameters()
-
-    def reset_parameters(self):
-        stdv = 1. / math.sqrt(self.weight.size(1))
-        self.weight.data.uniform_(-stdv, stdv)
-        self.weight1.data.uniform_(-stdv, stdv)
-        if self.bias is not None:
-            self.bias.data.uniform_(-stdv, stdv)
-
-    def forward(self, x, G):  # x: torch.Tensor, G: torch.Tensor
-        # edge_emb = nn.Embedding(984, 64)
-        # x = G.matmul(edge_emb.weight.cuda())
-        # x = x.matmul(self.weight)
-        if self.bias is not None:
-            x = x + self.bias
-        edge = G.t().matmul(x)
-        # edge = edge.matmul(self.weight1)
-        x = G.matmul(edge)
-
-        return x, edge
-
-
-class HGNN2(nn.Module):
-    def __init__(self, emb_dim, dropout=0.15):
-        super(HGNN2, self).__init__()
-        self.dropout = dropout
-        self.hgc1 = HGNN_conv(emb_dim, emb_dim)
-        self.hgc2 = HGNN_conv(emb_dim, emb_dim)
-        self.hgc3 = HGNN_conv(emb_dim, emb_dim)
-        # self.bn1 = nn.BatchNorm1d(emb_dim)
-        # self.bn2 = nn.BatchNorm1d(emb_dim)
-        # self.feat = nn.Embedding(n_node, emb_dim)
-        # self.feat_idx = torch.arange(n_node).cuda()
-        # nn.init.xavier_uniform_(self.feat.weight)
-        self.fc1 = nn.Linear(emb_dim, emb_dim, bias=False)
-        self.fc2 = nn.Linear(emb_dim, emb_dim, bias=False)
-        self.weight = nn.Parameter(torch.Tensor(emb_dim, emb_dim))
-
-    def forward(self, x, G):
-        # x = self.fc1(x)
-        x = F.relu(x, inplace=False)
-        x, edge = self.hgc1(x, G)
-        x, edge = self.hgc2(x, G)
-        # x = F.dropout(x, self.dropout)
-        x = F.softmax(x, dim=1)
-        x = self.fc1(x)
-        return x, edge
 
 
 def get_previous_user_mask(seq, user_size):
@@ -168,7 +45,7 @@ def get_previous_user_mask(seq, user_size):
 
 # Fusion gate
 class Fusion(nn.Module):
-    def __init__(self, input_size, out=1, dropout=0.1):
+    def __init__(self, input_size, out=1, dropout=0.2):
         super(Fusion, self).__init__()
         self.linear1 = nn.Linear(input_size, input_size)
         self.linear2 = nn.Linear(input_size, out)
@@ -191,7 +68,7 @@ class Fusion(nn.Module):
 
 
 class GraphNN(nn.Module):
-    def __init__(self, ntoken, ninp, dropout=0.1, is_norm=True):
+    def __init__(self, ntoken, ninp, dropout=0.5, is_norm=True):
         super(GraphNN, self).__init__()
         self.embedding = nn.Embedding(ntoken, ninp, padding_idx=0)
         # in:inp,out:nip*2
@@ -221,31 +98,8 @@ class GraphNN(nn.Module):
 '''Learn diffusion network'''
 
 
-class GRUNet(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, n_layers, drop_prob=0.1):
-        super(GRUNet, self).__init__()
-        self.hidden_dim = hidden_dim
-        self.n_layers = n_layers
-
-        self.gru = nn.GRU(input_dim, hidden_dim, n_layers, batch_first=True, dropout=drop_prob)
-        self.fc = nn.Linear(hidden_dim, output_dim)
-        self.relu = nn.ReLU()
-
-    def forward(self, x, h):
-        out, h = self.gru(x, h)
-        out = out.sum(dim=1)
-        out = self.fc(self.relu(out))
-        # out = self.fc(self.relu(out[:,-1]))
-        return out, h
-
-    def init_hidden(self, batch_size):
-        weight = next(self.parameters()).data
-        hidden = weight.new(self.n_layers, batch_size, self.hidden_dim).zero_().cuda()
-        return hidden
-
-
 class HGNN_ATT(nn.Module):
-    def __init__(self, input_size, n_hid, output_size, dropout=0.1, is_norm=True):
+    def __init__(self, input_size, n_hid, output_size, dropout=0.3, is_norm=True):
         super(HGNN_ATT, self).__init__()
         self.dropout = dropout
         self.is_norm = is_norm
@@ -253,60 +107,29 @@ class HGNN_ATT(nn.Module):
             self.batch_norm1 = torch.nn.BatchNorm1d(output_size)
         self.gat1 = HGATLayer(input_size, output_size, dropout=self.dropout, transfer=False, concat=True, edge=True)
         self.fus1 = Fusion(output_size)
-        # self.hgnn = DJconv(64, 64, 1)
-        # self.hgnn = HGNN_conv(input_size, output_size, True)
-        self.hgnn = HGNN2(input_size, 0.3)
 
     def forward(self, x, hypergraph_list):
         root_emb = F.embedding(hypergraph_list[1].cuda(), x)
 
         hypergraph_list = hypergraph_list[0]
         embedding_list = {}
-        graph = torch.zeros(15001, 984)  
-        IBR_graph = torch.zeros_like(graph)
         for sub_key in hypergraph_list.keys():
-            
             sub_graph = hypergraph_list[sub_key]
-            # if(sub_key == 1703192018)
-            #     IBR_graph = torch.zeros_like(sub_graph)
-            IBR_graph = IBR_graph + sub_graph
-            # CF_pred = useritemcf_with_probabilities(sub_graph.cpu().numpy())
-            # CF_pred = CF_pred.float()
-            
-            CF_pred = item_based_collaborative_filtering_binary(IBR_graph)
-            # sub_node_embed, sub_edge_embed = self.gat1(x, sub_graph.cuda(), root_emb)
-            sub_node_embed, sub_edge_embed = self.hgnn(x, CF_pred.cuda())
+            sub_node_embed, sub_edge_embed = self.gat1(x, sub_graph.cuda(), root_emb)
             sub_node_embed = F.dropout(sub_node_embed, self.dropout, training=self.training)
 
-            # if self.is_norm:
-            #     sub_node_embed = self.batch_norm1(sub_node_embed)
-            #     sub_edge_embed = self.batch_norm1(sub_edge_embed)
+            if self.is_norm:
+                sub_node_embed = self.batch_norm1(sub_node_embed)
+                sub_edge_embed = self.batch_norm1(sub_edge_embed)
 
-            # x = self.fus1(x, sub_node_embed)
+            x = self.fus1(x, sub_node_embed)
             embedding_list[sub_key] = [x.cpu(), sub_edge_embed.cpu()]
-            last_graph = sub_graph
 
         return embedding_list
 
 
-class MLPReadout(nn.Module):
-    def __init__(self, in_dim, out_dim, act):
-        """
-        out_dim: the final prediction dim, usually 1
-        act: the final activation, if rating then None, if CTR then sigmoid
-        """
-        super(MLPReadout, self).__init__()
-        self.layer1 = nn.Linear(in_dim, out_dim)
-        self.act = nn.ReLU()
-        self.out_act = act
-
-    def forward(self, x):
-        ret = self.layer1(x)
-        return ret
-
-
 class MSHGAT(nn.Module):
-    def __init__(self, opt, dropout=0.1):
+    def __init__(self, opt, dropout=0.3):
         super(MSHGAT, self).__init__()
         self.hidden_size = opt.d_word_vec
         self.n_node = opt.user_size
@@ -325,17 +148,11 @@ class MSHGAT(nn.Module):
         self.linear2 = nn.Linear(self.hidden_size + self.pos_dim, self.n_node)
         self.embedding = nn.Embedding(self.n_node, self.initial_feature, padding_idx=0)
         self.reset_parameters()
-        self.readout = MLPReadout(self.hidden_size, self.n_node, None)
-        self.GRU = GRUNet(self.hidden_size, self.hidden_size, self.hidden_size, 4)
 
     def reset_parameters(self):
         stdv = 1.0 / math.sqrt(self.hidden_size)
         for weight in self.parameters():
             weight.data.uniform_(-stdv, stdv)
-
-    def pred(self, pred_logits):
-        predictions = self.readout(pred_logits)
-        return predictions
 
     def forward(self, input, input_timestamp, input_idx, graph, hypergraph_list):
 
@@ -344,8 +161,6 @@ class MSHGAT(nn.Module):
         # print(input_timestamp)
         input_timestamp = input_timestamp[:, :-1]
         hidden = self.dropout(self.gnn(graph))
-        
-
         memory_emb_list = self.hgnn(hidden, hypergraph_list)
         # print(sorted(memory_emb_list.keys()))
 
@@ -357,12 +172,6 @@ class MSHGAT(nn.Module):
         zero_vec = torch.zeros_like(input)
         dyemb = torch.zeros(batch_size, max_len, self.hidden_size).cuda()
         cas_emb = torch.zeros(batch_size, max_len, self.hidden_size).cuda()
-        # print("batch_size", batch_size)
-        # print("max_len", max_len)
-        h = self.GRU.init_hidden(batch_size * max_len)
-        sub_emb_list = []
-        dy_emb_list = []
-        sub_cas_list = []
 
         for ind, time in enumerate(sorted(memory_emb_list.keys())):
             if ind == 0:
@@ -400,24 +209,22 @@ class MSHGAT(nn.Module):
 
                 dyemb += sub_emb
                 cas_emb += sub_cas
+        # dyemb = self.fus2(dyemb,cas_emb)
 
-            sub_emb_ = sub_emb.view(-1, sub_emb.size(-1))
-            dy_emb_ = dyemb.view(-1, dyemb.size(-1))
-            sub_cas_1 = sub_cas.view(-1, sub_cas.size(-1))
+        diff_embed = torch.cat([dyemb, order_embed], dim=-1).cuda()
+        fri_embed = torch.cat([F.embedding(input.cuda(), hidden.cuda()), order_embed], dim=-1).cuda()
 
-            sub_emb_list.append(sub_emb_)
-            dy_emb_list.append(dy_emb_)
-            sub_cas_list.append(sub_cas_1)
+        diff_att_out = self.decoder_attention1(diff_embed.cuda(), diff_embed.cuda(), diff_embed.cuda(),
+                                               mask=mask.cuda())
+        diff_att_out = self.dropout(diff_att_out.cuda())
 
-        dy_emb = torch.stack(dy_emb_list, dim=1)
-        sub_cas_t = torch.stack(sub_cas_list, dim=1)
+        fri_att_out = self.decoder_attention2(fri_embed.cuda(), fri_embed.cuda(), fri_embed.cuda(), mask=mask.cuda())
+        fri_att_out = self.dropout(fri_att_out.cuda())
 
-        # GRUoutput, h = self.GRU(dy_emb, h)   
-        GRUoutput, h = self.GRU(sub_cas_t, h)
-        output = self.fus2(dy_emb_, GRUoutput)
-        # output = GRUoutput.sum(dim=1)  
-        pred = self.pred(output)
-        # print("pred.shape:", pred.size())
-        # pred = self.pred(dyemb)
-        # return pred.view(-1, pred.size(-1))
-        return pred
+        att_out = self.fus(diff_att_out, fri_att_out)
+
+        # conbine users and cascades
+        output_u = self.linear2(att_out.cuda())  # (bsz, user_len, |U|)
+        mask = get_previous_user_mask(input.cpu(), self.n_node)
+
+        return (output_u + mask).view(-1, output_u.size(-1)).cuda()
