@@ -136,7 +136,7 @@ class HGNN_ATT(nn.Module):
                 sub_node_embed = self.batch_norm1(sub_node_embed)
                 sub_edge_embed = self.batch_norm1(sub_edge_embed)
 
-            x = self.fus1(x, sub_node_embed)
+            # x = self.fus1(x, sub_node_embed)
             embedding_list[sub_key] = [x.cpu(), sub_edge_embed.cpu()]
 
         return embedding_list
@@ -170,7 +170,7 @@ class MSHGAT(nn.Module):
         self.hgnn = HGNN_ATT(self.initial_feature, self.hidden_size * 2, self.hidden_size, dropout=dropout)
         self.gnn = GraphNN(self.n_node, self.initial_feature, dropout=dropout)
         self.fus = Fusion(self.hidden_size + self.pos_dim)
-        self.fus2 = Fusion(self.hidden_size)
+        self.fus2 = Fusion(self.n_node)
         self.pos_embedding = nn.Embedding(1000, self.pos_dim)
         self.decoder_attention1 = TransformerBlock(input_size=self.hidden_size + self.pos_dim, n_heads=8)
         self.decoder_attention2 = TransformerBlock(input_size=self.hidden_size + self.pos_dim, n_heads=8)
