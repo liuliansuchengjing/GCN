@@ -46,6 +46,67 @@ def item_based_collaborative_filtering_binary(H):
     # 返回完整的预测矩阵
     return H_pred
 
+class HGNN_conv(nn.Module):
+    def __init__(self, in_ft, out_ft, bias=True):  #
+        super(HGNN_conv, self).__init__()
+
+        self.weight = nn.Parameter(torch.Tensor(in_ft, out_ft))
+        self.weight1 = nn.Parameter(torch.Tensor(in_ft, out_ft))
+        init.xavier_uniform_(self.weight)
+        init.xavier_uniform_(self.weight1)
+        # self.edge = nn.Embedding(984, out_ft)
+        if bias:
+            self.bias = nn.Parameter(torch.Tensor(out_ft))
+        else:
+            self.register_parameter('bias', None)
+
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        stdv = 1. / math.sqrt(self.weight.size(1))
+        self.weight.data.uniform_(-stdv, stdv)
+        self.weight1.data.uniform_(-stdv, stdv)
+        if self.bias is not None:
+            self.bias.data.uniform_(-stdv, stdv)
+
+    def forward(self, x, G):  # x: torch.Tensor, G: torch.Tensor
+        # edge_emb = nn.Embedding(984, 64)
+        # x = G.matmul(edge_emb.weight.cuda())
+        # x = x.matmul(self.weight)
+        if self.bias is not None:
+            x = x + self.bias
+        edge = G.t().matmul(x)
+        # edge = edge.matmul(self.weight1)
+        x = G.matmul(edge)
+
+        return x, edge
+
+
+class HGNN2(nn.Module):
+    def __init__(self, emb_dim, dropout=0.15):
+        super(HGNN2, self).__init__()
+        self.dropout = dropout
+        self.hgc1 = HGNN_conv(emb_dim, emb_dim)
+        self.hgc2 = HGNN_conv(emb_dim, emb_dim)
+        self.hgc3 = HGNN_conv(emb_dim, emb_dim)
+        # self.bn1 = nn.BatchNorm1d(emb_dim)
+        # self.bn2 = nn.BatchNorm1d(emb_dim)
+        # self.feat = nn.Embedding(n_node, emb_dim)
+        # self.feat_idx = torch.arange(n_node).cuda()
+        # nn.init.xavier_uniform_(self.feat.weight)
+        self.fc1 = nn.Linear(emb_dim, emb_dim, bias=False)
+        self.fc2 = nn.Linear(emb_dim, emb_dim, bias=False)
+        self.weight = nn.Parameter(torch.Tensor(emb_dim, emb_dim))
+
+    def forward(self, x, G):
+        # x = self.fc1(x)
+        x = F.relu(x, inplace=False)
+        x, edge = self.hgc1(x, G)
+        x, edge = self.hgc2(x, G)
+        # x = F.dropout(x, self.dropout)
+        x = F.softmax(x, dim=1)
+        x = self.fc1(x)
+        return x, edge
 
 
 def get_previous_user_mask(seq, user_size):
@@ -137,6 +198,7 @@ class HGNN_ATT(nn.Module):
             self.batch_norm1 = torch.nn.BatchNorm1d(output_size)
         self.gat1 = HGATLayer(input_size, output_size, dropout=self.dropout, transfer=False, concat=True, edge=True)
         self.fus1 = Fusion(output_size)
+        self.hgnn = HGNN2(input_size, 0.3)
 
     def forward(self, x, hypergraph_list):
         root_emb = F.embedding(hypergraph_list[1].cuda(), x)
@@ -149,7 +211,8 @@ class HGNN_ATT(nn.Module):
             sub_graph = hypergraph_list[sub_key]
             # IBR_graph = IBR_graph + sub_graph
             CF_pred = item_based_collaborative_filtering_binary(sub_graph)
-            sub_node_embed, sub_edge_embed = self.gat1(x, CF_pred.cuda(), root_emb)
+            # sub_node_embed, sub_edge_embed = self.gat1(x, CF_pred.cuda(), root_emb)
+            sub_node_embed, sub_edge_embed = self.hgnn(x, CF_pred.cuda())
 
             # sub_node_embed, sub_edge_embed = self.gat1(x, sub_graph.cuda(), root_emb)
             sub_node_embed = F.dropout(sub_node_embed, self.dropout, training=self.training)
