@@ -143,10 +143,12 @@ class HGNN_ATT(nn.Module):
 
         hypergraph_list = hypergraph_list[0]
         embedding_list = {}
+        # IBR_graph = torch.zeros_like(graph)
+
         for sub_key in hypergraph_list.keys():
             sub_graph = hypergraph_list[sub_key]
-            IBR_graph = IBR_graph + sub_graph
-            CF_pred = item_based_collaborative_filtering_binary(IBR_graph)
+            # IBR_graph = IBR_graph + sub_graph
+            CF_pred = item_based_collaborative_filtering_binary(sub_graph)
             sub_node_embed, sub_edge_embed = self.gat1(x, CF_pred.cuda())
 
             # sub_node_embed, sub_edge_embed = self.gat1(x, sub_graph.cuda(), root_emb)
