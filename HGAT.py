@@ -249,18 +249,23 @@ class HGNN_ATT(nn.Module):
 
 
 class MLPReadout(nn.Module):
-    def __init__(self, in_dim, out_dim, act):
+    def __init__(self, in_dim, out_dim, dropout):
         """
         out_dim: the final prediction dim, usually 1
         act: the final activation, if rating then None, if CTR then sigmoid
         """
         super(MLPReadout, self).__init__()
-        self.layer1 = nn.Linear(in_dim, out_dim)
+        self.layer1 = nn.Linear(in_dim, in_dim*4)
+        self.layer2 = nn.Linear(in_dim*4, out_dim)
         self.act = nn.ReLU()
-        self.out_act = act
+        # self.out_act = act
+        self.dropout = nn.Dropout(dropout)
 
     def forward(self, x):
         ret = self.layer1(x)
+        ret = self.act(ret)
+        ret = self.dropout(ret)
+        ret = self.layer2(ret)        
         return ret
 
 
@@ -287,7 +292,7 @@ class MSHGAT(nn.Module):
         self.embedding = nn.Embedding(self.n_node, self.initial_feature, padding_idx=0)
         self.reset_parameters()
         self.layer_norm = nn.LayerNorm(normalized_shape=self.hidden_size)  
-        self.readout = MLPReadout(self.hidden_size, self.n_node, None)
+        self.readout = MLPReadout(self.hidden_size, self.n_node, dropout)
         self.GRU = GRUNet(self.hidden_size, self.hidden_size, self.n_node, 4)
 
 
