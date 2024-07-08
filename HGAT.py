@@ -122,6 +122,7 @@ class HGNN2(nn.Module):
         x = F.relu(x, inplace=False)
         x, edge = self.hgc1(x, G)
         x, edge = self.hgc2(x, G)
+        x, edge = self.hgc3(x, G)
         # x = F.dropout(x, self.dropout)
         x = F.softmax(x, dim=1)
         x = self.fc1(x)
