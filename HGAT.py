@@ -282,7 +282,7 @@ class MSHGAT(nn.Module):
         self.decoder_attention2 = TransformerBlock(input_size=self.hidden_size + self.pos_dim, n_heads=8)
 
         
-        self.fus2 = Fusion(self.n_node)
+        self.fus2 = Fusion(self.hidden_size)
         self.linear2 = nn.Linear(self.hidden_size + self.pos_dim, self.n_node)
         self.embedding = nn.Embedding(self.n_node, self.initial_feature, padding_idx=0)
         self.reset_parameters()
@@ -372,6 +372,8 @@ class MSHGAT(nn.Module):
         # fri_att_out = self.dropout(fri_att_out.cuda())
 
         fri_embed = F.embedding(input.cuda(), hidden.cuda())
+        # print("dyemb.shape:", dyemb.size())
+        # print("fri_embed.shape:", fri_embed.size())
 
         att_out = self.fus2(dyemb, fri_embed)
 
