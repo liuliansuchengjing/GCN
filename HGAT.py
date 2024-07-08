@@ -361,17 +361,19 @@ class MSHGAT(nn.Module):
                 dyemb += sub_emb
                 cas_emb += sub_cas
                 
-        diff_embed = torch.cat([dyemb, order_embed], dim=-1).cuda()
-        fri_embed = torch.cat([F.embedding(input.cuda(), hidden.cuda()), order_embed], dim=-1).cuda()
+        # diff_embed = torch.cat([dyemb, order_embed], dim=-1).cuda()
+        # fri_embed = torch.cat([F.embedding(input.cuda(), hidden.cuda()), order_embed], dim=-1).cuda()
 
-        diff_att_out = self.decoder_attention1(diff_embed.cuda(), diff_embed.cuda(), diff_embed.cuda(),
-                                               mask=mask.cuda())
-        diff_att_out = self.dropout(diff_att_out.cuda())
+        # diff_att_out = self.decoder_attention1(diff_embed.cuda(), diff_embed.cuda(), diff_embed.cuda(),
+        #                                        mask=mask.cuda())
+        # diff_att_out = self.dropout(diff_att_out.cuda())
 
-        fri_att_out = self.decoder_attention2(fri_embed.cuda(), fri_embed.cuda(), fri_embed.cuda(), mask=mask.cuda())
-        fri_att_out = self.dropout(fri_att_out.cuda())
+        # fri_att_out = self.decoder_attention2(fri_embed.cuda(), fri_embed.cuda(), fri_embed.cuda(), mask=mask.cuda())
+        # fri_att_out = self.dropout(fri_att_out.cuda())
 
-        att_out = self.fus(diff_att_out, fri_att_out)
+        fri_embed = F.embedding(input.cuda(), hidden.cuda())
+
+        att_out = self.fus(dyemb, fri_embed)
 
         # conbine users and cascades
         # output_u = self.linear2(att_out.cuda())  # (bsz, user_len, |U|)
