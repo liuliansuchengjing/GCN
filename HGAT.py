@@ -205,6 +205,7 @@ class HGNN_ATT(nn.Module):
 
         hypergraph_list = hypergraph_list[0]
         embedding_list = {}
+        graph = torch.zeros(15001, 984)  
         IBR_graph = torch.zeros_like(graph)
 
         for sub_key in hypergraph_list.keys():
