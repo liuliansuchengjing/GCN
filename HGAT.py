@@ -248,6 +248,7 @@ class MSHGAT(nn.Module):
         self.linear2 = nn.Linear(self.hidden_size + self.pos_dim, self.n_node)
         self.embedding = nn.Embedding(self.n_node, self.initial_feature, padding_idx=0)
         self.reset_parameters()
+        self.layer_norm = nn.LayerNorm(normalized_shape=self.hidden_size)  
 
     def reset_parameters(self):
         stdv = 1.0 / math.sqrt(self.hidden_size)
@@ -325,6 +326,7 @@ class MSHGAT(nn.Module):
 
         # conbine users and cascades
         output_u = self.linear2(att_out.cuda())  # (bsz, user_len, |U|)
+        output_u = self.layer_norm(output_u)
         mask = get_previous_user_mask(input.cpu(), self.n_node)
 
         return (output_u + mask).view(-1, output_u.size(-1)).cuda()
