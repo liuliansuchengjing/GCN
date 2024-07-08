@@ -376,6 +376,7 @@ class MSHGAT(nn.Module):
         # print("fri_embed.shape:", fri_embed.size())
 
         att_out = self.fus2(dyemb, fri_embed)
+        att_out = self.dropout(att_out)
 
         # conbine users and cascades
         # output_u = self.linear2(att_out.cuda())  # (bsz, user_len, |U|)
