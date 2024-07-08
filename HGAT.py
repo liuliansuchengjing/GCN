@@ -361,6 +361,10 @@ class MSHGAT(nn.Module):
 
                 dyemb += sub_emb
                 cas_emb += sub_cas
+                
+            sub_emb_ = sub_emb.view(-1, sub_emb.size(-1))
+            dy_emb_ = dyemb.view(-1, dyemb.size(-1))
+            sub_cas_1 = sub_cas.view(-1, sub_cas.size(-1))
 
             sub_emb_list.append(sub_emb_)
             dy_emb_list.append(dy_emb_)
