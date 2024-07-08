@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Jan 18 22:30:16 2021
-
-@author: Ling Sun
-"""
-
 import math
 import numpy as np
 import torch
@@ -229,15 +222,15 @@ class HGNN_ATT(nn.Module):
 
         hypergraph_list = hypergraph_list[0]
         embedding_list = {}
-        graph = torch.zeros(15001, 984)  
-        IBR_graph = torch.zeros_like(graph)
+        # graph = torch.zeros(15001, 984)  
+        # IBR_graph = torch.zeros_like(graph)
 
         for sub_key in hypergraph_list.keys():
             sub_graph = hypergraph_list[sub_key]
-            IBR_graph = IBR_graph + sub_graph
-            CF_pred = item_based_collaborative_filtering_binary(IBR_graph)
+            # IBR_graph = IBR_graph + sub_graph
+            # CF_pred = item_based_collaborative_filtering_binary(IBR_graph)
             # sub_node_embed, sub_edge_embed = self.gat1(x, CF_pred.cuda(), root_emb)
-            sub_node_embed, sub_edge_embed = self.hgnn(x, CF_pred.cuda())
+            sub_node_embed, sub_edge_embed = self.hgnn(x, sub_graph.cuda())
 
             # sub_node_embed, sub_edge_embed = self.gat1(x, sub_graph.cuda(), root_emb)
             sub_node_embed = F.dropout(sub_node_embed, self.dropout, training=self.training)
@@ -246,7 +239,7 @@ class HGNN_ATT(nn.Module):
             #     sub_node_embed = self.batch_norm1(sub_node_embed)
             #     sub_edge_embed = self.batch_norm1(sub_edge_embed)
 
-            # x = self.fus1(x, sub_node_embed)
+            x = self.fus1(x, sub_node_embed)
             embedding_list[sub_key] = [x.cpu(), sub_edge_embed.cpu()]
 
         return embedding_list
