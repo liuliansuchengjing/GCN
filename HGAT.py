@@ -228,6 +228,22 @@ class HGNN_ATT(nn.Module):
         return embedding_list
 
 
+class MLPReadout(nn.Module):
+    def __init__(self, in_dim, out_dim, act):
+        """
+        out_dim: the final prediction dim, usually 1
+        act: the final activation, if rating then None, if CTR then sigmoid
+        """
+        super(MLPReadout, self).__init__()
+        self.layer1 = nn.Linear(in_dim, out_dim)
+        self.act = nn.ReLU()
+        self.out_act = act
+
+    def forward(self, x):
+        ret = self.layer1(x)
+        return ret
+
+
 class MSHGAT(nn.Module):
     def __init__(self, opt, dropout=0.3):
         super(MSHGAT, self).__init__()
@@ -249,11 +265,16 @@ class MSHGAT(nn.Module):
         self.embedding = nn.Embedding(self.n_node, self.initial_feature, padding_idx=0)
         self.reset_parameters()
         self.layer_norm = nn.LayerNorm(normalized_shape=self.hidden_size)  
+        self.readout = MLPReadout(self.hidden_size, self.n_node, None)
 
     def reset_parameters(self):
         stdv = 1.0 / math.sqrt(self.hidden_size)
         for weight in self.parameters():
             weight.data.uniform_(-stdv, stdv)
+
+    def pred(self, pred_logits):
+        predictions = self.readout(pred_logits)
+        return predictions
 
     def forward(self, input, input_timestamp, input_idx, graph, hypergraph_list):
 
@@ -310,23 +331,23 @@ class MSHGAT(nn.Module):
 
                 dyemb += sub_emb
                 cas_emb += sub_cas
-        # dyemb = self.fus2(dyemb,cas_emb)
 
-        diff_embed = torch.cat([dyemb, order_embed], dim=-1).cuda()
-        fri_embed = torch.cat([F.embedding(input.cuda(), hidden.cuda()), order_embed], dim=-1).cuda()
+        # diff_embed = torch.cat([dyemb, order_embed], dim=-1).cuda()
+        # fri_embed = torch.cat([F.embedding(input.cuda(), hidden.cuda()), order_embed], dim=-1).cuda()
 
-        diff_att_out = self.decoder_attention1(diff_embed.cuda(), diff_embed.cuda(), diff_embed.cuda(),
-                                               mask=mask.cuda())
-        diff_att_out = self.dropout(diff_att_out.cuda())
+        # diff_att_out = self.decoder_attention1(diff_embed.cuda(), diff_embed.cuda(), diff_embed.cuda(),
+        #                                        mask=mask.cuda())
+        # diff_att_out = self.dropout(diff_att_out.cuda())
 
-        fri_att_out = self.decoder_attention2(fri_embed.cuda(), fri_embed.cuda(), fri_embed.cuda(), mask=mask.cuda())
-        fri_att_out = self.dropout(fri_att_out.cuda())
+        # fri_att_out = self.decoder_attention2(fri_embed.cuda(), fri_embed.cuda(), fri_embed.cuda(), mask=mask.cuda())
+        # fri_att_out = self.dropout(fri_att_out.cuda())
 
-        att_out = self.fus(diff_att_out, fri_att_out)
+        # att_out = self.fus(diff_att_out, fri_att_out)
 
         # conbine users and cascades
-        output_u = self.linear2(att_out.cuda())  # (bsz, user_len, |U|)
-        output_u = self.layer_norm(output_u)
+        pred = self.pred(dyemb)
+        # output_u = self.linear2(pred.cuda())  # (bsz, user_len, |U|)
+        output_u = self.layer_norm(pred)
         mask = get_previous_user_mask(input.cpu(), self.n_node)
 
         return (output_u + mask).view(-1, output_u.size(-1)).cuda()
