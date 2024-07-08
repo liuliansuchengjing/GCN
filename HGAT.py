@@ -18,6 +18,30 @@ from TransformerBlock import TransformerBlock
 from torch.autograd import Variable
 from sklearn.metrics.pairwise import cosine_similarity
 
+
+class GRUNet(nn.Module):
+    def __init__(self, input_dim, hidden_dim, output_dim, n_layers, drop_prob=0.1):
+        super(GRUNet, self).__init__()
+        self.hidden_dim = hidden_dim
+        self.n_layers = n_layers
+
+        self.gru = nn.GRU(input_dim, hidden_dim, n_layers, batch_first=True, dropout=drop_prob)
+        self.fc = nn.Linear(hidden_dim, output_dim)
+        self.relu = nn.ReLU()
+
+    def forward(self, x, h):
+        out, h = self.gru(x, h)
+        out = out.sum(dim=1)
+        out = self.fc(self.relu(out))
+        # out = self.fc(self.relu(out[:,-1]))
+        return out, h
+
+    def init_hidden(self, batch_size):
+        weight = next(self.parameters()).data
+        hidden = weight.new(self.n_layers, batch_size, self.hidden_dim).zero_().cuda()
+        return hidden
+
+
 def item_based_collaborative_filtering_binary(H):
     # 假设 H 是一个 PyTorch 张量
     n_user, n_item = H.shape
@@ -30,18 +54,18 @@ def item_based_collaborative_filtering_binary(H):
     numerator = torch.matmul(item_similarity, H.T)
     numerator = numerator.T  # 转置回原形状
 
-    # 计算分母部分
-    denominator = torch.sum(torch.abs(item_similarity), dim=0)
+    # # 计算分母部分
+    # denominator = torch.sum(torch.abs(item_similarity), dim=0)
 
-    # 为了避免除以0，设置分母为0的地方为无穷小值（例如，1e-10）
-    denominator[denominator == 0] = 1e-10
+    # # 为了避免除以0，设置分母为0的地方为无穷小值（例如，1e-10）
+    # denominator[denominator == 0] = 1e-10
 
-    # 创建一个与numerator形状相同的分母张量
-    denominator_expanded = denominator.unsqueeze(0).expand_as(numerator)
+    # # 创建一个与numerator形状相同的分母张量
+    # denominator_expanded = denominator.unsqueeze(0).expand_as(numerator)
 
-    # 计算预测值
-    H_pred = numerator / denominator_expanded
-    H_pred = H_pred + H
+    # # 计算预测值
+    # H_pred = numerator / denominator_expanded
+    H_pred = numerator + H
 
     # 返回完整的预测矩阵
     return H_pred
@@ -218,11 +242,11 @@ class HGNN_ATT(nn.Module):
             # sub_node_embed, sub_edge_embed = self.gat1(x, sub_graph.cuda(), root_emb)
             sub_node_embed = F.dropout(sub_node_embed, self.dropout, training=self.training)
 
-            if self.is_norm:
-                sub_node_embed = self.batch_norm1(sub_node_embed)
-                sub_edge_embed = self.batch_norm1(sub_edge_embed)
+            # if self.is_norm:
+            #     sub_node_embed = self.batch_norm1(sub_node_embed)
+            #     sub_edge_embed = self.batch_norm1(sub_edge_embed)
 
-            x = self.fus1(x, sub_node_embed)
+            # x = self.fus1(x, sub_node_embed)
             embedding_list[sub_key] = [x.cpu(), sub_edge_embed.cpu()]
 
         return embedding_list
@@ -266,6 +290,8 @@ class MSHGAT(nn.Module):
         self.reset_parameters()
         self.layer_norm = nn.LayerNorm(normalized_shape=self.hidden_size)  
         self.readout = MLPReadout(self.hidden_size, self.n_node, None)
+        self.GRU = GRUNet(self.hidden_size, self.hidden_size, self.hidden_size, 4)
+
 
     def reset_parameters(self):
         stdv = 1.0 / math.sqrt(self.hidden_size)
@@ -294,6 +320,10 @@ class MSHGAT(nn.Module):
         zero_vec = torch.zeros_like(input)
         dyemb = torch.zeros(batch_size, max_len, self.hidden_size).cuda()
         cas_emb = torch.zeros(batch_size, max_len, self.hidden_size).cuda()
+        h = self.GRU.init_hidden(batch_size * max_len)
+        sub_emb_list = []
+        dy_emb_list = []
+        sub_cas_list = []
 
         for ind, time in enumerate(sorted(memory_emb_list.keys())):
             if ind == 0:
@@ -332,25 +362,14 @@ class MSHGAT(nn.Module):
                 dyemb += sub_emb
                 cas_emb += sub_cas
 
-        # diff_embed = torch.cat([dyemb, order_embed], dim=-1).cuda()
-        # fri_embed = torch.cat([F.embedding(input.cuda(), hidden.cuda()), order_embed], dim=-1).cuda()
+            sub_emb_list.append(sub_emb_)
+            dy_emb_list.append(dy_emb_)
+            sub_cas_list.append(sub_cas_1)
 
-        # diff_att_out = self.decoder_attention1(diff_embed.cuda(), diff_embed.cuda(), diff_embed.cuda(),
-        #                                        mask=mask.cuda())
-        # diff_att_out = self.dropout(diff_att_out.cuda())
+        dy_emb = torch.stack(dy_emb_list, dim=1)
+        sub_cas_t = torch.stack(sub_cas_list, dim=1)
 
-        # fri_att_out = self.decoder_attention2(fri_embed.cuda(), fri_embed.cuda(), fri_embed.cuda(), mask=mask.cuda())
-        # fri_att_out = self.dropout(fri_att_out.cuda())
-
-        # att_out = self.fus(diff_att_out, fri_att_out)
-
-        # conbine users and cascades
-        dyemb = self.layer_norm(dyemb)
-        pred = self.pred(dyemb)
-
-        # output_u = self.linear2(pred.cuda())  # (bsz, user_len, |U|)
-        
-        mask = get_previous_user_mask(input.cpu(), self.n_node)
-
-
-        return (pred + mask).view(-1, pred.size(-1)).cuda()
+        GRUoutput, h = self.GRU(sub_cas_t, h)
+        output = self.fus2(dy_emb_, GRUoutput)
+        pred = self.pred(output)
+        return pred
