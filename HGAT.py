@@ -367,11 +367,11 @@ class MSHGAT(nn.Module):
         # GRUoutput, h = self.GRU(sub_emb_t, h)
         # pred = self.pred(GRUoutput)
         pred = self.pred(dyemb)
-        pred = pred.view(-1, pred.size(-1))
+        # pred = pred.view(-1, pred.size(-1))
         mask = get_previous_user_mask(input.cpu(), self.n_node)
-        mask = mask.view(-1, mask.size(-1))
+        # mask = mask.view(-1, mask.size(-1))
         # print("pred.shape:", pred.size())
         # print("mask.shape:", mask.size())
         pred = pred + mask
 
-        return pred
+        return pred.view(-1, pred.size(-1))
