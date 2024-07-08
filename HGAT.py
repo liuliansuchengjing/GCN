@@ -373,7 +373,7 @@ class MSHGAT(nn.Module):
 
         fri_embed = F.embedding(input.cuda(), hidden.cuda())
 
-        att_out = self.fus(dyemb, fri_embed)
+        att_out = self.fus2(dyemb, fri_embed)
 
         # conbine users and cascades
         # output_u = self.linear2(att_out.cuda())  # (bsz, user_len, |U|)
