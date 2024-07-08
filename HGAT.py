@@ -123,7 +123,7 @@ class HGNN2(nn.Module):
         x, edge = self.hgc1(x, G)
         # x, edge = self.hgc2(x, G)
         # x, edge = self.hgc3(x, G)
-        # x = F.dropout(x, self.dropout)
+        x = F.dropout(x, self.dropout)
         x = F.softmax(x, dim=1)
         x = self.fc1(x)
         return x, edge
@@ -218,7 +218,7 @@ class HGNN_ATT(nn.Module):
             self.batch_norm1 = torch.nn.BatchNorm1d(output_size)
         self.gat1 = HGATLayer(input_size, output_size, dropout=self.dropout, transfer=False, concat=True, edge=True)
         self.fus1 = Fusion(output_size)
-        self.hgnn = HGNN2(input_size, 0.3)
+        self.hgnn = HGNN2(input_size, dropout)
 
     def forward(self, x, hypergraph_list):
         root_emb = F.embedding(hypergraph_list[1].cuda(), x)
