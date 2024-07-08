@@ -312,7 +312,10 @@ class MSHGAT(nn.Module):
 
         mask = (input == Constants.PAD)
         batch_t = torch.arange(input.size(1)).expand(input.size()).cuda()
+        print("batch_t.shape:", batch_t.size())
+
         order_embed = self.dropout(self.pos_embedding(batch_t))
+        print("order_embed.shape:", order_embed.size())
         batch_size, max_len = input.size()
 
         zero_vec = torch.zeros_like(input)
