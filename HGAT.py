@@ -41,7 +41,7 @@ def item_based_collaborative_filtering_binary(H):
 
     # 计算预测值
     H_pred = numerator / denominator_expanded
-    H_pred = numerator + H
+    H_pred = H_pred + H
 
     # 返回完整的预测矩阵
     return H_pred
@@ -205,12 +205,12 @@ class HGNN_ATT(nn.Module):
 
         hypergraph_list = hypergraph_list[0]
         embedding_list = {}
-        # IBR_graph = torch.zeros_like(graph)
+        IBR_graph = torch.zeros_like(graph)
 
         for sub_key in hypergraph_list.keys():
             sub_graph = hypergraph_list[sub_key]
-            # IBR_graph = IBR_graph + sub_graph
-            CF_pred = item_based_collaborative_filtering_binary(sub_graph)
+            IBR_graph = IBR_graph + sub_graph
+            CF_pred = item_based_collaborative_filtering_binary(IBR_graph)
             # sub_node_embed, sub_edge_embed = self.gat1(x, CF_pred.cuda(), root_emb)
             sub_node_embed, sub_edge_embed = self.hgnn(x, CF_pred.cuda())
 
