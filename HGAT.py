@@ -287,7 +287,7 @@ class MSHGAT(nn.Module):
         self.embedding = nn.Embedding(self.n_node, self.initial_feature, padding_idx=0)
         self.reset_parameters()
         self.layer_norm = nn.LayerNorm(normalized_shape=self.hidden_size)  
-        self.readout = MLPReadout(self.hidden_size + self.pos_dim, self.n_node, None)
+        self.readout = MLPReadout(self.hidden_size, self.n_node, None)
         self.GRU = GRUNet(self.hidden_size, self.hidden_size, self.n_node, 4)
 
 
