@@ -283,7 +283,7 @@ class MSHGAT(nn.Module):
 
         
         self.fus2 = Fusion(self.n_node)
-        self.linear2 = nn.Linear(self.hidden_size, self.n_node)
+        self.linear2 = nn.Linear(self.hidden_size + self.pos_dim, self.n_node)
         self.embedding = nn.Embedding(self.n_node, self.initial_feature, padding_idx=0)
         self.reset_parameters()
         self.layer_norm = nn.LayerNorm(normalized_shape=self.hidden_size)  
