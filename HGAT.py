@@ -287,7 +287,7 @@ class MSHGAT(nn.Module):
         self.embedding = nn.Embedding(self.n_node, self.initial_feature, padding_idx=0)
         self.reset_parameters()
         self.layer_norm = nn.LayerNorm(normalized_shape=self.hidden_size)  
-        self.readout = MLPReadout(self.hidden_size, self.n_node, None)
+        self.readout = MLPReadout(self.hidden_size + self.pos_dim, self.n_node, None)
         self.GRU = GRUNet(self.hidden_size, self.hidden_size, self.n_node, 4)
 
 
@@ -374,7 +374,8 @@ class MSHGAT(nn.Module):
         att_out = self.fus(diff_att_out, fri_att_out)
 
         # conbine users and cascades
-        output_u = self.linear2(att_out.cuda())  # (bsz, user_len, |U|)
+        # output_u = self.linear2(att_out.cuda())  # (bsz, user_len, |U|)
+        output_u = self.pred(att_out.cuda())
         mask = get_previous_user_mask(input.cpu(), self.n_node)
 
         return (output_u + mask).view(-1, output_u.size(-1)).cuda()
