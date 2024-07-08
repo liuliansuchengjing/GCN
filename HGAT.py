@@ -359,19 +359,20 @@ class MSHGAT(nn.Module):
                 dyemb += sub_emb
                 cas_emb += sub_cas
                 
-        #     sub_emb_1 = sub_emb.view(-1, sub_emb.size(-1))
-        #     sub_emb_list.append(sub_emb_1)
+        diff_embed = torch.cat([dyemb, order_embed], dim=-1).cuda()
+        fri_embed = torch.cat([F.embedding(input.cuda(), hidden.cuda()), order_embed], dim=-1).cuda()
 
-        # sub_emb_t = torch.stack(sub_emb_list, dim=1)
+        diff_att_out = self.decoder_attention1(diff_embed.cuda(), diff_embed.cuda(), diff_embed.cuda(),
+                                               mask=mask.cuda())
+        diff_att_out = self.dropout(diff_att_out.cuda())
 
-        # GRUoutput, h = self.GRU(sub_emb_t, h)
-        # pred = self.pred(GRUoutput)
-        pred = self.pred(dyemb)
-        # pred = pred.view(-1, pred.size(-1))
+        fri_att_out = self.decoder_attention2(fri_embed.cuda(), fri_embed.cuda(), fri_embed.cuda(), mask=mask.cuda())
+        fri_att_out = self.dropout(fri_att_out.cuda())
+
+        att_out = self.fus(diff_att_out, fri_att_out)
+
+        # conbine users and cascades
+        output_u = self.linear2(att_out.cuda())  # (bsz, user_len, |U|)
         mask = get_previous_user_mask(input.cpu(), self.n_node)
-        # mask = mask.view(-1, mask.size(-1))
-        # print("pred.shape:", pred.size())
-        # print("mask.shape:", mask.size())
-        pred = pred + mask
 
-        return pred.view(-1, pred.size(-1))
+        return (output_u + mask).view(-1, output_u.size(-1)).cuda()
