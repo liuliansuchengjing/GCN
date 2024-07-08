@@ -241,7 +241,7 @@ class HGNN_ATT(nn.Module):
             #     sub_node_embed = self.batch_norm1(sub_node_embed)
             #     sub_edge_embed = self.batch_norm1(sub_edge_embed)
 
-            # x = self.fus1(x, sub_node_embed)
+            x = self.fus1(x, sub_node_embed)
             embedding_list[sub_key] = [x.cpu(), sub_edge_embed.cpu()]
 
         return embedding_list
@@ -359,13 +359,15 @@ class MSHGAT(nn.Module):
                 dyemb += sub_emb
                 cas_emb += sub_cas
                 
-            sub_emb_1 = sub_emb.view(-1, sub_emb.size(-1))
-            sub_emb_list.append(sub_emb_1)
+        #     sub_emb_1 = sub_emb.view(-1, sub_emb.size(-1))
+        #     sub_emb_list.append(sub_emb_1)
 
-        sub_emb_t = torch.stack(sub_emb_list, dim=1)
+        # sub_emb_t = torch.stack(sub_emb_list, dim=1)
 
-        GRUoutput, h = self.GRU(sub_emb_t, h)
-        pred = self.pred(GRUoutput)
+        # GRUoutput, h = self.GRU(sub_emb_t, h)
+        # pred = self.pred(GRUoutput)
+        pred = self.pred(dyemb)
+        pred = pred.view(-1, pred.size(-1))
         mask = get_previous_user_mask(input.cpu(), self.n_node)
         mask = mask.view(-1, mask.size(-1))
         # print("pred.shape:", pred.size())
