@@ -294,7 +294,7 @@ class MSHGAT(nn.Module):
         self.reset_parameters()
         self.layer_norm = nn.LayerNorm(normalized_shape=self.hidden_size)  
         self.readout = MLPReadout(self.hidden_size, self.n_node, dropout)
-        self.GRU = GRUNet(self.hidden_size, self.hidden_size, self.hidden_size, 2)
+        self.GRU = GRUNet(self.hidden_size, self.hidden_size, self.hidden_size, 3)
 
 
     def reset_parameters(self):
