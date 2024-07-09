@@ -116,6 +116,7 @@ class HGNN2(nn.Module):
         self.fc1 = nn.Linear(emb_dim, emb_dim, bias=False)
         self.fc2 = nn.Linear(emb_dim, emb_dim, bias=False)
         self.weight = nn.Parameter(torch.Tensor(emb_dim, emb_dim))
+        self.fus = Fusion(emb_dim)
 
     def forward(self, x, G):
         # x = self.fc1(x)
@@ -123,7 +124,7 @@ class HGNN2(nn.Module):
         x1, edge = self.hgc1(x0, G)
         x2, edge = self.hgc2(x1, G)
         # x, edge = self.hgc3(x, G)
-        x = (x+x1+x2)/3
+        x = self.fus(x1,x2)
         x = F.dropout(x, self.dropout)
         x = F.softmax(x, dim=1)
         x = self.fc1(x)
@@ -243,8 +244,7 @@ class HGNN_ATT(nn.Module):
             #     sub_node_embed = self.batch_norm1(sub_node_embed)
             #     sub_edge_embed = self.batch_norm1(sub_edge_embed)
 
-            # x = self.fus1(x, sub_node_embed)
-            x = (x + sub_node_embed)/2
+            x = self.fus1(x, sub_node_embed)
             embedding_list[sub_key] = [x.cpu(), sub_edge_embed.cpu()]
 
         return embedding_list
@@ -288,8 +288,8 @@ class MSHGAT(nn.Module):
         self.decoder_attention1 = TransformerBlock(input_size=self.hidden_size + self.pos_dim, n_heads=8)
         self.decoder_attention2 = TransformerBlock(input_size=self.hidden_size + self.pos_dim, n_heads=8)
 
-        
-        self.fus2 = Fusion(self.hidden_size)
+        self.fus1 = Fusion(self.hidden_size)
+        self.fus2 = Fusion(self.n_node)
         self.linear2 = nn.Linear(self.hidden_size, self.n_node)
         self.embedding = nn.Embedding(self.n_node, self.initial_feature, padding_idx=0)
         self.reset_parameters()
@@ -376,11 +376,11 @@ class MSHGAT(nn.Module):
 
         
         fri_embed = F.embedding(input.cuda(), hidden.cuda())
-        # att_out = self.fus2(dyemb, fri_embed)
-        att_out = dyemb + fri_embed
+        att_out = self.fus1(dyemb, fri_embed)
         att_out = self.dropout(att_out)
         output_u = self.pred(att_out.cuda())
         mask = get_previous_user_mask(input.cpu(), self.n_node)
         pre = (output_u + mask).view(-1, output_u.size(-1)).cuda()
+        pre = self.fus2(cas, pre)
 
-        return pre + cas
+        return pre
