@@ -26,9 +26,9 @@ class GRUNet(nn.Module):
 
     def forward(self, x, h):
         out, h = self.gru(x, h)
-        # out = out.sum(dim=1)
-        # out = self.fc(self.relu(out))
-        out = self.fc(self.relu(out[:,-1]))
+        out = out.sum(dim=1)
+        out = self.fc(self.relu(out))
+        # out = self.fc(self.relu(out[:,-1]))
         return out, h
 
     def init_hidden(self, batch_size):
@@ -289,12 +289,12 @@ class MSHGAT(nn.Module):
 
         
         self.fus2 = Fusion(self.hidden_size)
-        self.linear2 = nn.Linear(self.hidden_size + self.pos_dim, self.n_node)
+        self.linear2 = nn.Linear(self.hidden_size, self.n_node)
         self.embedding = nn.Embedding(self.n_node, self.initial_feature, padding_idx=0)
         self.reset_parameters()
         self.layer_norm = nn.LayerNorm(normalized_shape=self.hidden_size)  
         self.readout = MLPReadout(self.hidden_size, self.n_node, dropout)
-        self.GRU = GRUNet(self.hidden_size, self.hidden_size, self.n_node, 4)
+        self.GRU = GRUNet(self.hidden_size, self.hidden_size, self.n_node, 2)
 
 
     def reset_parameters(self):
@@ -367,26 +367,18 @@ class MSHGAT(nn.Module):
                 dyemb += sub_emb
                 cas_emb += sub_cas
                 
-        # diff_embed = torch.cat([dyemb, order_embed], dim=-1).cuda()
-        # fri_embed = torch.cat([F.embedding(input.cuda(), hidden.cuda()), order_embed], dim=-1).cuda()
+            sub_cas_1 = sub_cas.view(-1, sub_cas.size(-1))
+            sub_cas_list.append(sub_cas_1)          
+        sub_cas_t = torch.stack(sub_cas_list, dim=1)  
+        GRUoutput_cas, h = self.GRU(sub_cas_t, h)
+        cas = self.linear2(GRUoutput_cas)
 
-        # diff_att_out = self.decoder_attention1(diff_embed.cuda(), diff_embed.cuda(), diff_embed.cuda(),
-        #                                        mask=mask.cuda())
-        # diff_att_out = self.dropout(diff_att_out.cuda())
-
-        # fri_att_out = self.decoder_attention2(fri_embed.cuda(), fri_embed.cuda(), fri_embed.cuda(), mask=mask.cuda())
-        # fri_att_out = self.dropout(fri_att_out.cuda())
-
+        
         fri_embed = F.embedding(input.cuda(), hidden.cuda())
-        # print("dyemb.shape:", dyemb.size())
-        # print("fri_embed.shape:", fri_embed.size())
-
         att_out = self.fus2(dyemb, fri_embed)
         att_out = self.dropout(att_out)
-
-        # conbine users and cascades
-        # output_u = self.linear2(att_out.cuda())  # (bsz, user_len, |U|)
         output_u = self.pred(att_out.cuda())
         mask = get_previous_user_mask(input.cpu(), self.n_node)
+        pre = (output_u + mask).view(-1, output_u.size(-1)).cuda()
 
-        return (output_u + mask).view(-1, output_u.size(-1)).cuda()
+        return pre + cas
