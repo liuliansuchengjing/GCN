@@ -256,8 +256,8 @@ class MLPReadout(nn.Module):
         act: the final activation, if rating then None, if CTR then sigmoid
         """
         super(MLPReadout, self).__init__()
-        self.layer1 = nn.Linear(in_dim, in_dim*4)
-        self.layer2 = nn.Linear(in_dim*4, out_dim)
+        self.layer1 = nn.Linear(in_dim, out_dim)
+        self.layer2 = nn.Linear(in_dim, out_dim)
         self.act = nn.ReLU()
         # self.out_act = act
         self.dropout = nn.Dropout(dropout)
