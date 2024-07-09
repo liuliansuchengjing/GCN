@@ -120,9 +120,10 @@ class HGNN2(nn.Module):
     def forward(self, x, G):
         # x = self.fc1(x)
         x = F.relu(x, inplace=False)
-        x, edge = self.hgc1(x, G)
-        # x, edge = self.hgc2(x, G)
+        x1, edge = self.hgc1(x, G)
+        x2, edge = self.hgc2(x1, G)
         # x, edge = self.hgc3(x, G)
+        x = (x1+x2)/2
         x = F.dropout(x, self.dropout)
         x = F.softmax(x, dim=1)
         x = self.fc1(x)
