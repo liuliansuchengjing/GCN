@@ -264,9 +264,9 @@ class MLPReadout(nn.Module):
 
     def forward(self, x):
         ret = self.layer1(x)
-        ret = self.act(ret)
-        ret = self.dropout(ret)
-        ret = self.layer2(ret)        
+        # ret = self.act(ret)
+        # ret = self.dropout(ret)
+        # ret = self.layer2(ret)        
         return ret
 
 
