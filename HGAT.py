@@ -375,7 +375,8 @@ class MSHGAT(nn.Module):
 
         
         fri_embed = F.embedding(input.cuda(), hidden.cuda())
-        att_out = self.fus2(dyemb, fri_embed)
+        # att_out = self.fus2(dyemb, fri_embed)
+        att_out = dyemb + fri_embed
         att_out = self.dropout(att_out)
         output_u = self.pred(att_out.cuda())
         mask = get_previous_user_mask(input.cpu(), self.n_node)
