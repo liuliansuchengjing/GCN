@@ -265,7 +265,7 @@ class HGNN_ATT(nn.Module):
             # IBR_graph = IBR_graph + sub_graph
             # CF_pred = item_based_collaborative_filtering_binary(IBR_graph)
             # sub_node_embed, sub_edge_embed = self.gat1(x, CF_pred.cuda(), root_emb)
-            sub_node_embed, sub_edge_embed = self.hgnn(self.embedding.weight, sub_graph.cuda())
+            sub_node_embed, sub_edge_embed = self.hgnn(x, sub_graph.cuda())
 
             # sub_node_embed, sub_edge_embed = self.gat1(x, sub_graph.cuda(), root_emb)
             sub_node_embed = F.dropout(sub_node_embed, self.dropout, training=self.training)
