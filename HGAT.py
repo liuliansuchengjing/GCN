@@ -13,6 +13,37 @@ from torch.autograd import Variable
 from sklearn.metrics.pairwise import cosine_similarity
 
 
+def get_norm_adj_mat(interaction_matrix):  
+
+    n_users, n_items = interaction_matrix.shape
+    # build adj matrix  
+    A = sp.dok_matrix((n_users + n_items, n_users + n_items), dtype=np.float32)  
+    inter_M = interaction_matrix  
+    inter_M_t = inter_M.transpose()  
+      
+    # Populate the adjacency matrix  
+    data_dict = dict(zip(zip(inter_M.row, inter_M.col + n_users), [1] * inter_M.nnz))  
+    data_dict.update(dict(zip(zip(inter_M_t.row + n_users, inter_M_t.col), [1] * inter_M_t.nnz)))  
+    A._update(data_dict)  
+      
+    # norm adj matrix  
+    sumArr = (A > 0).sum(axis=1)  
+    diag = np.array(sumArr.flatten())[0] + 1e-7  # add epsilon to avoid divide by zero  
+    diag = np.power(diag, -0.5)  
+    D = sp.diags(diag)  
+    L = D * A * D  
+      
+    # convert norm_adj matrix to tensor  
+    L = sp.coo_matrix(L)  
+    row = L.row  
+    col = L.col  
+    i = torch.LongTensor([row, col])  
+    data = torch.FloatTensor(L.data)  
+    SparseL = torch.sparse.FloatTensor(i, data, torch.Size(L.shape))  
+      
+    return SparseL  
+
+
 class GRUNet(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim, n_layers, drop_prob=0.1):
         super(GRUNet, self).__init__()
@@ -230,6 +261,7 @@ class HGNN_ATT(nn.Module):
 
         for sub_key in hypergraph_list.keys():
             sub_graph = hypergraph_list[sub_key]
+            sub_graph = get_norm_adj_mat(sub_graph)
             # IBR_graph = IBR_graph + sub_graph
             # CF_pred = item_based_collaborative_filtering_binary(IBR_graph)
             # sub_node_embed, sub_edge_embed = self.gat1(x, CF_pred.cuda(), root_emb)
