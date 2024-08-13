@@ -1,4 +1,3 @@
-
 import math
 import numpy as np
 import torch
@@ -11,37 +10,6 @@ import Constants
 from TransformerBlock import TransformerBlock
 from torch.autograd import Variable
 from sklearn.metrics.pairwise import cosine_similarity
-
-
-def get_norm_adj_mat(interaction_matrix):  
-
-    n_users, n_items = interaction_matrix.shape
-    # build adj matrix  
-    A = sp.dok_matrix((n_users + n_items, n_users + n_items), dtype=np.float32)  
-    inter_M = interaction_matrix  
-    inter_M_t = inter_M.transpose()  
-      
-    # Populate the adjacency matrix  
-    data_dict = dict(zip(zip(inter_M.row, inter_M.col + n_users), [1] * inter_M.nnz))  
-    data_dict.update(dict(zip(zip(inter_M_t.row + n_users, inter_M_t.col), [1] * inter_M_t.nnz)))  
-    A._update(data_dict)  
-      
-    # norm adj matrix  
-    sumArr = (A > 0).sum(axis=1)  
-    diag = np.array(sumArr.flatten())[0] + 1e-7  # add epsilon to avoid divide by zero  
-    diag = np.power(diag, -0.5)  
-    D = sp.diags(diag)  
-    L = D * A * D  
-      
-    # convert norm_adj matrix to tensor  
-    L = sp.coo_matrix(L)  
-    row = L.row  
-    col = L.col  
-    i = torch.LongTensor([row, col])  
-    data = torch.FloatTensor(L.data)  
-    SparseL = torch.sparse.FloatTensor(i, data, torch.Size(L.shape))  
-      
-    return SparseL  
 
 
 class GRUNet(nn.Module):
@@ -249,7 +217,6 @@ class HGNN_ATT(nn.Module):
         self.gat1 = HGATLayer(input_size, output_size, dropout=self.dropout, transfer=False, concat=True, edge=True)
         self.fus1 = Fusion(output_size)
         self.hgnn = HGNN2(input_size, 0.3)
-        self.embedding = nn.Embedding(ntoken, ninp, padding_idx=0)
 
     def forward(self, x, hypergraph_list):
         root_emb = F.embedding(hypergraph_list[1].cuda(), x)
@@ -261,7 +228,6 @@ class HGNN_ATT(nn.Module):
 
         for sub_key in hypergraph_list.keys():
             sub_graph = hypergraph_list[sub_key]
-            sub_graph = get_norm_adj_mat(sub_graph)
             # IBR_graph = IBR_graph + sub_graph
             # CF_pred = item_based_collaborative_filtering_binary(IBR_graph)
             # sub_node_embed, sub_edge_embed = self.gat1(x, CF_pred.cuda(), root_emb)
@@ -314,12 +280,12 @@ class MSHGAT(nn.Module):
         self.decoder_attention2 = TransformerBlock(input_size=self.hidden_size + self.pos_dim, n_heads=8)
 
         
-        self.fus2 = Fusion(self.hidden_size)
+        self.fus2 = Fusion(self.n_node)
         self.linear2 = nn.Linear(self.hidden_size + self.pos_dim, self.n_node)
         self.embedding = nn.Embedding(self.n_node, self.initial_feature, padding_idx=0)
         self.reset_parameters()
         self.layer_norm = nn.LayerNorm(normalized_shape=self.hidden_size)  
-        self.readout = MLPReadout(self.hidden_size, self.n_node, None)
+        self.readout = MLPReadout(self.hidden_size + self.pos_dim, self.n_node, None)
         self.GRU = GRUNet(self.hidden_size, self.hidden_size, self.n_node, 4)
 
 
@@ -393,10 +359,20 @@ class MSHGAT(nn.Module):
                 dyemb += sub_emb
                 cas_emb += sub_cas
                 
-        fri_embed = F.embedding(input.cuda(), hidden.cuda())
-        att_out = self.fus2(dyemb, fri_embed)
-        att_out = self.dropout(att_out)
-        output_u = self.pred(att_out.cuda())
+        diff_embed = torch.cat([dyemb, order_embed], dim=-1).cuda()
+        fri_embed = torch.cat([F.embedding(input.cuda(), hidden.cuda()), order_embed], dim=-1).cuda()
+
+        diff_att_out = self.decoder_attention1(diff_embed.cuda(), diff_embed.cuda(), diff_embed.cuda(),mask=mask.cuda())
+        diff_att_out = self.dropout(diff_att_out.cuda())
+
+        fri_att_out = self.decoder_attention2(fri_embed.cuda(), fri_embed.cuda(), fri_embed.cuda(), mask=mask.cuda())
+        fri_att_out = self.dropout(fri_att_out.cuda())
+
+        att_out = self.fus(diff_att_out, fri_att_out)
+
+        # conbine users and cascades
+        output_u = self.linear2(att_out.cuda())  # (bsz, user_len, |U|)
+        # output_u = self.pred(att_out.cuda())
         mask = get_previous_user_mask(input.cpu(), self.n_node)
 
         return (output_u + mask).view(-1, output_u.size(-1)).cuda()
