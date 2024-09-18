@@ -271,8 +271,8 @@ class MSHGAT(nn.Module):
         position_ids = torch.arange(input.size(1), dtype=torch.long, device=input.device)
         position_ids = position_ids.unsqueeze(0).expand_as(input)
         position_embedding = self.position_embedding(position_ids.cuda())
-        # item_emb = self.item_embedding(input.cuda())
-        item_emb = dyemb
+        item_emb = self.item_embedding(input.cuda())
+        # item_emb = all_emb
         input_emb = item_emb + position_embedding
         input_emb = self.LayerNorm(input_emb)
         input_emb = self.dropout(input_emb)
