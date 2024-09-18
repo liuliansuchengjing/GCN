@@ -263,20 +263,20 @@ class MSHGAT(nn.Module):
                 sub_emb = F.embedding(sub_input.cuda(), list(memory_emb_list.values())[ind][0].cuda())
                 sub_emb[temp] = 0
 
-                all_emb = F.embedding(all_input.cuda(), list(memory_emb_list.values())[ind][0].cuda())
+                all_emb = F.embedding(input.cuda(), list(memory_emb_list.values())[ind][0].cuda())
 
                 dyemb += sub_emb
                 cas_emb += sub_cas
         # dyemb = self.fus2(dyemb,cas_emb)
-        position_ids = torch.arange(all_input.size(1), dtype=torch.long, device=all_input.device)
-        position_ids = position_ids.unsqueeze(0).expand_as(all_input)
+        position_ids = torch.arange(input.size(1), dtype=torch.long, device=input.device)
+        position_ids = position_ids.unsqueeze(0).expand_as(input)
         position_embedding = self.position_embedding(position_ids.cuda())
-        # item_emb = self.item_embedding(all_input.cuda())
+        # item_emb = self.item_embedding(input.cuda())
         item_emb = dyemb
         input_emb = item_emb + position_embedding
         input_emb = self.LayerNorm(input_emb)
         input_emb = self.dropout(input_emb)
-        extended_attention_mask = self.get_attention_mask(all_input)
+        extended_attention_mask = self.get_attention_mask(input)
         trm_output = self.trm_encoder(input_emb, extended_attention_mask, output_all_encoded_layers=False)
         # print("trm_output.size", trm_output.size)
 
