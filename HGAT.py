@@ -271,7 +271,8 @@ class MSHGAT(nn.Module):
         position_ids = torch.arange(all_input.size(1), dtype=torch.long, device=all_input.device)
         position_ids = position_ids.unsqueeze(0).expand_as(all_input)
         position_embedding = self.position_embedding(position_ids.cuda())
-        item_emb = self.item_embedding(all_input.cuda())
+        # item_emb = self.item_embedding(all_input.cuda())
+        item_emb = dyemb
         input_emb = item_emb + position_embedding
         input_emb = self.LayerNorm(input_emb)
         input_emb = self.dropout(input_emb)
@@ -294,8 +295,8 @@ class MSHGAT(nn.Module):
         # # conbine users and cascades
         # output_u = self.linear2(att_out.cuda())  # (bsz, user_len, |U|)
 
-        # output = self.fus(dyemb, trm_output)
-        pred = self.pred(dyemb)
+        output = self.fus(dyemb, trm_output)
+        pred = self.pred(output)
         mask = get_previous_user_mask(input.cpu(), self.n_node)
 
         return (pred + mask).view(-1, pred.size(-1)).cuda()
