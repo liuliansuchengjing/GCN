@@ -1,300 +1,317 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Jan 18 22:30:16 2021
+Created on Mon Jan 18 22:29:40 2021
 
 @author: Ling Sun
 """
-
+import copy
 import math
-import numpy as np
 import torch
-from torch import nn
+import torch.nn as nn
 import torch.nn.functional as F
-from layer import HGATLayer, TransformerEncoder
-from torch_geometric.nn import GCNConv
-import torch.nn.init as init
-import Constants
-from TransformerBlock import TransformerBlock
-from torch.autograd import Variable
+from torch.nn.parameter import Parameter
+from graphConstruct import get_EdgeAttention, get_NodeAttention, normalize
 
 
-def get_previous_user_mask(seq, user_size):
-    ''' Mask previous activated users.'''
-    assert seq.dim() == 2
-    prev_shape = (seq.size(0), seq.size(1), seq.size(1))
-    seqs = seq.repeat(1, 1, seq.size(1)).view(seq.size(0), seq.size(1), seq.size(1))
-    previous_mask = np.tril(np.ones(prev_shape)).astype('float32')
-    previous_mask = torch.from_numpy(previous_mask)
-    if seq.is_cuda:
-        previous_mask = previous_mask.cuda()
-    masked_seq = previous_mask * seqs.data.float()
+class HGATLayer(nn.Module):
 
-    # force the 0th dimension (PAD) to be masked
-    PAD_tmp = torch.zeros(seq.size(0), seq.size(1), 1)
-    if seq.is_cuda:
-        PAD_tmp = PAD_tmp.cuda()
-    masked_seq = torch.cat([masked_seq, PAD_tmp], dim=2)
-    ans_tmp = torch.zeros(seq.size(0), seq.size(1), user_size)
-    if seq.is_cuda:
-        ans_tmp = ans_tmp.cuda()
-    masked_seq = ans_tmp.scatter_(2, masked_seq.long(), float(-1000))
-    masked_seq = Variable(masked_seq, requires_grad=False)
-    # print("masked_seq ",masked_seq.size())
-    return masked_seq.cuda()
-
-
-# Fusion gate
-class Fusion(nn.Module):
-    def __init__(self, input_size, out=1, dropout=0.2):
-        super(Fusion, self).__init__()
-        self.linear1 = nn.Linear(input_size, input_size)
-        self.linear2 = nn.Linear(input_size, out)
-        self.dropout = nn.Dropout(dropout)
-        self.init_weights()
-
-    def init_weights(self):
-        init.xavier_normal_(self.linear1.weight)
-        init.xavier_normal_(self.linear2.weight)
-
-    def forward(self, hidden, dy_emb):
-        emb = torch.cat([hidden.unsqueeze(dim=0), dy_emb.unsqueeze(dim=0)], dim=0)
-        emb_score = F.softmax(self.linear2(torch.tanh(self.linear1(emb))), dim=0)
-        emb_score = self.dropout(emb_score)
-        out = torch.sum(emb_score * emb, dim=0)
-        return out
-
-
-'''Learn friendship network'''
-
-
-class GraphNN(nn.Module):
-    def __init__(self, ntoken, ninp, dropout=0.5, is_norm=True):
-        super(GraphNN, self).__init__()
-        self.embedding = nn.Embedding(ntoken, ninp, padding_idx=0)
-        # in:inp,out:nip*2
-        self.gnn1 = GCNConv(ninp, ninp * 2)
-        self.gnn2 = GCNConv(ninp * 2, ninp)
-        self.is_norm = is_norm
-
-        self.dropout = nn.Dropout(dropout)
-        if self.is_norm:
-            self.batch_norm = torch.nn.BatchNorm1d(ninp)
-        self.init_weights()
-
-    def init_weights(self):
-        init.xavier_normal_(self.embedding.weight)
-
-    def forward(self, graph):
-        graph_edge_index = graph.edge_index.cuda()
-        graph_x_embeddings = self.gnn1(self.embedding.weight, graph_edge_index)
-        graph_x_embeddings = self.dropout(graph_x_embeddings)
-        graph_output = self.gnn2(graph_x_embeddings, graph_edge_index)
-        if self.is_norm:
-            graph_output = self.batch_norm(graph_output)
-        # print(graph_output.shape)
-        return graph_output.cuda()
-
-
-'''Learn diffusion network'''
-
-
-class HGNN_ATT(nn.Module):
-    def __init__(self, input_size, n_hid, output_size, dropout=0.3, is_norm=True):
-        super(HGNN_ATT, self).__init__()
+    def __init__(self, in_features, out_features, dropout, transfer, concat=True, bias=False, edge=True):
+        super(HGATLayer, self).__init__()
         self.dropout = dropout
-        self.is_norm = is_norm
-        if self.is_norm:
-            self.batch_norm1 = torch.nn.BatchNorm1d(output_size)
-        self.gat1 = HGATLayer(input_size, output_size, dropout=self.dropout, transfer=False, concat=True, edge=True)
-        self.fus1 = Fusion(output_size)
+        self.in_features = in_features
+        self.out_features = out_features
+        self.concat = concat
+        self.edge = edge
 
-    def forward(self, x, hypergraph_list):
-        root_emb = F.embedding(hypergraph_list[1].cuda(), x)
+        self.transfer = transfer
 
-        hypergraph_list = hypergraph_list[0]
-        embedding_list = {}
-        for sub_key in hypergraph_list.keys():
-            sub_graph = hypergraph_list[sub_key]
-            sub_node_embed, sub_edge_embed = self.gat1(x, sub_graph.cuda(), root_emb)
-            sub_node_embed = F.dropout(sub_node_embed, self.dropout, training=self.training)
+        if self.transfer:
+            self.weight = Parameter(torch.Tensor(self.in_features, self.out_features))
+        else:
+            self.register_parameter('weight', None)
 
-            if self.is_norm:
-                sub_node_embed = self.batch_norm1(sub_node_embed)
-                sub_edge_embed = self.batch_norm1(sub_edge_embed)
+        self.weight2 = Parameter(torch.Tensor(self.in_features, self.out_features))
+        self.weight3 = Parameter(torch.Tensor(self.out_features, self.out_features))
 
-            x = self.fus1(x, sub_node_embed)
-            embedding_list[sub_key] = [x.cpu(), sub_edge_embed.cpu()]
+        if bias:
+            self.bias = Parameter(torch.Tensor(self.out_features))
+        else:
+            self.register_parameter('bias', None)
 
-        return embedding_list
-
-
-class MLPReadout(nn.Module):
-    def __init__(self, in_dim, out_dim, act):
-        """
-        out_dim: the final prediction dim, usually 1
-        act: the final activation, if rating then None, if CTR then sigmoid
-        """
-        super(MLPReadout, self).__init__()
-        self.layer1 = nn.Linear(in_dim, out_dim)
-        self.act = nn.ReLU()
-        self.out_act = act
-
-    def forward(self, x):
-        ret = self.layer1(x)
-        return ret
-
-
-class MSHGAT(nn.Module):
-    def __init__(self, opt, dropout=0.3):
-        super(MSHGAT, self).__init__()
-        self.hidden_size = opt.d_word_vec
-        self.n_node = opt.user_size
-        self.pos_dim = 8
-        self.dropout = nn.Dropout(dropout)
-        self.initial_feature = opt.initialFeatureSize
-
-        self.hgnn = HGNN_ATT(self.initial_feature, self.hidden_size * 2, self.hidden_size, dropout=dropout)
-        self.gnn = GraphNN(self.n_node, self.initial_feature, dropout=dropout)
-        self.fus = Fusion(self.hidden_size + self.pos_dim)
-        self.fus2 = Fusion(self.hidden_size)
-        self.pos_embedding = nn.Embedding(1000, self.pos_dim)
-        self.decoder_attention1 = TransformerBlock(input_size=self.hidden_size + self.pos_dim, n_heads=8)
-        self.decoder_attention2 = TransformerBlock(input_size=self.hidden_size + self.pos_dim, n_heads=8)
-
-        self.linear2 = nn.Linear(self.hidden_size + self.pos_dim, self.n_node)
-        self.embedding = nn.Embedding(self.n_node, self.initial_feature, padding_idx=0)
         self.reset_parameters()
-        self.readout = MLPReadout(self.hidden_size, self.n_node, None)
-
-              
-        self.n_layers = 6
-        self.n_heads = 8
-        self.inner_size = 256
-        self.hidden_dropout_prob = 0.3
-        self.attn_dropout_prob = 0.3
-        self.layer_norm_eps = 1e-12
-        self.hidden_act = 'gelu'
-        self.item_embedding = nn.Embedding(self.n_node + 1, self.hidden_size, padding_idx=0)  # mask token add 1
-        self.position_embedding = nn.Embedding(199 + 1, self.hidden_size)  # add mask_token at the last
-        self.LayerNorm = nn.LayerNorm(self.hidden_size, eps=self.layer_norm_eps)
-        self.dropout = nn.Dropout(self.hidden_dropout_prob)
-        self.trm_encoder = TransformerEncoder(
-            n_layers=self.n_layers,
-            n_heads=self.n_heads,
-            hidden_size=self.hidden_size,
-            inner_size=self.inner_size,
-            hidden_dropout_prob=self.hidden_dropout_prob,
-            attn_dropout_prob=self.attn_dropout_prob,
-            hidden_act=self.hidden_act,
-            layer_norm_eps=self.layer_norm_eps,
-            multiscale=False
-        )
 
     def reset_parameters(self):
-        stdv = 1.0 / math.sqrt(self.hidden_size)
-        for weight in self.parameters():
-            weight.data.uniform_(-stdv, stdv)
+        stdv = 1. / math.sqrt(self.out_features)
+        if self.weight is not None:
+            self.weight.data.uniform_(-stdv, stdv)
+        self.weight2.data.uniform_(-stdv, stdv)
+        self.weight3.data.uniform_(-stdv, stdv)
+        if self.bias is not None:
+            self.bias.data.uniform_(-stdv, stdv)
 
-    def get_attention_mask(self, item_seq):
-        """Generate bidirectional attention mask for multi-scale attention."""
-        attention_mask = (item_seq > 0).long()
-        extended_attention_mask = attention_mask.unsqueeze(1).unsqueeze(2)  # torch.int64
-        # bidirectional mask
-        extended_attention_mask = extended_attention_mask.to(dtype=next(self.parameters()).dtype)  # fp16 compatibility
-        extended_attention_mask = (1.0 - extended_attention_mask) * -10000.0
-        return extended_attention_mask
+    def forward(self, x, adj, root_emb):
 
-    def pred(self, pred_logits):
-        predictions = self.readout(pred_logits)
-        return predictions
+        if self.transfer:
+            x = x.matmul(self.weight)
+        else:
+            x = x.matmul(self.weight2)
 
-    def forward(self, input, input_timestamp, input_idx, graph, hypergraph_list):
+        if self.bias is not None:
+            x = x + self.bias
 
-        input = input[:, :-1]
-        # print(input)
-        # print(input_timestamp)
-        input_timestamp = input_timestamp[:, :-1]
-        hidden = self.dropout(self.gnn(graph))
-        memory_emb_list = self.hgnn(hidden, hypergraph_list)
-        # print(sorted(memory_emb_list.keys()))
+            # n2e_att = get_NodeAttention(x, adj.t(), root_emb)
 
-        mask = (input == Constants.PAD)
-        batch_t = torch.arange(input.size(1)).expand(input.size()).cuda()
-        # order_embed = self.dropout(self.pos_embedding(batch_t))
-        batch_size, max_len = input.size()
+        adjt = F.softmax(adj.T, dim=1)
+        # adj = normalize(adj)
 
-        zero_vec = torch.zeros_like(input)
-        dyemb = torch.zeros(batch_size, max_len, self.hidden_size).cuda()
-        cas_emb = torch.zeros(batch_size, max_len, self.hidden_size).cuda()
+        edge = torch.matmul(adjt, x)
 
-        for ind, time in enumerate(sorted(memory_emb_list.keys())):
-            if ind == 0:
-                sub_input = torch.where(input_timestamp <= time, input, zero_vec)
-                all_input = sub_input
-                sub_emb = F.embedding(sub_input.cuda(), hidden.cuda())
-                temp = sub_input == 0
-                sub_cas = sub_emb.clone()
-            else:
-                cur = torch.where(input_timestamp <= time, input, zero_vec) - sub_input
-                temp = cur == 0
+        edge = F.dropout(edge, self.dropout, training=self.training)
+        edge = F.relu(edge, inplace=False)
 
-                sub_cas = torch.zeros_like(cur)
-                sub_cas[~temp] = 1
-                sub_cas = torch.einsum('ij,i->ij', sub_cas, input_idx)
-                sub_cas = F.embedding(sub_cas.cuda(), list(memory_emb_list.values())[ind - 1][1].cuda())
-                sub_emb = F.embedding(cur.cuda(), list(memory_emb_list.values())[ind - 1][0].cuda())
-                sub_input = cur + sub_input
-                all_input = cur + all_input
+        e1 = edge.matmul(self.weight3)
 
-            sub_cas[temp] = 0
-            sub_emb[temp] = 0
-            dyemb += sub_emb
-            cas_emb += sub_cas
+        adj = F.softmax(adj, dim=1)
+        # adj = get_EdgeAttention(adj)
 
-            if ind == len(memory_emb_list) - 1:
-                sub_input = input - sub_input
-                temp = sub_input == 0
+        node = torch.matmul(adj, e1)
+        node = F.dropout(node, self.dropout, training=self.training)
 
-                sub_cas = torch.zeros_like(sub_input)
-                sub_cas[~temp] = 1
-                sub_cas = torch.einsum('ij,i->ij', sub_cas, input_idx)
-                sub_cas = F.embedding(sub_cas.cuda(), list(memory_emb_list.values())[ind - 1][1].cuda())
-                sub_cas[temp] = 0
-                sub_emb = F.embedding(sub_input.cuda(), list(memory_emb_list.values())[ind][0].cuda())
-                sub_emb[temp] = 0
+        if self.concat:
+            node = F.relu(node, inplace=False)
 
-                all_emb = F.embedding(all_input.cuda(), list(memory_emb_list.values())[ind][0].cuda())
+        if self.edge:
+            edge = torch.matmul(adjt, node)
+            edge = F.dropout(edge, self.dropout, training=self.training)
+            edge = F.relu(edge, inplace=False)
+            return node, edge
+        else:
+            return node
 
-                dyemb += sub_emb
-                cas_emb += sub_cas
-        # dyemb = self.fus2(dyemb,cas_emb)
-        position_ids = torch.arange(all_input.size(1), dtype=torch.long, device=all_input.device)
-        position_ids = position_ids.unsqueeze(0).expand_as(all_input)
-        position_embedding = self.position_embedding(position_ids.cuda())
-        item_emb = self.item_embedding(all_input.cuda())
-        input_emb = item_emb + position_embedding
-        input_emb = self.LayerNorm(input_emb)
-        input_emb = self.dropout(input_emb)
-        extended_attention_mask = self.get_attention_mask(all_input)
-        trm_output = self.trm_encoder(input_emb, extended_attention_mask, output_all_encoded_layers=False)
-        # print("trm_output.size", trm_output.size)
+    def __repr__(self):
+        return self.__class__.__name__ + ' (' + str(self.in_features) + ' -> ' + str(self.out_features) + ')'
 
-        # diff_embed = torch.cat([dyemb, order_embed], dim=-1).cuda()
-        # fri_embed = torch.cat([F.embedding(input.cuda(), hidden.cuda()), order_embed], dim=-1).cuda()
-        #
-        # diff_att_out = self.decoder_attention1(diff_embed.cuda(), diff_embed.cuda(), diff_embed.cuda(),
-        #                                        mask=mask.cuda())
-        # diff_att_out = self.dropout(diff_att_out.cuda())
-        #
-        # fri_att_out = self.decoder_attention2(fri_embed.cuda(), fri_embed.cuda(), fri_embed.cuda(), mask=mask.cuda())
-        # fri_att_out = self.dropout(fri_att_out.cuda())
-        #
-        # att_out = self.fus(diff_att_out, fri_att_out)
-        #
-        # # conbine users and cascades
-        # output_u = self.linear2(att_out.cuda())  # (bsz, user_len, |U|)
 
-        pred = self.pred(trm_output)
-        mask = get_previous_user_mask(input.cpu(), self.n_node)
+class TransformerLayer(nn.Module):
+    """
+    One transformer layer consists of a multi-head self-attention layer and a point-wise feed-forward layer.
 
-        return (pred + mask).view(-1, pred.size(-1)).cuda()
+    Args:
+        hidden_states (torch.Tensor): the input of the multi-head self-attention sublayer
+        attention_mask (torch.Tensor): the attention mask for the multi-head self-attention sublayer
+
+    Returns:
+        feedforward_output (torch.Tensor): The output of the point-wise feed-forward sublayer,
+                                           is the output of the transformer layer.
+
+    """
+
+    def __init__(
+            self, n_heads, hidden_size, intermediate_size, hidden_dropout_prob, attn_dropout_prob, hidden_act,
+            layer_norm_eps,
+            multiscale=False,
+            scales=None
+    ):
+        super(TransformerLayer, self).__init__()
+
+        self.multi_head_attention = MultiHeadAttention(
+            n_heads, hidden_size, hidden_dropout_prob, attn_dropout_prob, layer_norm_eps
+        )
+        self.feed_forward = FeedForward(hidden_size, intermediate_size, hidden_dropout_prob, hidden_act, layer_norm_eps)
+
+    def forward(self, hidden_states, attention_mask):
+        attention_output = self.multi_head_attention(hidden_states, attention_mask)
+        feedforward_output = self.feed_forward(attention_output)
+        return feedforward_output
+
+
+class TransformerEncoder(nn.Module):
+    r""" One TransformerEncoder consists of several TransformerLayers.
+
+        - n_layers(num): num of transformer layers in transformer encoder. Default: 2
+        - n_heads(num): num of attention heads for multi-head attention layer. Default: 2
+        - hidden_size(num): the input and output hidden size. Default: 64
+        - inner_size(num): the dimensionality in feed-forward layer. Default: 256
+        - hidden_dropout_prob(float): probability of an element to be zeroed. Default: 0.5
+        - attn_dropout_prob(float): probability of an attention score to be zeroed. Default: 0.5
+        - hidden_act(str): activation function in feed-forward layer. Default: 'gelu'
+                      candidates: 'gelu', 'relu', 'swish', 'tanh', 'sigmoid'
+        - layer_norm_eps(float): a value added to the denominator for numerical stability. Default: 1e-12
+
+    """
+
+    def __init__(
+            self,
+            n_layers=2,
+            n_heads=2,
+            hidden_size=64,
+            inner_size=256,
+            hidden_dropout_prob=0.5,
+            attn_dropout_prob=0.5,
+            hidden_act='gelu',
+            layer_norm_eps=1e-12,
+            multiscale=False,
+            scales=None
+    ):
+
+        super(TransformerEncoder, self).__init__()
+        layer = TransformerLayer(
+            n_heads, hidden_size, inner_size, hidden_dropout_prob, attn_dropout_prob, hidden_act, layer_norm_eps,
+            multiscale=multiscale, scales=scales
+        )
+        self.layer = nn.ModuleList([copy.deepcopy(layer) for _ in range(n_layers)])
+
+    def forward(self, hidden_states, attention_mask, output_all_encoded_layers=False):
+        """
+        Args:
+            hidden_states (torch.Tensor): the input of the TransformerEncoder
+            attention_mask (torch.Tensor): the attention mask for the input hidden_states
+            output_all_encoded_layers (Bool): whether output all transformer layers' output
+
+        Returns:
+            all_encoder_layers (list): if output_all_encoded_layers is True, return a list consists of all transformer
+            layers' output, otherwise return a list only consists of the output of last transformer layer.
+
+        """
+        all_encoder_layers = []
+        for layer_module in self.layer:
+            hidden_states = layer_module(hidden_states, attention_mask)
+            if output_all_encoded_layers:
+                all_encoder_layers.append(hidden_states)
+        if not output_all_encoded_layers:
+            return hidden_states
+            # all_encoder_layers.append(hidden_states)
+        return all_encoder_layers
+
+
+class MultiHeadAttention(nn.Module):
+    """
+    Multi-head Self-attention layers, a attention score dropout layer is introduced.
+
+    Args:
+        input_tensor (torch.Tensor): the input of the multi-head self-attention layer
+        attention_mask (torch.Tensor): the attention mask for input tensor
+
+    Returns:
+        hidden_states (torch.Tensor): the output of the multi-head self-attention layer
+
+    """
+
+    def __init__(self, n_heads, hidden_size, hidden_dropout_prob, attn_dropout_prob, layer_norm_eps):
+        super(MultiHeadAttention, self).__init__()
+        if hidden_size % n_heads != 0:
+            raise ValueError(
+                "The hidden size (%d) is not a multiple of the number of attention "
+                "heads (%d)" % (hidden_size, n_heads)
+            )
+
+        self.num_attention_heads = n_heads
+        self.attention_head_size = int(hidden_size / n_heads)
+        self.all_head_size = self.num_attention_heads * self.attention_head_size
+
+        self.query = nn.Linear(hidden_size, self.all_head_size)
+        self.key = nn.Linear(hidden_size, self.all_head_size)
+        self.value = nn.Linear(hidden_size, self.all_head_size)
+
+        self.attn_dropout = nn.Dropout(attn_dropout_prob)
+
+        self.dense = nn.Linear(hidden_size, hidden_size)
+        self.LayerNorm = nn.LayerNorm(hidden_size, eps=layer_norm_eps)
+        self.out_dropout = nn.Dropout(hidden_dropout_prob)
+
+    def transpose_for_scores(self, x):
+        new_x_shape = x.size()[:-1] + (self.num_attention_heads, self.attention_head_size)
+        x = x.view(*new_x_shape)
+        return x.permute(0, 2, 1, 3)
+
+    def forward(self, input_tensor, attention_mask):
+        mixed_query_layer = self.query(input_tensor)
+        mixed_key_layer = self.key(input_tensor)
+        mixed_value_layer = self.value(input_tensor)
+
+        query_layer = self.transpose_for_scores(mixed_query_layer)
+        key_layer = self.transpose_for_scores(mixed_key_layer)
+        value_layer = self.transpose_for_scores(mixed_value_layer)
+
+        # Take the dot product between "query" and "key" to get the raw attention scores.
+        attention_scores = torch.matmul(query_layer, key_layer.transpose(-1, -2))
+
+        attention_scores = attention_scores / math.sqrt(self.attention_head_size)
+        # Apply the attention mask is (precomputed for all layers in BertModel forward() function)
+        # [batch_size heads seq_len seq_len] scores
+        # [batch_size 1 1 seq_len]
+        if attention_mask is not None:
+            attention_scores = attention_scores.cuda() + attention_mask.cuda()
+
+        # Normalize the attention scores to probabilities.
+        attention_probs = nn.Softmax(dim=-1)(attention_scores)
+        # This is actually dropping out entire tokens to attend to, which might
+        # seem a bit unusual, but is taken from the original Transformer paper.
+
+        attention_probs = self.attn_dropout(attention_probs)
+        context_layer = torch.matmul(attention_probs, value_layer)
+        context_layer = context_layer.permute(0, 2, 1, 3).contiguous()
+        new_context_layer_shape = context_layer.size()[:-2] + (self.all_head_size,)
+        context_layer = context_layer.view(*new_context_layer_shape)
+        hidden_states = self.dense(context_layer)
+        hidden_states = self.out_dropout(hidden_states)
+        hidden_states = self.LayerNorm(hidden_states + input_tensor)
+
+        return hidden_states
+
+
+class FeedForward(nn.Module):
+    """
+    Point-wise feed-forward layer is implemented by two dense layers.
+
+    Args:
+        input_tensor (torch.Tensor): the input of the point-wise feed-forward layer
+
+    Returns:
+        hidden_states (torch.Tensor): the output of the point-wise feed-forward layer
+
+    """
+
+    def __init__(self, hidden_size, inner_size, hidden_dropout_prob, hidden_act, layer_norm_eps):
+        super(FeedForward, self).__init__()
+        self.dense_1 = nn.Linear(hidden_size, inner_size)
+        self.intermediate_act_fn = self.get_hidden_act(hidden_act)
+        # self.intermediate_act_fn = hidden_act
+
+        self.dense_2 = nn.Linear(inner_size, hidden_size)
+        self.LayerNorm = nn.LayerNorm(hidden_size, eps=layer_norm_eps)
+        self.dropout = nn.Dropout(hidden_dropout_prob)
+
+    def get_hidden_act(self, act):
+        ACT2FN = {
+            "gelu": self.gelu,
+            "relu": F.relu,
+            "swish": self.swish,
+            "tanh": torch.tanh,
+            "sigmoid": torch.sigmoid,
+        }
+        return ACT2FN[act]
+
+    def gelu(self, x):
+        """Implementation of the gelu activation function.
+
+        For information: OpenAI GPT's gelu is slightly different (and gives slightly different results)::
+
+            0.5 * x * (1 + torch.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * torch.pow(x, 3))))
+
+        Also see https://arxiv.org/abs/1606.08415
+        """
+        return x * 0.5 * (1.0 + torch.erf(x / math.sqrt(2.0)))
+
+    def swish(self, x):
+        return x * torch.sigmoid(x)
+
+    def forward(self, input_tensor):
+        hidden_states = self.dense_1(input_tensor)
+        hidden_states = self.intermediate_act_fn(hidden_states)
+
+        hidden_states = self.dense_2(hidden_states)
+        hidden_states = self.dropout(hidden_states)
+        hidden_states = self.LayerNorm(hidden_states + input_tensor)
+
+        return hidden_states
