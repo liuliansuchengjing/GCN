@@ -168,8 +168,8 @@ class MSHGAT(nn.Module):
 
               
         self.n_layers = 1
-        self.n_heads = 8
-        self.inner_size = 256
+        self.n_heads = 2
+        self.inner_size = 64
         self.hidden_dropout_prob = 0.3
         self.attn_dropout_prob = 0.3
         self.layer_norm_eps = 1e-12
