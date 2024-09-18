@@ -167,7 +167,7 @@ class MSHGAT(nn.Module):
         self.readout = MLPReadout(self.hidden_size, self.n_node, None)
 
               
-        self.n_layers = 6
+        self.n_layers = 1
         self.n_heads = 8
         self.inner_size = 256
         self.hidden_dropout_prob = 0.3
