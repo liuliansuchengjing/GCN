@@ -264,7 +264,7 @@ class MSHGAT(nn.Module):
                 sub_emb = F.embedding(sub_input.cuda(), list(memory_emb_list.values())[ind][0].cuda())
                 sub_emb[temp] = 0
 
-                all_emb = F.embedding(input.cuda(), list(memory_emb_list.values())[ind][2].cuda())
+                all_emb = F.embedding(input.cuda(), list(memory_emb_list.values())[ind][0].cuda())
 
                 dyemb += sub_emb
                 cas_emb += sub_cas
