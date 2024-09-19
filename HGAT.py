@@ -122,8 +122,9 @@ class HGNN_ATT(nn.Module):
                 sub_node_embed = self.batch_norm1(sub_node_embed)
                 sub_edge_embed = self.batch_norm1(sub_edge_embed)
 
+            xl = x
             x = self.fus1(x, sub_node_embed)
-            embedding_list[sub_key] = [x.cpu(), sub_edge_embed.cpu()]
+            embedding_list[sub_key] = [x.cpu(), sub_edge_embed.cpu(), xl.cpu()]
 
         return embedding_list
 
@@ -263,7 +264,7 @@ class MSHGAT(nn.Module):
                 sub_emb = F.embedding(sub_input.cuda(), list(memory_emb_list.values())[ind][0].cuda())
                 sub_emb[temp] = 0
 
-                all_emb = F.embedding(input.cuda(), list(memory_emb_list.values())[ind][0].cuda())
+                all_emb = F.embedding(input.cuda(), list(memory_emb_list.values())[ind][2].cuda())
 
                 dyemb += sub_emb
                 cas_emb += sub_cas
@@ -271,8 +272,8 @@ class MSHGAT(nn.Module):
         position_ids = torch.arange(input.size(1), dtype=torch.long, device=input.device)
         position_ids = position_ids.unsqueeze(0).expand_as(input)
         position_embedding = self.position_embedding(position_ids.cuda())
-        item_emb = self.item_embedding(input.cuda())
-        # item_emb = all_emb
+        # item_emb = self.item_embedding(input.cuda())
+        item_emb = all_emb
         input_emb = item_emb + position_embedding
         input_emb = self.LayerNorm(input_emb)
         input_emb = self.dropout(input_emb)
