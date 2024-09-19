@@ -269,12 +269,12 @@ class MSHGAT(nn.Module):
                 dyemb += sub_emb
                 cas_emb += sub_cas
         # dyemb = self.fus2(dyemb,cas_emb)
-        position_ids = torch.arange(input.size(1), dtype=torch.long, device=input.device)
-        position_ids = position_ids.unsqueeze(0).expand_as(input)
-        position_embedding = self.position_embedding(position_ids.cuda())
+        # position_ids = torch.arange(input.size(1), dtype=torch.long, device=input.device)
+        # position_ids = position_ids.unsqueeze(0).expand_as(input)
+        # position_embedding = self.position_embedding(position_ids.cuda())
         # item_emb = self.item_embedding(input.cuda())
         item_emb = all_emb
-        input_emb = item_emb + position_embedding
+        input_emb = item_emb + cas_emb
         input_emb = self.LayerNorm(input_emb)
         input_emb = self.dropout(input_emb)
         extended_attention_mask = self.get_attention_mask(input)
