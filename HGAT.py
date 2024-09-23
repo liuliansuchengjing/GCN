@@ -116,8 +116,7 @@ class HGNN_ATT(nn.Module):
                 sub_edge_embed = self.batch_norm1(sub_edge_embed)
 
             xl = x
-            # x = self.fus1(x, sub_node_embed)
-            x = x + sub_node_embed
+            x = self.fus1(x, sub_node_embed)
             embedding_list[sub_key] = [x.cpu(), sub_edge_embed.cpu(), xl.cpu()]
 
         return embedding_list
@@ -149,8 +148,9 @@ class MSHGAT(nn.Module):
 
         self.hgnn = HGNN_ATT(self.initial_feature, self.hidden_size * 2, self.hidden_size, dropout=dropout)
         self.gnn = GraphNN(self.n_node, self.initial_feature, dropout=dropout)
-        self.fus2 = Fusion(self.hidden_size)
+        self.fus = Fusion(self.hidden_size)
 
+        self.linear2 = nn.Linear(self.hidden_size + self.pos_dim, self.n_node)
         self.embedding = nn.Embedding(self.n_node, self.initial_feature, padding_idx=0)
         self.reset_parameters()
         self.readout = MLPReadout(self.hidden_size, self.n_node, None)
@@ -163,7 +163,7 @@ class MSHGAT(nn.Module):
         self.layer_norm_eps = 1e-12
         self.hidden_act = 'gelu'
         self.item_embedding = nn.Embedding(self.n_node + 1, self.hidden_size, padding_idx=0)  # mask token add 1
-        self.position_embedding = nn.Embedding(199 + 1, self.hidden_size)  # add mask_token at the last
+        self.position_embedding = nn.Embedding(500, self.hidden_size)  # add mask_token at the last
         self.LayerNorm = nn.LayerNorm(self.hidden_size, eps=self.layer_norm_eps)
         self.trm_encoder = TransformerEncoder(
             n_layers=self.n_layers,
@@ -244,19 +244,24 @@ class MSHGAT(nn.Module):
                 sub_emb = F.embedding(sub_input.cuda(), list(memory_emb_list.values())[ind][0].cuda())
                 sub_emb[temp] = 0
 
-                all_emb = F.embedding(input.cuda(), list(memory_emb_list.values())[ind][0].cuda())
+                # all_emb = F.embedding(input.cuda(), list(memory_emb_list.values())[ind][0].cuda())
 
                 dyemb += sub_emb
                 cas_emb += sub_cas
 
-        # position_ids = torch.arange(input.size(1), dtype=torch.long, device=input.device)
-        # position_ids = position_ids.unsqueeze(0).expand_as(input)
-        # position_embedding = self.position_embedding(position_ids.cuda())
-        # item_emb = self.item_embedding(input.cuda())
-        item_emb = dyemb
-        input_emb = item_emb + cas_emb
-        input_emb = self.LayerNorm(input_emb)
-        input_emb = self.dropout(input_emb)
+        item_emb1 = dyemb
+        input_emb1 = item_emb1 + cas_emb
+        input_emb1 = self.LayerNorm(input_emb1)
+        input_emb1 = self.dropout(input_emb1)
+
+        position_ids = torch.arange(input.size(1), dtype=torch.long, device=input.device)
+        position_ids = position_ids.unsqueeze(0).expand_as(input)
+        position_embedding = self.position_embedding(position_ids.cuda())
+        item_emb2 = self.item_embedding(input.cuda())
+        input_emb2 = item_emb2 + position_embedding
+        input_emb2 = self.LayerNorm(input_emb2)
+        input_emb2 = self.dropout(input_emb2)
+        input_emb = self.fus(input_emb1, input_emb2)
         extended_attention_mask = self.get_attention_mask(input)
         trm_output = self.trm_encoder(input_emb, extended_attention_mask, output_all_encoded_layers=False)
 
