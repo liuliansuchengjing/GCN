@@ -189,7 +189,7 @@ class DataLoader(object):
         def pad_to_longest(insts):
             ''' Pad the instance to the max seq length in batch '''
 
-            max_len = 500
+            max_len = 200
             
             inst_data = np.array([
                 inst + [Constants.PAD] * (max_len - len(inst)) if len(inst)<max_len else inst[:max_len]  
