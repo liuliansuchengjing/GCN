@@ -116,7 +116,8 @@ class HGNN_ATT(nn.Module):
                 sub_edge_embed = self.batch_norm1(sub_edge_embed)
 
             xl = x
-            x = self.fus1(x, sub_node_embed)
+            # x = self.fus1(x, sub_node_embed)
+            x = x + sub_node_embed
             embedding_list[sub_key] = [x.cpu(), sub_edge_embed.cpu(), xl.cpu()]
 
         return embedding_list
