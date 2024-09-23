@@ -150,7 +150,6 @@ class MSHGAT(nn.Module):
         self.gnn = GraphNN(self.n_node, self.initial_feature, dropout=dropout)
         self.fus = Fusion(self.hidden_size)
 
-        
         self.embedding = nn.Embedding(self.n_node, self.initial_feature, padding_idx=0)
         self.reset_parameters()
         self.readout = MLPReadout(self.hidden_size, self.n_node, None)
@@ -244,7 +243,7 @@ class MSHGAT(nn.Module):
                 sub_emb = F.embedding(sub_input.cuda(), list(memory_emb_list.values())[ind][0].cuda())
                 sub_emb[temp] = 0
 
-                # all_emb = F.embedding(input.cuda(), list(memory_emb_list.values())[ind][0].cuda())
+                all_emb = F.embedding(input.cuda(), list(memory_emb_list.values())[ind][2].cuda())
 
                 dyemb += sub_emb
                 cas_emb += sub_cas
@@ -257,7 +256,8 @@ class MSHGAT(nn.Module):
         position_ids = torch.arange(input.size(1), dtype=torch.long, device=input.device)
         position_ids = position_ids.unsqueeze(0).expand_as(input)
         position_embedding = self.position_embedding(position_ids.cuda())
-        item_emb2 = self.item_embedding(input.cuda())
+        # item_emb2 = self.item_embedding(input.cuda())
+        item_emb2 = all_emb
         input_emb2 = item_emb2 + position_embedding
         input_emb2 = self.LayerNorm(input_emb2)
         input_emb2 = self.dropout(input_emb2)
@@ -270,5 +270,3 @@ class MSHGAT(nn.Module):
         mask = get_previous_user_mask(input.cpu(), self.n_node)
 
         return (pred + mask).view(-1, pred.size(-1)).cuda()
-
-
