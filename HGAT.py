@@ -150,7 +150,7 @@ class MSHGAT(nn.Module):
         self.gnn = GraphNN(self.n_node, self.initial_feature, dropout=dropout)
         self.fus = Fusion(self.hidden_size)
 
-        self.linear2 = nn.Linear(self.hidden_size + self.pos_dim, self.n_node)
+        
         self.embedding = nn.Embedding(self.n_node, self.initial_feature, padding_idx=0)
         self.reset_parameters()
         self.readout = MLPReadout(self.hidden_size, self.n_node, None)
