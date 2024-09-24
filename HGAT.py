@@ -232,7 +232,7 @@ class MSHGAT(nn.Module):
         self.embedding = nn.Embedding(self.n_node, self.initial_feature, padding_idx=0)
         self.reset_parameters()
         self.readout = MLPReadout(self.hidden_size, self.n_node, None)
-        self.GRU = GRUNet(self.hidden_size, self.hidden_size, self.hidden_size, 2, 0.3)
+        self.GRU = GRUNet(self.hidden_size, self.hidden_size, self.hidden_size, 4)
 
         self.n_layers = 1
         self.n_heads = 2
@@ -345,12 +345,12 @@ class MSHGAT(nn.Module):
 
         GRUoutput1, h1 = self.GRU(sub_emb_sta, h1)
         GRUoutput2, h2 = self.GRU(sub_cas_sta, h2)
-        GRUoutput1 = GRUoutput1.view(batch_size, max_len, GRUoutput1.size(-1))
-        GRUoutput2 = GRUoutput1.view(batch_size, max_len, GRUoutput2.size(-1))
-        dyemb_ = self.fus1(dyemb, GRUoutput1)
-        cas_emb_ = self.fus2(cas_emb, GRUoutput2)
-        item_emb = dyemb_
-        input_emb = item_emb + cas_emb_
+        GRUoutput1 = GRUoutput1.view(batch_size, max_len, self.hidden_size,)
+        GRUoutput2 = GRUoutput1.view(batch_size, max_len, self.hidden_size)
+        # dyemb_ = self.fus1(dyemb, GRUoutput1)
+        # cas_emb_ = self.fus2(cas_emb, GRUoutput2)
+        item_emb = GRUoutput1
+        input_emb = item_emb + GRUoutput2
         input_emb = self.LayerNorm(input_emb)
         input_emb = self.dropout(input_emb)
         extended_attention_mask = self.get_attention_mask(input)
