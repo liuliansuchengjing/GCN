@@ -61,7 +61,7 @@ class Fusion(nn.Module):
 
 
 class GraphNN(nn.Module):
-    def __init__(self, ntoken, ninp, dropout=0.2, is_norm=True):
+    def __init__(self, ntoken, ninp, dropout=0.5, is_norm=True):
         super(GraphNN, self).__init__()
         self.embedding = nn.Embedding(ntoken, ninp, padding_idx=0)
         # in:inp,out:nip*2
@@ -92,7 +92,7 @@ class GraphNN(nn.Module):
 
 
 class HGNN_ATT(nn.Module):
-    def __init__(self, input_size, n_hid, output_size, dropout=0.5, is_norm=True):
+    def __init__(self, input_size, n_hid, output_size, dropout=0.3, is_norm=True):
         super(HGNN_ATT, self).__init__()
         self.dropout = dropout
         self.is_norm = is_norm
@@ -139,31 +139,39 @@ class MLPReadout(nn.Module):
 
 
 class MSHGAT(nn.Module):
-    def __init__(self, opt, dropout=0.2):
+    def __init__(self, opt, dropout=0.3):
         super(MSHGAT, self).__init__()
         self.hidden_size = opt.d_word_vec
         self.n_node = opt.user_size
+        self.pos_dim = 8
         self.dropout = nn.Dropout(dropout)
         self.initial_feature = opt.initialFeatureSize
 
         self.hgnn = HGNN_ATT(self.initial_feature, self.hidden_size * 2, self.hidden_size, dropout=dropout)
         self.gnn = GraphNN(self.n_node, self.initial_feature, dropout=dropout)
-        self.fus = Fusion(self.hidden_size)
+        self.fus = Fusion(self.hidden_size + self.pos_dim)
+        self.fus2 = Fusion(self.hidden_size)
+        self.pos_embedding = nn.Embedding(1000, self.pos_dim)
+        self.decoder_attention1 = TransformerBlock(input_size=self.hidden_size + self.pos_dim, n_heads=8)
+        self.decoder_attention2 = TransformerBlock(input_size=self.hidden_size + self.pos_dim, n_heads=8)
 
+        self.linear2 = nn.Linear(self.hidden_size + self.pos_dim, self.n_node)
         self.embedding = nn.Embedding(self.n_node, self.initial_feature, padding_idx=0)
         self.reset_parameters()
         self.readout = MLPReadout(self.hidden_size, self.n_node, None)
 
+              
         self.n_layers = 1
         self.n_heads = 2
         self.inner_size = 64
-        self.hidden_dropout_prob = 0.2
-        self.attn_dropout_prob = 0.2
+        self.hidden_dropout_prob = 0.3
+        self.attn_dropout_prob = 0.3
         self.layer_norm_eps = 1e-12
         self.hidden_act = 'gelu'
         self.item_embedding = nn.Embedding(self.n_node + 1, self.hidden_size, padding_idx=0)  # mask token add 1
-        self.position_embedding = nn.Embedding(500, self.hidden_size)  # add mask_token at the last
+        self.position_embedding = nn.Embedding(199 + 1, self.hidden_size)  # add mask_token at the last
         self.LayerNorm = nn.LayerNorm(self.hidden_size, eps=self.layer_norm_eps)
+        self.dropout = nn.Dropout(self.hidden_dropout_prob)
         self.trm_encoder = TransformerEncoder(
             n_layers=self.n_layers,
             n_heads=self.n_heads,
@@ -197,10 +205,16 @@ class MSHGAT(nn.Module):
     def forward(self, input, input_timestamp, input_idx, graph, hypergraph_list):
 
         input = input[:, :-1]
+        # print(input)
+        # print(input_timestamp)
         input_timestamp = input_timestamp[:, :-1]
         hidden = self.dropout(self.gnn(graph))
         memory_emb_list = self.hgnn(hidden, hypergraph_list)
+        # print(sorted(memory_emb_list.keys()))
 
+        mask = (input == Constants.PAD)
+        batch_t = torch.arange(input.size(1)).expand(input.size()).cuda()
+        # order_embed = self.dropout(self.pos_embedding(batch_t))
         batch_size, max_len = input.size()
 
         zero_vec = torch.zeros_like(input)
@@ -243,25 +257,14 @@ class MSHGAT(nn.Module):
                 sub_emb = F.embedding(sub_input.cuda(), list(memory_emb_list.values())[ind][0].cuda())
                 sub_emb[temp] = 0
 
-                all_emb = F.embedding(input.cuda(), list(memory_emb_list.values())[ind][2].cuda())
+                all_emb = F.embedding(input.cuda(), list(memory_emb_list.values())[ind][0].cuda())
 
                 dyemb += sub_emb
                 cas_emb += sub_cas
-
-        item_emb1 = dyemb
-        input_emb1 = item_emb1 + cas_emb
-        input_emb1 = self.LayerNorm(input_emb1)
-        input_emb1 = self.dropout(input_emb1)
-
-        position_ids = torch.arange(input.size(1), dtype=torch.long, device=input.device)
-        position_ids = position_ids.unsqueeze(0).expand_as(input)
-        position_embedding = self.position_embedding(position_ids.cuda())
-        # item_emb2 = self.item_embedding(input.cuda())
-        item_emb2 = all_emb
-        input_emb2 = item_emb2 + position_embedding
-        input_emb2 = self.LayerNorm(input_emb2)
-        input_emb2 = self.dropout(input_emb2)
-        input_emb = self.fus(input_emb1, input_emb2)
+        item_emb = dyemb
+        input_emb = item_emb + cas_emb
+        input_emb = self.LayerNorm(input_emb)
+        input_emb = self.dropout(input_emb)
         extended_attention_mask = self.get_attention_mask(input)
         trm_output = self.trm_encoder(input_emb, extended_attention_mask, output_all_encoded_layers=False)
 
@@ -270,3 +273,4 @@ class MSHGAT(nn.Module):
         mask = get_previous_user_mask(input.cpu(), self.n_node)
 
         return (pred + mask).view(-1, pred.size(-1)).cuda()
+                            
