@@ -287,10 +287,12 @@ class MSHGAT(nn.Module):
         dyemb = torch.zeros(batch_size, max_len, self.hidden_size).cuda()
         cas_emb = torch.zeros(batch_size, max_len, self.hidden_size).cuda()
 
+        h = self.GRU.init_hidden(batch_size)
         h1 = self.GRU.init_hidden(batch_size*max_len)
         h2 = self.GRU.init_hidden(batch_size*max_len)
         sub_emb_list = []
         sub_cas_list = []
+        sub_input_list = []
 
         for ind, time in enumerate(sorted(memory_emb_list.keys())):
             if ind == 0:
@@ -333,24 +335,16 @@ class MSHGAT(nn.Module):
                 dyemb += sub_emb
                 cas_emb += sub_cas
 
-            sub_emb = sub_emb.view(-1, sub_emb.size(-1))
-            # dy_emb_ = dyemb.view(-1, dyemb.size(-1))
-            sub_cas = sub_cas.view(-1, sub_cas.size(-1))
+            sub_input_list.append(sub_input)
 
-            sub_emb_list.append(sub_emb)
-            sub_cas_list.append(sub_cas)
+        sub_input_sta = torch.stack(sub_input_list, dim=1)
 
-        sub_emb_sta = torch.stack(sub_emb_list, dim=1)
-        sub_cas_sta = torch.stack(sub_cas_list, dim=1)
-
-        GRUoutput1, h1 = self.GRU(sub_emb_sta, h1)
-        GRUoutput2, h2 = self.GRU(sub_cas_sta, h2)
-        GRUoutput1 = GRUoutput1.view(batch_size, max_len, self.hidden_size,)
-        GRUoutput2 = GRUoutput1.view(batch_size, max_len, self.hidden_size)
+        GRUoutput, h = self.GRU(sub_input_sta, h)
         # dyemb_ = self.fus1(dyemb, GRUoutput1)
         # cas_emb_ = self.fus2(cas_emb, GRUoutput2)
-        item_emb = GRUoutput1
-        input_emb = item_emb + GRUoutput2
+        item_emb = dyemb
+        # input_emb = item_emb + cas_emb
+        input_emb = self.fus(item_emb, cas_emb)
         input_emb = self.LayerNorm(input_emb)
         input_emb = self.dropout(input_emb)
         extended_attention_mask = self.get_attention_mask(input)
