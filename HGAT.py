@@ -38,7 +38,7 @@ def get_previous_user_mask(seq, user_size):
 
 # Fusion gate
 class Fusion(nn.Module):
-    def __init__(self, input_size, out=1, dropout=0.2):
+    def __init__(self, input_size, out=1, dropout=0.5):
         super(Fusion, self).__init__()
         self.linear1 = nn.Linear(input_size, input_size)
         self.linear2 = nn.Linear(input_size, out)
@@ -92,7 +92,7 @@ class GraphNN(nn.Module):
 
 
 class HGNN_ATT(nn.Module):
-    def __init__(self, input_size, n_hid, output_size, dropout=0.3, is_norm=True):
+    def __init__(self, input_size, n_hid, output_size, dropout=0.5, is_norm=True):
         super(HGNN_ATT, self).__init__()
         self.dropout = dropout
         self.is_norm = is_norm
@@ -139,7 +139,7 @@ class MLPReadout(nn.Module):
 
 
 class MSHGAT(nn.Module):
-    def __init__(self, opt, dropout=0.3):
+    def __init__(self, opt, dropout=0.5):
         super(MSHGAT, self).__init__()
         self.hidden_size = opt.d_word_vec
         self.n_node = opt.user_size
@@ -157,8 +157,8 @@ class MSHGAT(nn.Module):
         self.n_layers = 1
         self.n_heads = 2
         self.inner_size = 64
-        self.hidden_dropout_prob = 0.3
-        self.attn_dropout_prob = 0.3
+        self.hidden_dropout_prob = 0.5
+        self.attn_dropout_prob = 0.5
         self.layer_norm_eps = 1e-12
         self.hidden_act = 'gelu'
         self.item_embedding = nn.Embedding(self.n_node + 1, self.hidden_size, padding_idx=0)  # mask token add 1
