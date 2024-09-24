@@ -11,6 +11,58 @@ from TransformerBlock import TransformerBlock
 from torch.autograd import Variable
 
 
+class HGNN_conv(nn.Module):
+    def __init__(self, in_ft, out_ft, bias=True):  #
+        super(HGNN_conv, self).__init__()
+
+        self.weight = nn.Parameter(torch.Tensor(in_ft, out_ft))
+        self.weight1 = nn.Parameter(torch.Tensor(in_ft, out_ft))
+        if bias:
+            self.bias = nn.Parameter(torch.Tensor(out_ft))
+        else:
+            self.register_parameter('bias', None)
+
+
+        self.reset_parameters()
+
+
+    def reset_parameters(self):
+        stdv = 1. / math.sqrt(self.weight.size(1))
+        self.weight.data.uniform_(-stdv, stdv)
+        self.weight1.data.uniform_(-stdv, stdv)
+        if self.bias is not None:
+            self.bias.data.uniform_(-stdv, stdv)
+
+
+    def forward(self, x, G):  # x: torch.Tensor, G: torch.Tensor
+
+        x = x.matmul(self.weight)
+        if self.bias is not None:
+            x = x + self.bias
+        edge = G.t().matmul(x)
+        edge = edge.matmul(self.weight1)
+        x = G.matmul(edge)
+
+        return x, edge
+
+class HGNNLayer(nn.Module):
+    def __init__(self, emb_dim, dropout=0.15):
+        super(HGNNLayer, self).__init__()
+        self.dropout = dropout
+        self.hgc1 = HGNN_conv(emb_dim, emb_dim)
+        self.hgc2 = HGNN_conv(emb_dim, emb_dim)
+        self.hgc3 = HGNN_conv(emb_dim, emb_dim)
+
+    def forward(self, x, G):
+        x, edge = self.hgc1(x, G)
+        x, edge = self.hgc2(x, G)
+        x = F.softmax(x,dim = 1)
+        x, edge = self.hgc3(x, G)
+        x = F.dropout(x, self.dropout)
+        x = F.tanh(x)
+        return x, edge
+
+
 def get_previous_user_mask(seq, user_size):
     ''' Mask previous activated users.'''
     assert seq.dim() == 2
@@ -99,6 +151,7 @@ class HGNN_ATT(nn.Module):
         if self.is_norm:
             self.batch_norm1 = torch.nn.BatchNorm1d(output_size)
         self.gat1 = HGATLayer(input_size, output_size, dropout=self.dropout, transfer=False, concat=True, edge=True)
+        self.hgnn = HGNNLayer(input_size, 0.1)
         self.fus1 = Fusion(output_size)
 
     def forward(self, x, hypergraph_list):
@@ -108,7 +161,8 @@ class HGNN_ATT(nn.Module):
         embedding_list = {}
         for sub_key in hypergraph_list.keys():
             sub_graph = hypergraph_list[sub_key]
-            sub_node_embed, sub_edge_embed = self.gat1(x, sub_graph.cuda(), root_emb)
+            # sub_node_embed, sub_edge_embed = self.gat1(x, sub_graph.cuda(), root_emb)
+            sub_node_embed, sub_edge_embed = self.hgnn(x, sub_graph.cuda())
             sub_node_embed = F.dropout(sub_node_embed, self.dropout, training=self.training)
 
             if self.is_norm:
@@ -143,24 +197,17 @@ class MSHGAT(nn.Module):
         super(MSHGAT, self).__init__()
         self.hidden_size = opt.d_word_vec
         self.n_node = opt.user_size
-        self.pos_dim = 8
         self.dropout = nn.Dropout(dropout)
         self.initial_feature = opt.initialFeatureSize
 
         self.hgnn = HGNN_ATT(self.initial_feature, self.hidden_size * 2, self.hidden_size, dropout=dropout)
         self.gnn = GraphNN(self.n_node, self.initial_feature, dropout=dropout)
-        self.fus = Fusion(self.hidden_size + self.pos_dim)
-        self.fus2 = Fusion(self.hidden_size)
-        self.pos_embedding = nn.Embedding(1000, self.pos_dim)
-        self.decoder_attention1 = TransformerBlock(input_size=self.hidden_size + self.pos_dim, n_heads=8)
-        self.decoder_attention2 = TransformerBlock(input_size=self.hidden_size + self.pos_dim, n_heads=8)
+        self.fus = Fusion(self.hidden_size)
 
-        self.linear2 = nn.Linear(self.hidden_size + self.pos_dim, self.n_node)
         self.embedding = nn.Embedding(self.n_node, self.initial_feature, padding_idx=0)
         self.reset_parameters()
         self.readout = MLPReadout(self.hidden_size, self.n_node, None)
 
-              
         self.n_layers = 1
         self.n_heads = 2
         self.inner_size = 64
@@ -169,9 +216,8 @@ class MSHGAT(nn.Module):
         self.layer_norm_eps = 1e-12
         self.hidden_act = 'gelu'
         self.item_embedding = nn.Embedding(self.n_node + 1, self.hidden_size, padding_idx=0)  # mask token add 1
-        self.position_embedding = nn.Embedding(199 + 1, self.hidden_size)  # add mask_token at the last
+        self.position_embedding = nn.Embedding(500, self.hidden_size)  # add mask_token at the last
         self.LayerNorm = nn.LayerNorm(self.hidden_size, eps=self.layer_norm_eps)
-        self.dropout = nn.Dropout(self.hidden_dropout_prob)
         self.trm_encoder = TransformerEncoder(
             n_layers=self.n_layers,
             n_heads=self.n_heads,
@@ -205,16 +251,10 @@ class MSHGAT(nn.Module):
     def forward(self, input, input_timestamp, input_idx, graph, hypergraph_list):
 
         input = input[:, :-1]
-        # print(input)
-        # print(input_timestamp)
         input_timestamp = input_timestamp[:, :-1]
         hidden = self.dropout(self.gnn(graph))
         memory_emb_list = self.hgnn(hidden, hypergraph_list)
-        # print(sorted(memory_emb_list.keys()))
 
-        mask = (input == Constants.PAD)
-        batch_t = torch.arange(input.size(1)).expand(input.size()).cuda()
-        # order_embed = self.dropout(self.pos_embedding(batch_t))
         batch_size, max_len = input.size()
 
         zero_vec = torch.zeros_like(input)
@@ -257,14 +297,25 @@ class MSHGAT(nn.Module):
                 sub_emb = F.embedding(sub_input.cuda(), list(memory_emb_list.values())[ind][0].cuda())
                 sub_emb[temp] = 0
 
-                all_emb = F.embedding(input.cuda(), list(memory_emb_list.values())[ind][0].cuda())
+                all_emb = F.embedding(input.cuda(), list(memory_emb_list.values())[ind][2].cuda())
 
                 dyemb += sub_emb
                 cas_emb += sub_cas
-        item_emb = dyemb
-        input_emb = item_emb + cas_emb
-        input_emb = self.LayerNorm(input_emb)
-        input_emb = self.dropout(input_emb)
+
+        item_emb1 = dyemb
+        input_emb1 = item_emb1 + cas_emb
+        input_emb1 = self.LayerNorm(input_emb1)
+        input_emb1 = self.dropout(input_emb1)
+
+        position_ids = torch.arange(input.size(1), dtype=torch.long, device=input.device)
+        position_ids = position_ids.unsqueeze(0).expand_as(input)
+        position_embedding = self.position_embedding(position_ids.cuda())
+        # item_emb2 = self.item_embedding(input.cuda())
+        item_emb2 = all_emb
+        input_emb2 = item_emb2 + position_embedding
+        input_emb2 = self.LayerNorm(input_emb2)
+        input_emb2 = self.dropout(input_emb2)
+        input_emb = self.fus(input_emb1, input_emb2)
         extended_attention_mask = self.get_attention_mask(input)
         trm_output = self.trm_encoder(input_emb, extended_attention_mask, output_all_encoded_layers=False)
 
@@ -273,4 +324,3 @@ class MSHGAT(nn.Module):
         mask = get_previous_user_mask(input.cpu(), self.n_node)
 
         return (pred + mask).view(-1, pred.size(-1)).cuda()
-                            
