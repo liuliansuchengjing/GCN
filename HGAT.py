@@ -11,6 +11,28 @@ from TransformerBlock import TransformerBlock
 from torch.autograd import Variable
 
 
+# class GRUNet(nn.Module):
+#     def __init__(self, input_dim, hidden_dim, output_dim, n_layers, drop_prob=0.1):
+#         super(GRUNet, self).__init__()
+#         self.hidden_dim = hidden_dim
+#         self.n_layers = n_layers
+
+#         self.gru = nn.GRU(input_dim, hidden_dim, n_layers, batch_first=True, dropout=drop_prob)
+#         self.fc = nn.Linear(hidden_dim, output_dim)
+#         self.relu = nn.ReLU()
+
+#     def forward(self, x, h):
+#         out, h = self.gru(x, h)
+#         out = out.sum(dim=1)
+#         out = self.fc(self.relu(out))
+#         # out = self.fc(self.relu(out[:,-1]))
+#         return out, h
+
+#     def init_hidden(self, batch_size):
+#         weight = next(self.parameters()).data
+#         hidden = weight.new(self.n_layers, batch_size, self.hidden_dim).zero_().cuda()
+#         return hidden
+
 class GRUNet(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim, n_layers, drop_prob=0.1):
         super(GRUNet, self).__init__()
@@ -21,12 +43,26 @@ class GRUNet(nn.Module):
         self.fc = nn.Linear(hidden_dim, output_dim)
         self.relu = nn.ReLU()
 
-    def forward(self, x, h):
-        out, h = self.gru(x, h)
+    def forward(self, x):
+        batch_size, seq_len, max_len, input_dim = x.shape
+        # Reshape to (batch_size * seq_len, max_len, input_dim)
+        x = x.view(-1, max_len, input_dim)
+
+        h0 = self.init_hidden(x.size(0))
+        out, _ = self.gru(x, h0)
+        # Take the last time step output
+        out = out[:, -1, :]
+
+        # Reshape back to (batch_size, seq_len, hidden_dim)
+        out = out.view(batch_size, seq_len, self.hidden_dim)
+
+        # Sum over seq_len dimension
         out = out.sum(dim=1)
-        out = self.fc(self.relu(out))
-        # out = self.fc(self.relu(out[:,-1]))
-        return out, h
+
+        # Reshape to (batch_size, max_len, input_dim)
+        out = out.unsqueeze(1).repeat(1, max_len, 1)
+
+        return out
 
     def init_hidden(self, batch_size):
         weight = next(self.parameters()).data
@@ -226,6 +262,8 @@ class MSHGAT(nn.Module):
         self.hgnn = HGNN_ATT(self.initial_feature, self.hidden_size * 2, self.hidden_size, dropout=dropout)
         self.gnn = GraphNN(self.n_node, self.initial_feature, dropout=dropout)
         self.fus = Fusion(self.hidden_size)
+        self.fus1 = Fusion(self.hidden_size)
+        self.fus2 = Fusion(self.hidden_size)
 
         self.embedding = nn.Embedding(self.n_node, self.initial_feature, padding_idx=0)
         self.reset_parameters()
@@ -285,8 +323,8 @@ class MSHGAT(nn.Module):
         dyemb = torch.zeros(batch_size, max_len, self.hidden_size).cuda()
         cas_emb = torch.zeros(batch_size, max_len, self.hidden_size).cuda()
 
-        h1 = self.GRU.init_hidden(batch_size*max_len)
-        h2 = self.GRU.init_hidden(batch_size * max_len)
+        # h1 = self.GRU.init_hidden(batch_size)
+        # h2 = self.GRU.init_hidden(batch_size)
         sub_emb_list = []
         sub_cas_list = []
 
@@ -341,12 +379,12 @@ class MSHGAT(nn.Module):
         sub_emb_sta = torch.stack(sub_emb_list, dim=1)
         sub_cas_sta = torch.stack(sub_cas_list, dim=1)
 
-        GRUoutput1, h1 = self.GRU(sub_emb_sta, h1)
-        GRUoutput2, h2 = self.GRU(sub_cas_sta, h2)
-        dyemb_ = self.fus2(dyemb, GRUoutput1)
-        cas_emb_ = self.fus2(cas_emb, GRUoutput2)
-        item_emb = dyemb_
-        input_emb = item_emb + cas_emb_
+        GRUoutput1 = self.GRU(sub_emb_sta)
+        GRUoutput2 = self.GRU(sub_cas_sta)
+        # dyemb_ = self.fus1(dyemb, GRUoutput1)
+        # cas_emb_ = self.fus2(cas_emb, GRUoutput2)
+        item_emb = GRUoutput1
+        input_emb = item_emb + GRUoutput2
         input_emb = self.LayerNorm(input_emb)
         input_emb = self.dropout(input_emb)
         extended_attention_mask = self.get_attention_mask(input)
