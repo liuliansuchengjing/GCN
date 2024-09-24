@@ -11,6 +11,29 @@ from TransformerBlock import TransformerBlock
 from torch.autograd import Variable
 
 
+class GRUNet(nn.Module):
+    def __init__(self, input_dim, hidden_dim, output_dim, n_layers, drop_prob=0.1):
+        super(GRUNet, self).__init__()
+        self.hidden_dim = hidden_dim
+        self.n_layers = n_layers
+
+        self.gru = nn.GRU(input_dim, hidden_dim, n_layers, batch_first=True, dropout=drop_prob)
+        self.fc = nn.Linear(hidden_dim, output_dim)
+        self.relu = nn.ReLU()
+
+    def forward(self, x, h):
+        out, h = self.gru(x, h)
+        out = out.sum(dim=1)
+        out = self.fc(self.relu(out))
+        # out = self.fc(self.relu(out[:,-1]))
+        return out, h
+
+    def init_hidden(self, batch_size):
+        weight = next(self.parameters()).data
+        hidden = weight.new(self.n_layers, batch_size, self.hidden_dim).zero_().cuda()
+        return hidden
+
+
 class HGNN_conv(nn.Module):
     def __init__(self, in_ft, out_ft, bias=True):  #
         super(HGNN_conv, self).__init__()
@@ -207,6 +230,7 @@ class MSHGAT(nn.Module):
         self.embedding = nn.Embedding(self.n_node, self.initial_feature, padding_idx=0)
         self.reset_parameters()
         self.readout = MLPReadout(self.hidden_size, self.n_node, None)
+        self.GRU = GRUNet(self.hidden_size, self.hidden_size, self.hidden_size, 4)
 
         self.n_layers = 1
         self.n_heads = 2
@@ -261,6 +285,11 @@ class MSHGAT(nn.Module):
         dyemb = torch.zeros(batch_size, max_len, self.hidden_size).cuda()
         cas_emb = torch.zeros(batch_size, max_len, self.hidden_size).cuda()
 
+        h1 = self.GRU.init_hidden(batch_size*max_len)
+        h2 = self.GRU.init_hidden(batch_size * max_len)
+        sub_emb_list = []
+        sub_cas_list = []
+
         for ind, time in enumerate(sorted(memory_emb_list.keys())):
             if ind == 0:
                 sub_input = torch.where(input_timestamp <= time, input, zero_vec)
@@ -302,8 +331,22 @@ class MSHGAT(nn.Module):
                 dyemb += sub_emb
                 cas_emb += sub_cas
 
-        item_emb = dyemb
-        input_emb = item_emb + cas_emb
+            # sub_emb_ = sub_emb.view(-1, sub_emb.size(-1))
+            # dy_emb_ = dyemb.view(-1, dyemb.size(-1))
+            # sub_cas_1 = sub_cas.view(-1, sub_cas.size(-1))
+
+            sub_emb_list.append(sub_emb)
+            sub_cas_list.append(sub_cas)
+
+        sub_emb_sta = torch.stack(sub_emb_list, dim=1)
+        sub_cas_sta = torch.stack(sub_cas_list, dim=1)
+
+        GRUoutput1, h1 = self.GRU(sub_emb_sta, h1)
+        GRUoutput2, h2 = self.GRU(sub_cas_sta, h2)
+        dyemb_ = self.fus2(dyemb, GRUoutput1)
+        cas_emb_ = self.fus2(cas_emb, GRUoutput2)
+        item_emb = dyemb_
+        input_emb = item_emb + cas_emb_
         input_emb = self.LayerNorm(input_emb)
         input_emb = self.dropout(input_emb)
         extended_attention_mask = self.get_attention_mask(input)
@@ -314,3 +357,28 @@ class MSHGAT(nn.Module):
         mask = get_previous_user_mask(input.cpu(), self.n_node)
 
         return (pred + mask).view(-1, pred.size(-1)).cuda()
+
+
+
+        # item_emb1 = dyemb
+        # input_emb1 = item_emb1 + cas_emb
+        # input_emb1 = self.LayerNorm(input_emb1)
+        # input_emb1 = self.dropout(input_emb1)
+        #
+        # position_ids = torch.arange(input.size(1), dtype=torch.long, device=input.device)
+        # position_ids = position_ids.unsqueeze(0).expand_as(input)
+        # position_embedding = self.position_embedding(position_ids.cuda())
+        # # item_emb2 = self.item_embedding(input.cuda())
+        # item_emb2 = all_emb
+        # input_emb2 = item_emb2 + position_embedding
+        # input_emb2 = self.LayerNorm(input_emb2)
+        # input_emb2 = self.dropout(input_emb2)
+        # input_emb = self.fus(input_emb1, input_emb2)
+        # extended_attention_mask = self.get_attention_mask(input)
+        # trm_output = self.trm_encoder(input_emb, extended_attention_mask, output_all_encoded_layers=False)
+        #
+        # # output = self.fus2(dyemb, trm_output)
+        # pred = self.pred(trm_output)
+        # mask = get_previous_user_mask(input.cpu(), self.n_node)
+        #
+        # return (pred + mask).view(-1, pred.size(-1)).cuda()
