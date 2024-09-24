@@ -335,11 +335,11 @@ class MSHGAT(nn.Module):
                 dyemb += sub_emb
                 cas_emb += sub_cas
 
-            sub_input_list.append(sub_input)
+        #     sub_input_list.append(sub_input)
 
-        sub_input_sta = torch.stack(sub_input_list, dim=1)
+        # sub_input_sta = torch.stack(sub_input_list, dim=1)
 
-        GRUoutput, h = self.GRU(sub_input_sta, h)
+        # GRUoutput, h = self.GRU(sub_input_sta, h)
         # dyemb_ = self.fus1(dyemb, GRUoutput1)
         # cas_emb_ = self.fus2(cas_emb, GRUoutput2)
         item_emb = dyemb
