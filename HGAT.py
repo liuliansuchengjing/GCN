@@ -40,7 +40,7 @@ class SharedGRU(nn.Module):
 
         self.init_weights()
         # 使用GRU替换LSTM
-        self.gru = nn.GRU(self.emb_dim, self.emb_dim, num_layers=1, batch_first=True)
+        self.gru = nn.GRU(self.emb_dim, self.emb_dim, num_layers=4, batch_first=True)
 
     def init_weights(self):
         stdv = 1.0 / math.sqrt(self.emb_dim)
