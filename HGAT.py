@@ -355,9 +355,6 @@ class MSHGAT(nn.Module):
         dyemb = torch.zeros(batch_size, max_len, self.hidden_size).cuda()
         cas_emb = torch.zeros(batch_size, max_len, self.hidden_size).cuda()
 
-        h = self.GRU.init_hidden(batch_size)
-        h1 = self.GRU.init_hidden(batch_size*max_len)
-        h2 = self.GRU.init_hidden(batch_size*max_len)
         sub_emb_list = []
         sub_cas_list = []
         sub_input_list = []
