@@ -11,6 +11,74 @@ from TransformerBlock import TransformerBlock
 from torch.autograd import Variable
 
 
+class SharedGRU(nn.Module):
+    def __init__(self, input_size, emb_dim):
+        super().__init__()
+        self.input_size = input_size
+        self.emb_dim = emb_dim
+        # 处理从级联图中学到的用户向量
+        self.W_i = nn.Parameter(torch.Tensor(emb_dim, emb_dim))
+        # 处理隐向量（因为不再有social_emb，这里的参数设置相应调整）
+        self.V_i = nn.Parameter(torch.Tensor(emb_dim, emb_dim))
+        # 偏置
+        self.b_i = nn.Parameter(torch.Tensor(emb_dim))
+
+        # 遗忘门 f_t
+        self.W_f = nn.Parameter(torch.Tensor(emb_dim, emb_dim))
+        self.V_f = nn.Parameter(torch.Tensor(emb_dim, emb_dim))
+        self.b_f = nn.Parameter(torch.Tensor(emb_dim))
+
+        # 输入门 c_t
+        self.W_c = nn.Parameter(torch.Tensor(emb_dim, emb_dim))
+        self.V_c = nn.Parameter(torch.Tensor(emb_dim, emb_dim))
+        self.b_c = nn.Parameter(torch.Tensor(emb_dim))
+
+        # 输出门 o_t
+        self.W_o = nn.Parameter(torch.Tensor(emb_dim, emb_dim))
+        self.V_o = nn.Parameter(torch.Tensor(emb_dim, emb_dim))
+        self.b_o = nn.Parameter(torch.Tensor(emb_dim))
+
+        self.init_weights()
+        # 使用GRU替换LSTM
+        self.gru = nn.GRU(self.emb_dim, self.emb_dim, num_layers=1, batch_first=True)
+
+    def init_weights(self):
+        stdv = 1.0 / math.sqrt(self.emb_dim)
+        for weight in self.parameters():
+            weight.data.uniform_(-stdv, stdv)
+
+    def forward(self, cas_emb, init_states=None):
+        '''
+        :param cas_emb: 级联图HGNN学来的用户embedding (batch_size, 200, emb_dim)
+        :param init_states: 初始状态，可忽略
+        :return: hidden_seq: 最后一层的状态(batch_size, 200, emb_dim)
+        '''
+        bs, seq_sz, _ = cas_emb.size()
+        hidden_seq = []
+
+        if init_states is None:
+            h_t = torch.zeros(bs, self.emb_dim).to(cas_emb.device)
+        else:
+            h_t = init_states
+        for t in range(seq_sz):
+            cas_emb_t = cas_emb[:, t, :]
+
+            i_t = torch.sigmoid(cas_emb_t @ self.W_i + h_t @ self.V_i + self.b_i)
+            f_t = torch.sigmoid(cas_emb_t @ self.W_f + h_t @ self.V_f + self.b_f)
+            g_t = torch.tanh(cas_emb_t @ self.W_c + h_t @ self.V_c + self.b_c)
+            o_t = torch.sigmoid(cas_emb_t @ self.W_o + h_t @ self.V_o + self.b_o)
+            h_t = (1 - f_t) * h_t + i_t * g_t
+            h_t = o_t * torch.tanh(h_t)
+
+            hidden_seq.append(h_t.unsqueeze(0))
+        hidden_seq = torch.cat(hidden_seq, dim=0)
+        # reshape from shape(sequence, batch, feature) to (batch, sequence, feature)
+        hidden_seq = hidden_seq.transpose(0, 1).contiguous()
+        # 使用GRU进行处理（这里假设GRU的输入和输出与修改后的逻辑匹配）
+        output_embedding, h_t_final = self.gru(cas_emb, h_t.unsqueeze(0))
+        return output_embedding, h_t_final.squeeze(0)
+
+
 class GRUNet(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim, n_layers, drop_prob=0.1):
         super(GRUNet, self).__init__()
@@ -232,7 +300,7 @@ class MSHGAT(nn.Module):
         self.embedding = nn.Embedding(self.n_node, self.initial_feature, padding_idx=0)
         self.reset_parameters()
         self.readout = MLPReadout(self.hidden_size, self.n_node, None)
-        self.GRU = GRUNet(self.hidden_size, self.hidden_size, self.hidden_size, 4)
+        self.GRU = SharedGRU(200, self.hidden_size)
 
         self.n_layers = 1
         self.n_heads = 2
@@ -335,23 +403,24 @@ class MSHGAT(nn.Module):
                 dyemb += sub_emb
                 cas_emb += sub_cas
 
-        #     sub_input_list.append(sub_input)
+            sub_input_list.append(sub_input)
 
-        # sub_input_sta = torch.stack(sub_input_list, dim=1)
+        sub_input_sta = torch.stack(sub_input_list, dim=1)
 
-        # GRUoutput, h = self.GRU(sub_input_sta, h)
+        GRUoutput, h = self.GRU(sub_input_sta, h)
         # dyemb_ = self.fus1(dyemb, GRUoutput1)
         # cas_emb_ = self.fus2(cas_emb, GRUoutput2)
         item_emb = dyemb
-        # input_emb = item_emb + cas_emb
-        input_emb = self.fus(item_emb, cas_emb)
+        input_emb = item_emb + cas_emb
+        # input_emb = self.fus(item_emb, cas_emb)
         input_emb = self.LayerNorm(input_emb)
         input_emb = self.dropout(input_emb)
         extended_attention_mask = self.get_attention_mask(input)
         trm_output = self.trm_encoder(input_emb, extended_attention_mask, output_all_encoded_layers=False)
+        gru_embedding, _ = self.GRU(trm_output)
 
         # output = self.fus2(dyemb, trm_output)
-        pred = self.pred(trm_output)
+        pred = self.pred(gru_embedding)
         mask = get_previous_user_mask(input.cpu(), self.n_node)
 
         return (pred + mask).view(-1, pred.size(-1)).cuda()
