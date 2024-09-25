@@ -300,7 +300,8 @@ class MSHGAT(nn.Module):
         self.embedding = nn.Embedding(self.n_node, self.initial_feature, padding_idx=0)
         self.reset_parameters()
         self.readout = MLPReadout(self.hidden_size, self.n_node, None)
-        self.GRU = SharedGRU(200, self.hidden_size)
+        self.gru1 = nn.GRU(self.hidden_size, self.hidden_size, num_layers=3, batch_first=True)
+        self.gru2 = nn.GRU(self.hidden_size, self.hidden_size, num_layers=3, batch_first=True)
 
         self.n_layers = 1
         self.n_heads = 2
@@ -402,17 +403,20 @@ class MSHGAT(nn.Module):
 
         # dyemb_ = self.fus1(dyemb, GRUoutput1)
         # cas_emb_ = self.fus2(cas_emb, GRUoutput2)
-        item_emb = dyemb
-        input_emb = item_emb + cas_emb
+        item_emb, h_t1 = self.gru1(dyemb)
+        pos_emb, h_t2 = self.gru2(cas_emb)
+        item_emb = self.fus1(item_emb, dyemb)
+        pos_emb = self.fus2(pos_emb, cas_emb)
+        input_emb = item_emb + pos_emb
         # input_emb = self.fus(item_emb, cas_emb)
         input_emb = self.LayerNorm(input_emb)
         input_emb = self.dropout(input_emb)
         extended_attention_mask = self.get_attention_mask(input)
         trm_output = self.trm_encoder(input_emb, extended_attention_mask, output_all_encoded_layers=False)
-        gru_embedding, _ = self.GRU(trm_output)
-
+        # gru_embedding, _ = self.GRU(trm_output)
+        
         # output = self.fus2(dyemb, trm_output)
-        pred = self.pred(gru_embedding)
+        pred = self.pred(trm_output)
         mask = get_previous_user_mask(input.cpu(), self.n_node)
 
         return (pred + mask).view(-1, pred.size(-1)).cuda()
