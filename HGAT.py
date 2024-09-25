@@ -300,8 +300,8 @@ class MSHGAT(nn.Module):
         self.embedding = nn.Embedding(self.n_node, self.initial_feature, padding_idx=0)
         self.reset_parameters()
         self.readout = MLPReadout(self.hidden_size, self.n_node, None)
-        self.gru1 = nn.GRU(self.hidden_size, self.hidden_size, num_layers=1, batch_first=True)
-        self.gru2 = nn.GRU(self.hidden_size, self.hidden_size, num_layers=1, batch_first=True)
+        self.gru1 = nn.GRU(self.hidden_size, self.hidden_size, num_layers=2, batch_first=True)
+        self.gru2 = nn.GRU(self.hidden_size, self.hidden_size, num_layers=2, batch_first=True)
 
         self.n_layers = 1
         self.n_heads = 2
