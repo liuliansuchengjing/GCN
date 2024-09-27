@@ -263,7 +263,7 @@ class HGNN_ATT(nn.Module):
 
             xl = x
             # x = self.fus1(x, sub_node_embed)
-            embedding_list[sub_key] = [sub_node_embed.cpu(), sub_edge_embed.cpu(), xl.cpu()]
+            embedding_list[sub_key] = [x.cpu(), sub_edge_embed.cpu(), xl.cpu()]
 
         return embedding_list
 
