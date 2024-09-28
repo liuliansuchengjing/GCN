@@ -198,7 +198,7 @@ def test_model(MSHGAT, data_path):
     test_data = DataLoader(test, batch_size=opt.batch_size, load_dict=True, cuda=False)
     
     relation_graph = ConRelationGraph(data_path)
-    hypergraph_list = ConHyperGraphList(train, user_size)
+    hypergraph_list = ConHyperGraphList(total_cascades, timestamps, user_size)
 
     opt.user_size = user_size
 
