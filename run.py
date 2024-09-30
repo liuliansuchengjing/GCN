@@ -147,7 +147,7 @@ def train_model(MSHGAT, data_path):
                 print(metric + ' ' + str(scores[metric]))
 
             if validation_history <= sum(scores.values()):
-                print("Best Validation hit@100:{} at Epoch:{}".format(scores["hits@100"], epoch_i))
+                print("Best Validation hit@100:{} at Epoch:{}".format(scores["hits@20"], epoch_i))
                 validation_history = sum(scores.values())
                 best_scores = scores
                 print("Save best model!!!")
@@ -157,7 +157,7 @@ def train_model(MSHGAT, data_path):
     for metric in best_scores.keys():
         print(metric + ' ' + str(best_scores[metric]))
                 
-def test_epoch(model, validation_data, graph, hypergraph_list, k_list=[10, 50, 100]):
+def test_epoch(model, validation_data, graph, hypergraph_list, k_list=[5, 10, 20]):
     ''' Epoch operation in evaluation phase '''
     model.eval()
 
