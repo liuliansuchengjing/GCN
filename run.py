@@ -28,7 +28,7 @@ metric = Metrics()
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-data_name', default='r_MOOC10000')
+parser.add_argument('-data_name', default='rmr_MOOC10000')
 parser.add_argument('-epoch', type=int, default=60)
 parser.add_argument('-batch_size', type=int, default=64)
 parser.add_argument('-d_model', type=int, default=64)
@@ -212,8 +212,47 @@ def test_model(MSHGAT, data_path):
         print(metric + ' ' + str(scores[metric]))
 
 
+def test_epoch_pro(model, validation_data, graph, hypergraph_list, k_list=[5, 10, 20]):
+    ''' Epoch operation in evaluation phase '''
+    model.eval()
+
+    scores = {}
+    for k in k_list:
+        scores['hits@' + str(k)] = 0
+        scores['map@' + str(k)] = 0
+
+    n_total_words = 0
+    with torch.no_grad():
+        for i, batch in enumerate(validation_data):  #tqdm(validation_data, mininterval=2, desc='  - (Validation) ', leave=False):
+            #print("Validation batch ", i)
+            # prepare data
+            tgt, tgt_timestamp, tgt_idx, watch_count, course_id, duration_time, watch_time =  batch
+            y_gold = tgt[:, 1:].contiguous().view(-1).detach().cpu().numpy()
+
+            y_prev = tgt[:, :-1].contiguous().view(-1).detach().cpu().numpy()
+            course_prev = course_id[:, :-1].contiguous().view(-1).detach().cpu().numpy()
+
+            # forward
+            pred = model(tgt, tgt_timestamp, tgt_idx, graph, hypergraph_list )
+            y_pred = pred.detach().cpu().numpy()
+
+            scores_batch, scores_len = metric.compute_metric(y_pred, y_gold, k_list)
+            scores_batch, scores_len = metric.compute_metric_pro(y_pred, y_gold, y_prev, course_prev, k_list)
+            n_total_words += scores_len
+            for k in k_list:
+                scores['hits@' + str(k)] += scores_batch['hits@' + str(k)] * scores_len
+                scores['map@' + str(k)] += scores_batch['map@' + str(k)] * scores_len
+
+    for k in k_list:
+        scores['hits@' + str(k)] = scores['hits@' + str(k)] / n_total_words
+        scores['map@' + str(k)] = scores['map@' + str(k)] / n_total_words
+
+    return scores
+
+
 if __name__ == "__main__": 
     model = MSHGAT  
     # train_model(model, opt.data_name)
-    test_model(model, opt.data_name)
+    # test_model(model, opt.data_name)
+    test_epoch_pro(model, opt.data_name)
 
