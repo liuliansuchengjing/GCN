@@ -11,13 +11,13 @@ def load_idx2u():
 
 # 从course - video.json中加载课程 - 视频关系
 def load_course_video():
-    with open('/kaggle/input/riginmooccube/MOOCCube/relations/course-video.json', 'r', encoding='utf - 8') as f:
+    with open('/kaggle/input/riginmooccube/MOOCCube/relations/course-video.json', 'r', encoding='utf-8') as f:
         return json.load(f)
 
 
 # 从course.json中加载课程数据
 def load_course():
-    with open('/kaggle/input/riginmooccube/MOOCCube/entities/course.json', 'r', encoding='utf - 8') as f:
+    with open('/kaggle/input/riginmooccube/MOOCCube/entities/course.json', 'r', encoding='utf-8') as f:
         return json.load(f)
 
 class Video:
