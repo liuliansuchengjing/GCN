@@ -93,8 +93,7 @@ def Split_data(data_name, train_rate =0.8, valid_rate = 0.1, random_seed = 300, 
                 course_ids.append(courselist)
                 video_durations.append(durationlist)
                 local_watching_times.append(watchingtimelist)
-                
-        print("course_ids",course_ids)
+       
         
         '''ordered by timestamps'''        
         order = [i[0] for i in sorted(enumerate(timestamps), key=lambda x:x[1])]
@@ -102,6 +101,7 @@ def Split_data(data_name, train_rate =0.8, valid_rate = 0.1, random_seed = 300, 
         t_cascades[:] = [t_cascades[i] for i in order]
         watching_counts[:] = [t_cascades[i] for i in order]
         course_ids[:] = [t_cascades[i] for i in order]
+        print("course_ids", course_ids)
         video_durations[:] = [t_cascades[i] for i in order]
         local_watching_times[:] = [t_cascades[i] for i in order]
         cas_idx = [i for i in range(len(t_cascades))]
