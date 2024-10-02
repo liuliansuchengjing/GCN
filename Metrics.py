@@ -153,7 +153,6 @@ class Metrics(object):
 												if video_name == predicted_video_name:
 													predicted_index = index
 											distance = abs(y_index - predicted_index)
-											print("distance:", distance)
 
 											if distance == 1:
 												scores_pro[video_id] += 10
