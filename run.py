@@ -210,16 +210,16 @@ def test_epoch_pro(model, validation_data, graph, hypergraph_list, k_list=[5, 10
                 validation_data):  # tqdm(validation_data, mininterval=2, desc='  - (Validation) ', leave=False):
             # print("Validation batch ", i)
             # prepare data
-            tgt, tgt_timestamp, tgt_idx, watch_count, course_id, duration_time, watch_time = batch
+            tgt, tgt_timestamp, tgt_idx, watch_count, course_name, duration_time, watch_time = batch
             y_gold = tgt[:, 1:].contiguous().view(-1).detach().cpu().numpy()
             print("y_gold shape:", y_gold.shape)
             print("y_gold:", y_gold)
 
             y_prev = tgt[:, :-1].contiguous().view(-1).detach().cpu().numpy()
-            course_prev = course_id[:, :-1].contiguous().view(-1).detach().cpu().numpy()
+            course_prev = course_name[:, :-1].detach().cpu()
             print("y_prev shape:", y_prev.shape)
             print("y_prev:", y_prev)
-            print("course_prev shape:", course_prev.shape)            
+            print("course_prev shape:", course_prev.shape)
             print("course_prev:", course_prev)
 
             # forward
