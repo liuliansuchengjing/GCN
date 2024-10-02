@@ -1,6 +1,29 @@
 
 import numpy as np
+import json
+import pickle
 
+# 从idx2u.pickle中加载索引到名称的映射
+def load_idx2u():
+    with open('/kaggle/working/GCN/data/r_MOOC10000/idx2u.pickle', 'rb') as f:
+        return pickle.load(f)
+
+
+# 从course - video.json中加载课程 - 视频关系
+def load_course_video():
+    with open('/kaggle/input/riginmooccube/MOOCCube/relations/course-video.json', 'r', encoding='utf - 8') as f:
+        return json.load(f)
+
+
+# 从course.json中加载课程数据
+def load_course():
+    with open('/kaggle/input/riginmooccube/MOOCCube/entities/course.json', 'r', encoding='utf - 8') as f:
+        return json.load(f)
+
+class Video:
+    def __init__(self, index, course):
+        self.index = index
+        self.course = course
 
 class Metrics(object):
 
@@ -61,7 +84,6 @@ class Metrics(object):
 
 		scores = {k: np.mean(v) for k, v in scores.items()}
 		return scores, scores_len
-
 
 	def compute_metric_pro(self, y_prob, y_true, y_prev, course_prev, k_list=[5, 10, 20]):
 		'''
@@ -137,4 +159,5 @@ class Metrics(object):
 
 		scores = {k: np.mean(v) for k, v in scores.items()}
 		return scores, scores_len
+
 
