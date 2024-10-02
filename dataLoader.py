@@ -69,6 +69,7 @@ def Split_data(data_name, train_rate =0.8, valid_rate = 0.1, random_seed = 300, 
                             timestamplist.append(float(timestamp))
                     elif len(chunk.split())== 6:
                         user, timestamp, watching_count, course_id, video_duration, local_watching_time = chunk.split()
+                        
                 except:
                     print(chunk)
                 if user in u2idx:
@@ -79,6 +80,7 @@ def Split_data(data_name, train_rate =0.8, valid_rate = 0.1, random_seed = 300, 
                     durationlist.append(float(video_duration))
                     watchingtimelist.append(float(local_watching_time))
 
+            print("courselist:", courselist)
             if len(userlist) > 1 and len(userlist)<=500:
                 if with_EOS:
                     userlist.append(Constants.EOS)
@@ -120,8 +122,7 @@ def Split_data(data_name, train_rate =0.8, valid_rate = 0.1, random_seed = 300, 
         test = t_cascades[valid_idx_:]
         test_t = timestamps[valid_idx_:]
         test_wc = watching_counts[valid_idx_:]
-        test_course = course_ids[valid_idx_:]
-        print("test_course:", test_course)
+        test_course = course_ids[valid_idx_:]        
         test_dt = video_durations[valid_idx_:]
         test_wt = local_watching_times[train_idx_:valid_idx_]
         test_idx = cas_idx[valid_idx_:]
