@@ -125,7 +125,7 @@ class Metrics(object):
 				p_sort_desc = p_.argsort()[::-1]
 
 				top20 = p_sort_desc[:20]
-				# print("1.top20:", top20)
+				print("1.top20:", top20)
 				# print("c_p:", c_p)
 				scores_pro = {video_id: 0 for video_id in top20}
 				for video_id in top20:
@@ -185,7 +185,7 @@ class Metrics(object):
 
 				for k in k_list:
 					topk = sorted_top20[:k]
-					# print("topk:", topk)
+					print("topk:", topk)
 					scores['hits@' + str(k)].extend([1. if y_ in topk else 0.])
 					scores['map@'+str(k)].extend([self.apk([y_], topk, k)])
 
