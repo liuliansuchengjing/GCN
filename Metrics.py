@@ -124,7 +124,7 @@ class Metrics(object):
 				scores_len += 1.0
 				p_sort_desc = p_.argsort()[::-1]
 				for k in k_list:
-					top100 = p_sort_desc[:20 ]
+					top100 = p_sort_desc[:20]
 					scores_pro = {video_id: 0 for video_id in top100}
 					for video_id in top100:
 						# 获取预测视频的名称
