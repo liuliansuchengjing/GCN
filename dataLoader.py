@@ -1,3 +1,10 @@
+# Part of this file is derived from 
+# https://github.com/albertyang33/FOREST
+"""
+Created on Mon Jan 18 22:28:02 2021
+
+@author: Ling Sun
+"""
 import random
 import numpy as np
 import torch
@@ -37,7 +44,7 @@ def Split_data(data_name, train_rate =0.8, valid_rate = 0.1, random_seed = 300, 
         timestamps = []
         watching_counts = []
         course_ids = []
-        video_duration = []
+        video_durations = []
         local_watching_times = []
         for line in open(options.data):
             if len(line.strip()) == 0:
@@ -80,7 +87,7 @@ def Split_data(data_name, train_rate =0.8, valid_rate = 0.1, random_seed = 300, 
                 timestamps.append(timestamplist)
                 watching_counts.append(countslist)
                 course_ids.append(courselist)
-                video_duration.append(durationlist)
+                video_durations.append(durationlist)
                 local_watching_times.append(watchingtimelist)
         
         '''ordered by timestamps'''        
@@ -89,7 +96,7 @@ def Split_data(data_name, train_rate =0.8, valid_rate = 0.1, random_seed = 300, 
         t_cascades[:] = [t_cascades[i] for i in order]
         watching_counts[:] = [t_cascades[i] for i in order]
         course_ids[:] = [t_cascades[i] for i in order]
-        video_duration[:] = [t_cascades[i] for i in order]
+        video_durations[:] = [t_cascades[i] for i in order]
         local_watching_times[:] = [t_cascades[i] for i in order]
         cas_idx = [i for i in range(len(t_cascades))]
         
@@ -105,7 +112,7 @@ def Split_data(data_name, train_rate =0.8, valid_rate = 0.1, random_seed = 300, 
         valid_t = timestamps[train_idx_:valid_idx_]
         valid_wc = watching_counts[train_idx_:valid_idx_]
         valid_course = course_ids[train_idx_:valid_idx_]
-        valid_dt = video_duration[train_idx_:valid_idx_]
+        valid_dt = video_durations[train_idx_:valid_idx_]
         valid_wt = local_watching_times[train_idx_:valid_idx_]
         valid_idx = cas_idx[train_idx_:valid_idx_]
         valid = [valid, valid_t, valid_idx, valid_wc, valid_course, valid_dt, valid_wt]
@@ -114,7 +121,7 @@ def Split_data(data_name, train_rate =0.8, valid_rate = 0.1, random_seed = 300, 
         test_t = timestamps[valid_idx_:]
         test_wc = watching_counts[valid_idx_:]
         test_course = course_ids[valid_idx_:]
-        test_dt = video_duration[valid_idx_:]
+        test_dt = video_durations[valid_idx_:]
         test_wt = local_watching_times[train_idx_:valid_idx_]
         test_idx = cas_idx[valid_idx_:]
         test = [test, test_t, test_idx, test_wc, test_course, test_dt, test_wt]
