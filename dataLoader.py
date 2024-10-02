@@ -69,7 +69,6 @@ def Split_data(data_name, train_rate =0.8, valid_rate = 0.1, random_seed = 300, 
                             timestamplist.append(float(timestamp))
                     elif len(chunk.split())== 6:
                         user, timestamp, watching_count, course_id, video_duration, local_watching_time = chunk.split()
-                        
                 except:
                     print(chunk)
                 if user in u2idx:
@@ -80,17 +79,22 @@ def Split_data(data_name, train_rate =0.8, valid_rate = 0.1, random_seed = 300, 
                     durationlist.append(float(video_duration))
                     watchingtimelist.append(float(local_watching_time))
 
-            print("courselist:", courselist)
             if len(userlist) > 1 and len(userlist)<=500:
                 if with_EOS:
                     userlist.append(Constants.EOS)
                     timestamplist.append(Constants.EOS)
+                    countslist.append(Constants.EOS)
+                    courselist.append(Constants.EOS)
+                    durationlist.append(Constants.EOS)
+                    watchingtimelist.append(Constants.EOS)
                 t_cascades.append(userlist)
                 timestamps.append(timestamplist)
                 watching_counts.append(countslist)
                 course_ids.append(courselist)
                 video_durations.append(durationlist)
                 local_watching_times.append(watchingtimelist)
+                
+        print("course_ids",course_ids)
         
         '''ordered by timestamps'''        
         order = [i[0] for i in sorted(enumerate(timestamps), key=lambda x:x[1])]
@@ -122,7 +126,7 @@ def Split_data(data_name, train_rate =0.8, valid_rate = 0.1, random_seed = 300, 
         test = t_cascades[valid_idx_:]
         test_t = timestamps[valid_idx_:]
         test_wc = watching_counts[valid_idx_:]
-        test_course = course_ids[valid_idx_:]        
+        test_course = course_ids[valid_idx_:]
         test_dt = video_durations[valid_idx_:]
         test_wt = local_watching_times[train_idx_:valid_idx_]
         test_idx = cas_idx[valid_idx_:]
@@ -249,7 +253,6 @@ class DataLoader(object):
             seq_timestamp = self.time[start_idx:end_idx]
             seq_wc = self.wc[start_idx:end_idx]
             seq_ci = self.ci[start_idx:end_idx]
-            print("seq_ci:", seq_ci)
             seq_dt = self.dt[start_idx:end_idx]
             seq_wt = self.wt[start_idx:end_idx]
             seq_data = pad_to_longest(seq_insts)
