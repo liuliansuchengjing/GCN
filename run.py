@@ -28,7 +28,7 @@ metric = Metrics()
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-data_name', default='rmr_MOOC10000')
+parser.add_argument('-data_name', default='r_MOOC10000')
 parser.add_argument('-epoch', type=int, default=60)
 parser.add_argument('-batch_size', type=int, default=64)
 parser.add_argument('-d_model', type=int, default=64)
