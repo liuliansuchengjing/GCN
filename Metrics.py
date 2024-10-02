@@ -2,35 +2,31 @@
 import numpy as np
 import json
 import pickle
+import csv
 
-# 从idx2u.pickle中加载索引到名称的映射
+
 def load_idx2u():
-    with open('/kaggle/working/GCN/data/r_MOOC10000/idx2u.pickle', 'rb') as f:
-        return pickle.load(f)
+	with open('/kaggle/working/GCN/data/r_MOOC10000/idx2u.pickle', 'rb') as f:
+		return pickle.load(f)
 
 
-# 从course - video.json中加载课程 - 视频关系
-def load_course_video():  
-    try:  
-        with open('/kaggle/input/riginmooccube/MOOCCube/relations/course-video.json', 'r', encoding='utf-8') as f:  
-            return json.load(f)  
-    except FileNotFoundError:  
-        print("指定的文件未找到，请检查文件路径。")  
-    except json.JSONDecodeError:  
-        print("文件内容不是有效的 JSON 格式，请检查文件内容。")  
-    except Exception as e:  
-        print(f"发生了一个错误：{e}")
+def load_course_video():
+	data = {}
+	with open('/kaggle/input/riginmooccube/MOOCCube/relations/course-video.json', 'r', encoding='utf-8') as file:
+		reader = csv.reader(file, delimiter='\t')
+		for row in reader:
+			if len(row) == 2:
+				course_id, video_id = row
+				if course_id not in data:
+					data[course_id] = []
+				data[course_id].append(video_id)
+	return data
 
 
-# 从course.json中加载课程数据
 def load_course():
-    with open('/kaggle/input/riginmooccube/MOOCCube/entities/course.json', 'r', encoding='utf-8') as f:
-        return json.load(f)
+	with open('/kaggle/input/riginmooccube/MOOCCube/entities/course.json', 'r', encoding='utf-8') as f:
+		return json.load(f)
 
-class Video:
-    def __init__(self, index, course):
-        self.index = index
-        self.course = course
 
 class Metrics(object):
 
@@ -166,5 +162,3 @@ class Metrics(object):
 
 		scores = {k: np.mean(v) for k, v in scores.items()}
 		return scores, scores_len
-
-
