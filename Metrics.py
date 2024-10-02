@@ -124,7 +124,7 @@ class Metrics(object):
 				scores_len += 1.0
 				p_sort_desc = p_.argsort()[::-1]
 				for k in k_list:
-					top100 = p_sort_desc[:100 ]
+					top100 = p_sort_desc[:20 ]
 					scores_pro = {video_id: 0 for video_id in top100}
 					for video_id in top100:
 						# 获取预测视频的名称
@@ -147,11 +147,14 @@ class Metrics(object):
 											predicted_index = video_order.index(predicted_video_name)
 											distance = abs(y_index - predicted_index)
 											if distance == 1:
-												scores_pro[video_id] += 100
+												scores_pro[video_id] += 10
+												print("+10")
 											elif distance == 2:
-												scores_pro[video_id] += 50
+												scores_pro[video_id] += 5
+												print("+5")
 											elif distance == 3:
-												scores_pro[video_id] += 20
+												scores_pro[video_id] += 2
+												print("+2")
 										except ValueError:
 											pass
 
