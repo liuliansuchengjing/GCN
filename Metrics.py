@@ -10,9 +10,16 @@ def load_idx2u():
 
 
 # 从course - video.json中加载课程 - 视频关系
-def load_course_video():
-    with open('/kaggle/input/riginmooccube/MOOCCube/relations/course-video.json', 'r', encoding='utf-8') as f:
-        return json.load(f)
+def load_course_video():  
+    try:  
+        with open('path_to_your_json_file.json', 'r', encoding='utf-8') as f:  
+            return json.load(f)  
+    except FileNotFoundError:  
+        print("指定的文件未找到，请检查文件路径。")  
+    except json.JSONDecodeError:  
+        print("文件内容不是有效的 JSON 格式，请检查文件内容。")  
+    except Exception as e:  
+        print(f"发生了一个错误：{e}")
 
 
 # 从course.json中加载课程数据
