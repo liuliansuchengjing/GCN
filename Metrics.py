@@ -112,17 +112,15 @@ class Metrics(object):
 		course_video = load_course_video()
 		courses = load_course()
 
-
 		scores = {'hits@'+str(k):[] for k in k_list}
 		scores.update({'map@'+str(k):[] for k in k_list})
-		print("k_list:", k_list)  
 		for p_, y_, y_p, c_p in zip(y_prob, y_true, y_prev, course_prev):
 			if y_ != self.PAD:
 				scores_len += 1.0
 				p_sort_desc = p_.argsort()[::-1]
 				for k in k_list:
 					top100 = p_sort_desc[:100 ]
-					scores = {video_id: 0 for video_id in top100}
+					scores_pro = {video_id: 0 for video_id in top100}
 					for video_id in top100:
 						# 获取预测视频的名称
 						predicted_video_name = idx2u[video_id]
@@ -144,32 +142,28 @@ class Metrics(object):
 											predicted_index = video_order.index(predicted_video_name)
 											distance = abs(y_index - predicted_index)
 											if distance == 1:
-												scores[video_id] += 100
+												scores_pro[video_id] += 100
 											elif distance == 2:
-												scores[video_id] += 50
+												scores_pro[video_id] += 50
 											elif distance == 3:
-												scores[video_id] += 20
+												scores_pro[video_id] += 20
 										except ValueError:
 											pass
 
 					# 根据得分对top100重新排序
 					# 得分的视频及其分数
-					scored_videos = [(video_id, score) for video_id, score in scores.items() if score > 0]
+					scored_videos = [(video_id, score_pro) for video_id, score_pro in scores_pro.items() if score_pro > 0]
 					# 按照分数从高到低排序得分的视频
 					scored_videos.sort(key=lambda pair: pair[1], reverse=True)
 					scored_video_ids = [video_id for video_id, _ in scored_videos]
-
 					# 未得分的视频
-					unscored_video_ids = [video_id for video_id in top100 if video_id not in scores or scores[video_id] == 0]
-
+					unscored_video_ids = [video_id for video_id in top100 if video_id not in scores_pro or scores_pro[video_id] == 0]
 					# 合并结果
 					sorted_top100 = scored_video_ids + unscored_video_ids
-
 
 					topk = sorted_top100[:k]
 					scores['hits@' + str(k)].extend([1. if y_ in topk else 0.])
 					scores['map@'+str(k)].extend([self.apk([y_], topk, k)])
-
 
 		scores = {k: np.mean(v) for k, v in scores.items()}
 		return scores, scores_len
