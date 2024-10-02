@@ -25,20 +25,23 @@ def load_course_video():
 
 def load_course():
 	courses = []
-	with open('/kaggle/input/riginmooccube/MOOCCube/entities/course.json', 'r', encoding='utf - 8') as f:
+	with open('/kaggle/input/riginmooccube/MOOCCube/entities/course.json', 'r', encoding='utf-8') as f:
 		data = f.read()
-		json_objects = data.split('}{')
-		for json_obj in json_objects:
-			if not json_obj.strip():
-				continue
-			json_obj = '{' + json_obj + '}'
+		start = 0
+		end = 0
+		while True:
+			start = data.find('{', end)
+			if start == - 1:
+				break
+			end = data.find('}', start) + 1
+			json_obj = data[start:end]
 			try:
 				course = json.loads(json_obj)
 				courses.append(course)
 			except json.decoder.JSONDecodeError as e:
 				print(f"解析错误: {e}")
 	return courses
-
+		
 
 class Metrics(object):
 
