@@ -115,12 +115,13 @@ class Metrics(object):
 
 		scores = {'hits@'+str(k):[] for k in k_list}
 		scores.update({'map@'+str(k):[] for k in k_list})
+		print("k_list:", k_list)  
 		for p_, y_, y_p, c_p in zip(y_prob, y_true, y_prev, course_prev):
 			if y_ != self.PAD:
 				scores_len += 1.0
 				p_sort_desc = p_.argsort()[::-1]
 				for k in k_list:
-					top100 = p_sort_desc[:k ]
+					top100 = p_sort_desc[:100 ]
 					scores = {video_id: 0 for video_id in top100}
 					for video_id in top100:
 						# 获取预测视频的名称
