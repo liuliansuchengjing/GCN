@@ -123,55 +123,67 @@ class Metrics(object):
 			if y_ != self.PAD:
 				scores_len += 1.0
 				p_sort_desc = p_.argsort()[::-1]
+
+				top20 = p_sort_desc[:20]
+				print("1.top20:", top20)
+				print("c_p:", c_p)
+				scores_pro = {video_id: 0 for video_id in top20}
+				for video_id in top20:
+					# 获取预测视频的名称
+					predicted_video_name = idx2u[video_id]
+					print("video_id:", video_id)
+					print("predicted_video_name:", predicted_video_name)
+					# 获取预测视频所属的课程
+					predicted_video_courses = []
+					for course, videos in course_video.items():
+						if predicted_video_name in videos:
+							predicted_video_courses.append(course)
+							print("predicted_video_courses:", course)
+
+					for predicted_course in predicted_video_courses:
+						if predicted_course == c_p:
+							y_video_name = idx2u[y_p]
+							print("predicted_video_courses = c_p,   y_video_name=",y_video_name)
+							# 在每个课程的video_order中查找y_video_name和predicted_video_name的位置
+							for course in courses:
+								print("course['id']:", course['id'])
+								if course['id'] == predicted_course:
+									video_order = course['video_order']
+									try:
+										for index, video_name in enumerate(video_order):
+											if video_name == y_video_name:
+												y_index = index
+												print("y_index:", y_index)
+											if video_name == predicted_video_name:
+												predicted_index = index
+												print("predicted_index:",predicted_index)
+										distance = abs(y_index - predicted_index)
+										print("distance:", distance)
+										
+										if distance == 1:
+											scores_pro[video_id] += 10
+											print("+10")
+										elif distance == 2:
+											scores_pro[video_id] += 5
+											print("+5")
+										elif distance == 3:
+											scores_pro[video_id] += 2
+											print("+2")
+									except ValueError:
+										pass
+
+				# 根据得分对top20重新排序
+				# 得分的视频及其分数
+				scored_videos = [(video_id, score_pro) for video_id, score_pro in scores_pro.items() if score_pro > 0]
+				# 按照分数从高到低排序得分的视频
+				scored_videos.sort(key=lambda pair: pair[1], reverse=True)
+				scored_video_ids = [video_id for video_id, _ in scored_videos]
+				# 未得分的视频
+				unscored_video_ids = [video_id for video_id in top20 if video_id not in scores_pro or scores_pro[video_id] == 0]
+				# 合并结果
+				sorted_top20 = scored_video_ids + unscored_video_ids
+
 				for k in k_list:
-					top20 = p_sort_desc[:20 ]
-					print("1.top20:", top20)
-					scores_pro = {video_id: 0 for video_id in top20}
-					for video_id in top20:
-						# 获取预测视频的名称
-						predicted_video_name = idx2u[video_id]
-						print("video_id:", video_id)
-						print("predicted_video_name:", predicted_video_name)
-						# 获取预测视频所属的课程
-						predicted_video_courses = []
-						for course, videos in course_video.items():
-							if predicted_video_name in videos:
-								predicted_video_courses.append(course)
-
-						for predicted_course in predicted_video_courses:
-							if predicted_course == c_p:
-								y_video_name = idx2u[y_p]
-								# 在每个课程的video_order中查找y_video_name和predicted_video_name的位置
-								for course in courses:
-									if course['id'] == predicted_course:
-										video_order = course['video_order']
-										try:
-											y_index = video_order.index(y_video_name)
-											predicted_index = video_order.index(predicted_video_name)
-											distance = abs(y_index - predicted_index)
-											if distance == 1:
-												scores_pro[video_id] += 10
-												print("+10")
-											elif distance == 2:
-												scores_pro[video_id] += 5
-												print("+5")
-											elif distance == 3:
-												scores_pro[video_id] += 2
-												print("+2")
-										except ValueError:
-											pass
-
-					# 根据得分对top20重新排序
-					# 得分的视频及其分数
-					scored_videos = [(video_id, score_pro) for video_id, score_pro in scores_pro.items() if score_pro > 0]
-					# 按照分数从高到低排序得分的视频
-					scored_videos.sort(key=lambda pair: pair[1], reverse=True)
-					scored_video_ids = [video_id for video_id, _ in scored_videos]
-					# 未得分的视频
-					unscored_video_ids = [video_id for video_id in top20 if video_id not in scores_pro or scores_pro[video_id] == 0]
-					# 合并结果
-					sorted_top20 = scored_video_ids + unscored_video_ids
-
 					topk = sorted_top20[:k]
 					print("topk:", topk)
 					scores['hits@' + str(k)].extend([1. if y_ in topk else 0.])
