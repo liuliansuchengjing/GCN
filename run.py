@@ -254,5 +254,5 @@ if __name__ == "__main__":
     model = MSHGAT  
     # train_model(model, opt.data_name)
     # test_model(model, opt.data_name)
-    test_epoch_pro(model, opt.data_name)
+    test_model(model, opt.data_name)
 
