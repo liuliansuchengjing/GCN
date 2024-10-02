@@ -263,7 +263,7 @@ class DataLoader(object):
             seq_idx = Variable(
                 torch.LongTensor(self.idx[start_idx:end_idx]), volatile=self.test)
             
-            return seq_data, seq_data_timestamp, seq_idx, seq_data_wc, seq_data_ci, seq_data_dt, seq_data_wt
+            return seq_data, seq_data_timestamp, seq_idx, seq_data_wc, seq_data_dt, seq_data_wt
         else:
 
             self._iter_count = 0
