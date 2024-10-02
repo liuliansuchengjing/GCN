@@ -103,7 +103,7 @@ class Metrics(object):
 		scores = {k: np.mean(v) for k, v in scores.items()}
 		return scores, scores_len
 
-	def compute_metric_pro(self, y_prob, y_true, y_prev, course_prev, k_list=[5, 10, 20]):
+	def compute_metric_pro(self, y_prob, y_true, y_prev, k_list=[5, 10, 20]):
 		'''
 			y_true: (#samples, )
 			y_pred: (#samples, #users)
