@@ -127,7 +127,7 @@ class Metrics(object):
 				p_sort_desc = p_.argsort()[::-1]
 
 				top20 = p_sort_desc[:20]
-				print("1.top20:", top20)
+				# print("1.top20:", top20)
 				scores_pro = {video_id: 0 for video_id in top20}
 				for video_id in top20:
 					# 获取预测视频的名称
@@ -157,13 +157,18 @@ class Metrics(object):
 
 											if distance == 1:
 												scores_pro[video_id] += 10
-												print("+10")
 											elif distance == 2:
-												scores_pro[video_id] += 5
-												print("+5")
+												scores_pro[video_id] += 9
 											elif distance == 3:
+												scores_pro[video_id] += 8
+											elif distance == 4:
+												scores_pro[video_id] += 5
+											elif distance == 5:
+												scores_pro[video_id] += 4
+											elif distance == 6:
 												scores_pro[video_id] += 2
-												print("+2")
+											elif distance == 7:
+												scores_pro[video_id] += 1
 										except ValueError:
 											pass
 
@@ -180,7 +185,7 @@ class Metrics(object):
 
 				for k in k_list:
 					topk = sorted_top20[:k]
-					print("topk:", topk)
+					# print("topk:", topk)
 					scores['hits@' + str(k)].extend([1. if y_ in topk else 0.])
 					scores['map@'+str(k)].extend([self.apk([y_], topk, k)])
 
