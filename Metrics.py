@@ -41,7 +41,7 @@ def load_course():
 			except json.decoder.JSONDecodeError as e:
 				print(f"解析错误: {e}")
 	return courses
-		
+
 
 class Metrics(object):
 
@@ -124,15 +124,18 @@ class Metrics(object):
 				scores_len += 1.0
 				p_sort_desc = p_.argsort()[::-1]
 				for k in k_list:
-					top100 = p_sort_desc[:20]
-					scores_pro = {video_id: 0 for video_id in top100}
-					for video_id in top100:
+					top20 = p_sort_desc[:20 ]
+					print("1.top20:", top20)
+					scores_pro = {video_id: 0 for video_id in top20}
+					for video_id in top20:
 						# 获取预测视频的名称
 						predicted_video_name = idx2u[video_id]
+						print("video_id:", video_id)
+						print("predicted_video_name:", predicted_video_name)
 						# 获取预测视频所属的课程
 						predicted_video_courses = []
 						for course, videos in course_video.items():
-							if video_id in videos:
+							if predicted_video_name in videos:
 								predicted_video_courses.append(course)
 
 						for predicted_course in predicted_video_courses:
@@ -158,18 +161,19 @@ class Metrics(object):
 										except ValueError:
 											pass
 
-					# 根据得分对top100重新排序
+					# 根据得分对top20重新排序
 					# 得分的视频及其分数
 					scored_videos = [(video_id, score_pro) for video_id, score_pro in scores_pro.items() if score_pro > 0]
 					# 按照分数从高到低排序得分的视频
 					scored_videos.sort(key=lambda pair: pair[1], reverse=True)
 					scored_video_ids = [video_id for video_id, _ in scored_videos]
 					# 未得分的视频
-					unscored_video_ids = [video_id for video_id in top100 if video_id not in scores_pro or scores_pro[video_id] == 0]
+					unscored_video_ids = [video_id for video_id in top20 if video_id not in scores_pro or scores_pro[video_id] == 0]
 					# 合并结果
-					sorted_top100 = scored_video_ids + unscored_video_ids
+					sorted_top20 = scored_video_ids + unscored_video_ids
 
-					topk = sorted_top100[:k]
+					topk = sorted_top20[:k]
+					print("topk:", topk)
 					scores['hits@' + str(k)].extend([1. if y_ in topk else 0.])
 					scores['map@'+str(k)].extend([self.apk([y_], topk, k)])
 
