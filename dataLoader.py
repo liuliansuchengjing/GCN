@@ -194,6 +194,10 @@ class DataLoader(object):
         self.cas = cas[0]
         self.time = cas[1]
         self.idx = cas[2]
+        self.wc = cas[3]
+        self.ci = cas[4]
+        self.dt = cas[5]
+        self.wt = cas[6]
         self.test = test
         self.with_EOS = with_EOS          
         self.cuda = cuda
@@ -241,12 +245,20 @@ class DataLoader(object):
 
             seq_insts = self.cas[start_idx:end_idx]
             seq_timestamp = self.time[start_idx:end_idx]
+            seq_wc = self.wc[start_idx:end_idx]
+            seq_ci = self.ci[start_idx:end_idx]
+            seq_dt = self.dt[start_idx:end_idx]
+            seq_wt = self.wt[start_idx:end_idx]
             seq_data = pad_to_longest(seq_insts)
             seq_data_timestamp = pad_to_longest(seq_timestamp)
+            seq_data_wc = pad_to_longest(seq_wc)
+            seq_data_ci = pad_to_longest(seq_ci)
+            seq_data_dt = pad_to_longest(seq_dt)
+            seq_data_wt = pad_to_longest(seq_wt)
             seq_idx = Variable(
                 torch.LongTensor(self.idx[start_idx:end_idx]), volatile=self.test)
             
-            return seq_data, seq_data_timestamp, seq_idx
+            return seq_data, seq_data_timestamp, seq_idx, seq_data_wc, seq_data_ci, seq_data_dt, seq_data_wt
         else:
 
             self._iter_count = 0
