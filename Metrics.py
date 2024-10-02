@@ -125,50 +125,50 @@ class Metrics(object):
 				p_sort_desc = p_.argsort()[::-1]
 
 				top20 = p_sort_desc[:20]
-				print("1.top20:", top20)
-				print("c_p:", c_p)
+				# print("1.top20:", top20)
+				# print("c_p:", c_p)
 				scores_pro = {video_id: 0 for video_id in top20}
 				for video_id in top20:
 					# 获取预测视频的名称
 					predicted_video_name = idx2u[video_id]
-					print("video_id:", video_id)
-					print("predicted_video_name:", predicted_video_name)
+					# print("video_id:", video_id)
+					# print("predicted_video_name:", predicted_video_name)
 					# 获取预测视频所属的课程
 					predicted_video_courses = []
 					for course, videos in course_video.items():
 						if predicted_video_name in videos:
 							predicted_video_courses.append(course)
-							print("predicted_video_courses:", course)
+							# print("predicted_video_courses:", course)
 
 					for predicted_course in predicted_video_courses:
 						if predicted_course == c_p:
 							y_video_name = idx2u[y_p]
-							print("predicted_video_courses = c_p,   y_video_name=",y_video_name)
+							# print("predicted_video_courses = c_p,   y_video_name=",y_video_name)
 							# 在每个课程的video_order中查找y_video_name和predicted_video_name的位置
 							for course in courses:
-								print("course['id']:", course['id'])
+								# print("course['id']:", course['id'])
 								if course['id'] == predicted_course:
 									video_order = course['video_order']
 									try:
 										for index, video_name in enumerate(video_order):
 											if video_name == y_video_name:
 												y_index = index
-												print("y_index:", y_index)
+												# print("y_index:", y_index)
 											if video_name == predicted_video_name:
 												predicted_index = index
-												print("predicted_index:",predicted_index)
+												# print("predicted_index:",predicted_index)
 										distance = abs(y_index - predicted_index)
-										print("distance:", distance)
+										# print("distance:", distance)
 										
 										if distance == 1:
 											scores_pro[video_id] += 10
-											print("+10")
+											# print("+10")
 										elif distance == 2:
 											scores_pro[video_id] += 5
-											print("+5")
+											# print("+5")
 										elif distance == 3:
 											scores_pro[video_id] += 2
-											print("+2")
+											# print("+2")
 									except ValueError:
 										pass
 
@@ -185,7 +185,7 @@ class Metrics(object):
 
 				for k in k_list:
 					topk = sorted_top20[:k]
-					print("topk:", topk)
+					# print("topk:", topk)
 					scores['hits@' + str(k)].extend([1. if y_ in topk else 0.])
 					scores['map@'+str(k)].extend([self.apk([y_], topk, k)])
 
