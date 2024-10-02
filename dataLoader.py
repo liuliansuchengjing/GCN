@@ -1,10 +1,3 @@
-# Part of this file is derived from 
-# https://github.com/albertyang33/FOREST
-"""
-Created on Mon Jan 18 22:28:02 2021
-
-@author: Ling Sun
-"""
 import random
 import numpy as np
 import torch
@@ -42,11 +35,19 @@ def Split_data(data_name, train_rate =0.8, valid_rate = 0.1, random_seed = 300, 
             
         t_cascades = []
         timestamps = []
+        watching_counts = []
+        course_ids = []
+        video_duration = []
+        local_watching_times = []
         for line in open(options.data):
             if len(line.strip()) == 0:
                 continue
             timestamplist = []
             userlist = []
+            countslist = []
+            courselist = []
+            durationlist = []
+            watchingtimelist = []
             chunks = line.strip().split(',')
             for chunk in chunks:
                 try:
@@ -55,15 +56,21 @@ def Split_data(data_name, train_rate =0.8, valid_rate = 0.1, random_seed = 300, 
                         user, timestamp = chunk.split()
                     # Android,Christianity
                     elif len(chunk.split())==3:
-                        root, user, timestamp = chunk.split()                                           
-                        if root in u2idx:          
-                            userlist.append(u2idx[root])                        
+                        root, user, timestamp = chunk.split()
+                        if root in u2idx:
+                            userlist.append(u2idx[root])
                             timestamplist.append(float(timestamp))
+                    elif len(chunk.split())== 6:
+                        user, timestamp, watching_count, course_id, video_duration, local_watching_time = chunk.split()
                 except:
                     print(chunk)
                 if user in u2idx:
                     userlist.append(u2idx[user])
                     timestamplist.append(float(timestamp))
+                    countslist.append(float(watching_count))
+                    courselist.append(course_id)
+                    durationlist.append(float(video_duration))
+                    watchingtimelist.append(float(local_watching_time))
 
             if len(userlist) > 1 and len(userlist)<=500:
                 if with_EOS:
@@ -71,12 +78,19 @@ def Split_data(data_name, train_rate =0.8, valid_rate = 0.1, random_seed = 300, 
                     timestamplist.append(Constants.EOS)
                 t_cascades.append(userlist)
                 timestamps.append(timestamplist)
-                
+                watching_counts.append(countslist)
+                course_ids.append(courselist)
+                video_duration.append(durationlist)
+                local_watching_times.append(watchingtimelist)
         
         '''ordered by timestamps'''        
         order = [i[0] for i in sorted(enumerate(timestamps), key=lambda x:x[1])]
         timestamps = sorted(timestamps)
         t_cascades[:] = [t_cascades[i] for i in order]
+        watching_counts[:] = [t_cascades[i] for i in order]
+        course_ids[:] = [t_cascades[i] for i in order]
+        video_duration[:] = [t_cascades[i] for i in order]
+        local_watching_times[:] = [t_cascades[i] for i in order]
         cas_idx = [i for i in range(len(t_cascades))]
         
         '''data split'''
@@ -89,13 +103,21 @@ def Split_data(data_name, train_rate =0.8, valid_rate = 0.1, random_seed = 300, 
         valid_idx_ = int((train_rate+valid_rate)*len(t_cascades))
         valid = t_cascades[train_idx_:valid_idx_]
         valid_t = timestamps[train_idx_:valid_idx_]
+        valid_wc = watching_counts[train_idx_:valid_idx_]
+        valid_course = course_ids[train_idx_:valid_idx_]
+        valid_dt = video_duration[train_idx_:valid_idx_]
+        valid_wt = local_watching_times[train_idx_:valid_idx_]
         valid_idx = cas_idx[train_idx_:valid_idx_]
-        valid = [valid, valid_t, valid_idx]
+        valid = [valid, valid_t, valid_idx, valid_wc, valid_course, valid_dt, valid_wt]
         
         test = t_cascades[valid_idx_:]
         test_t = timestamps[valid_idx_:]
+        test_wc = watching_counts[valid_idx_:]
+        test_course = course_ids[valid_idx_:]
+        test_dt = video_duration[valid_idx_:]
+        test_wt = local_watching_times[train_idx_:valid_idx_]
         test_idx = cas_idx[valid_idx_:]
-        test = [test, test_t, test_idx]
+        test = [test, test_t, test_idx, test_wc, test_course, test_dt, test_wt]
             
         random.seed(random_seed)
         random.shuffle(train)
