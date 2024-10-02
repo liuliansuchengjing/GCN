@@ -191,27 +191,6 @@ def test_epoch(model, validation_data, graph, hypergraph_list, k_list=[5, 10, 20
     return scores
 
 
-def test_model(MSHGAT, data_path):
-    
-    user_size, total_cascades, timestamps, train, valid, test = Split_data(data_path, opt.train_rate, opt.valid_rate, load_dict=True)
-    
-    test_data = DataLoader(test, batch_size=opt.batch_size, load_dict=True, cuda=False)
-    
-    relation_graph = ConRelationGraph(data_path)
-    hypergraph_list = ConHyperGraphList(total_cascades, timestamps, user_size)
-
-    opt.user_size = user_size
-
-    model = MSHGAT(opt, dropout = opt.dropout)
-    model.load_state_dict(torch.load(opt.save_path))
-    model.cuda()
-
-    scores = test_epoch_pro(model, test_data, relation_graph, hypergraph_list)
-    print('  - (Test) ')
-    for metric in scores.keys():
-        print(metric + ' ' + str(scores[metric]))
-
-
 def test_epoch_pro(model, validation_data, graph, hypergraph_list, k_list=[5, 10, 20]):
     ''' Epoch operation in evaluation phase '''
     model.eval()
@@ -248,6 +227,30 @@ def test_epoch_pro(model, validation_data, graph, hypergraph_list, k_list=[5, 10
         scores['map@' + str(k)] = scores['map@' + str(k)] / n_total_words
 
     return scores
+
+
+def test_model(MSHGAT, data_path):
+    
+    user_size, total_cascades, timestamps, train, valid, test = Split_data(data_path, opt.train_rate, opt.valid_rate, load_dict=True)
+    
+    test_data = DataLoader(test, batch_size=opt.batch_size, load_dict=True, cuda=False)
+    
+    relation_graph = ConRelationGraph(data_path)
+    hypergraph_list = ConHyperGraphList(total_cascades, timestamps, user_size)
+
+    opt.user_size = user_size
+
+    model = MSHGAT(opt, dropout = opt.dropout)
+    model.load_state_dict(torch.load(opt.save_path))
+    model.cuda()
+
+    scores = test_epoch_pro(model, test_data, relation_graph, hypergraph_list, k_list=[5, 10, 20])
+    print('  - (Test) ')
+    for metric in scores.keys():
+        print(metric + ' ' + str(scores[metric]))
+
+
+
 
 
 if __name__ == "__main__": 
