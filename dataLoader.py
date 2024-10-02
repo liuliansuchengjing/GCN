@@ -121,6 +121,7 @@ def Split_data(data_name, train_rate =0.8, valid_rate = 0.1, random_seed = 300, 
         test_t = timestamps[valid_idx_:]
         test_wc = watching_counts[valid_idx_:]
         test_course = course_ids[valid_idx_:]
+        print("test_course:", test_course)
         test_dt = video_durations[valid_idx_:]
         test_wt = local_watching_times[train_idx_:valid_idx_]
         test_idx = cas_idx[valid_idx_:]
@@ -247,6 +248,7 @@ class DataLoader(object):
             seq_timestamp = self.time[start_idx:end_idx]
             seq_wc = self.wc[start_idx:end_idx]
             seq_ci = self.ci[start_idx:end_idx]
+            print("seq_ci:", seq_ci)
             seq_dt = self.dt[start_idx:end_idx]
             seq_wt = self.wt[start_idx:end_idx]
             seq_data = pad_to_longest(seq_insts)
