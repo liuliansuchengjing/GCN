@@ -42,19 +42,11 @@ def Split_data(data_name, train_rate =0.8, valid_rate = 0.1, random_seed = 300, 
             
         t_cascades = []
         timestamps = []
-        watching_counts = []
-        # course_ids = []
-        video_durations = []
-        local_watching_times = []
         for line in open(options.data):
             if len(line.strip()) == 0:
                 continue
             timestamplist = []
             userlist = []
-            countslist = []
-            # courselist = []
-            durationlist = []
-            watchingtimelist = []
             chunks = line.strip().split(',')
             for chunk in chunks:
                 try:
@@ -63,46 +55,28 @@ def Split_data(data_name, train_rate =0.8, valid_rate = 0.1, random_seed = 300, 
                         user, timestamp = chunk.split()
                     # Android,Christianity
                     elif len(chunk.split())==3:
-                        root, user, timestamp = chunk.split()
-                        if root in u2idx:
-                            userlist.append(u2idx[root])
+                        root, user, timestamp = chunk.split()                                           
+                        if root in u2idx:          
+                            userlist.append(u2idx[root])                        
                             timestamplist.append(float(timestamp))
-                    elif len(chunk.split())== 6:
-                        user, timestamp, watching_count, course_id, video_duration, local_watching_time = chunk.split()
                 except:
                     print(chunk)
                 if user in u2idx:
                     userlist.append(u2idx[user])
                     timestamplist.append(float(timestamp))
-                    countslist.append(float(watching_count))
-                    # courselist.append(course_id)
-                    durationlist.append(float(video_duration))
-                    watchingtimelist.append(float(local_watching_time))
 
             if len(userlist) > 1 and len(userlist)<=500:
                 if with_EOS:
                     userlist.append(Constants.EOS)
                     timestamplist.append(Constants.EOS)
-                    countslist.append(Constants.EOS)
-                    # courselist.append(Constants.EOS)
-                    durationlist.append(Constants.EOS)
-                    watchingtimelist.append(Constants.EOS)
                 t_cascades.append(userlist)
                 timestamps.append(timestamplist)
-                watching_counts.append(countslist)
-                # course_ids.append(courselist)
-                video_durations.append(durationlist)
-                local_watching_times.append(watchingtimelist)
-
+                
         
         '''ordered by timestamps'''        
         order = [i[0] for i in sorted(enumerate(timestamps), key=lambda x:x[1])]
         timestamps = sorted(timestamps)
         t_cascades[:] = [t_cascades[i] for i in order]
-        watching_counts[:] = [watching_counts[i] for i in order]
-        # course_ids[:] = [course_ids[i] for i in order]
-        video_durations[:] = [video_durations[i] for i in order]
-        local_watching_times[:] = [local_watching_times[i] for i in order]
         cas_idx = [i for i in range(len(t_cascades))]
         
         '''data split'''
@@ -115,21 +89,13 @@ def Split_data(data_name, train_rate =0.8, valid_rate = 0.1, random_seed = 300, 
         valid_idx_ = int((train_rate+valid_rate)*len(t_cascades))
         valid = t_cascades[train_idx_:valid_idx_]
         valid_t = timestamps[train_idx_:valid_idx_]
-        valid_wc = watching_counts[train_idx_:valid_idx_]
-        # valid_course = course_ids[train_idx_:valid_idx_]
-        valid_dt = video_durations[train_idx_:valid_idx_]
-        valid_wt = local_watching_times[train_idx_:valid_idx_]
         valid_idx = cas_idx[train_idx_:valid_idx_]
-        valid = [valid, valid_t, valid_idx, valid_wc, valid_dt, valid_wt]
+        valid = [valid, valid_t, valid_idx]
         
         test = t_cascades[valid_idx_:]
         test_t = timestamps[valid_idx_:]
-        test_wc = watching_counts[valid_idx_:]
-        # test_course = course_ids[valid_idx_:]
-        test_dt = video_durations[valid_idx_:]
-        test_wt = local_watching_times[train_idx_:valid_idx_]
         test_idx = cas_idx[valid_idx_:]
-        test = [test, test_t, test_idx, test_wc, test_dt, test_wt]
+        test = [test, test_t, test_idx]
             
         random.seed(random_seed)
         random.shuffle(train)
@@ -199,10 +165,6 @@ class DataLoader(object):
         self.cas = cas[0]
         self.time = cas[1]
         self.idx = cas[2]
-        self.wc = cas[3]
-        # self.ci = cas[4]
-        self.dt = cas[4]
-        self.wt = cas[5]
         self.test = test
         self.with_EOS = with_EOS          
         self.cuda = cuda
@@ -250,20 +212,12 @@ class DataLoader(object):
 
             seq_insts = self.cas[start_idx:end_idx]
             seq_timestamp = self.time[start_idx:end_idx]
-            seq_wc = self.wc[start_idx:end_idx]
-            # seq_ci = self.ci[start_idx:end_idx]
-            seq_dt = self.dt[start_idx:end_idx]
-            seq_wt = self.wt[start_idx:end_idx]
             seq_data = pad_to_longest(seq_insts)
             seq_data_timestamp = pad_to_longest(seq_timestamp)
-            seq_data_wc = pad_to_longest(seq_wc)
-            # seq_data_ci = pad_to_longest(seq_ci)
-            seq_data_dt = pad_to_longest(seq_dt)
-            seq_data_wt = pad_to_longest(seq_wt)
             seq_idx = Variable(
                 torch.LongTensor(self.idx[start_idx:end_idx]), volatile=self.test)
             
-            return seq_data, seq_data_timestamp, seq_idx, seq_data_wc, seq_data_dt, seq_data_wt
+            return seq_data, seq_data_timestamp, seq_idx
         else:
 
             self._iter_count = 0
