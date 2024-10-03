@@ -208,16 +208,12 @@ def test_epoch_pro(model, validation_data, graph, hypergraph_list, k_list=[5, 10
     with torch.no_grad():
         for i, batch in enumerate(
                 validation_data):  # tqdm(validation_data, mininterval=2, desc='  - (Validation) ', leave=False):
-            # print("Validation batch ", i)
+            print("Validation batch ", i)
             # prepare data
-            tgt, tgt_timestamp, tgt_idx, watch_count, duration_time, watch_time = batch
+            tgt, tgt_timestamp, tgt_idx = batch
             y_gold = tgt[:, 1:].contiguous().view(-1).detach().cpu().numpy()
-            # print("y_gold shape:", y_gold.shape)
-            # print("y_gold:", y_gold)
 
-            y_prev = tgt[:, :-1].contiguous().view(-1).detach().cpu().numpy()            
-            # print("y_prev shape:", y_prev.shape)
-            # print("y_prev:", y_prev)
+            y_prev = tgt[:, :-1].contiguous().view(-1).detach().cpu().numpy()        
 
             # forward
             pred = model(tgt, tgt_timestamp, tgt_idx, graph, hypergraph_list)
