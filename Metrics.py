@@ -199,11 +199,11 @@ class Metrics(object):
 
 				for k in k_list:
 					topk = sorted_top20[:k]
-					if k == 20:
-						if y_ not in topk:
-							# 打印 topk 和 y_
-							print("topk:", topk)
-							print("y_list:", y_list)
+					# if k == 20:
+					# 	if y_ not in topk:
+					# 		# 打印 topk 和 y_
+					# 		print("topk:", topk)
+					# 		print("y_list:", y_list)
 
 					
 					# print("topk:", topk)
