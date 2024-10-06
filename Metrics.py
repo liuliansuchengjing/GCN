@@ -10,8 +10,13 @@ def load_idx2u():
 
 
 def load_u2idx():
-	with open('/kaggle/working/GCN/data/r_MOOC10000/u2idx.pickle', 'rb') as f:
-		return pickle.load(f)
+	u2idx = {}  # Default to an empty dictionary if loading fails
+	try:  
+            with open('/kaggle/working/GCN/data/r_MOOC10000/u2idx.pickle', 'rb') as f:  
+                u2idx = pickle.load(f)  
+                 
+        except ValueError:  
+            pass
 
 
 def load_course_video():
@@ -165,11 +170,7 @@ class Metrics(object):
 												scores_pro[video_id] += 10
 												next_id = None
 											else:
-												try:
-													next_id = u2idx[next_name]
-												except ValueError:
-													next_id = None
-												# print("next_id.type():",next_id.type())
+												next_id = u2idx[next_name]
 											if distance == 2:
 												scores_pro[video_id] += 9
 											elif distance == 3:
