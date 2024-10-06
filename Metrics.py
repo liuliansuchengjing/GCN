@@ -32,49 +32,60 @@ def get_topk(score_seq, k):
 
 
 def course_order_score(prevent_video, hyper_topk):
-	# 加载数据
+	# 加载数据  
 	idx2u = load_idx2u()
 	course_video = load_course_video()
 	courses = load_course()
-	prev_course = []
+
+	# 预处理数据  
+	y_video_name = idx2u[prevent_video]
+	video_order_map = {}
+	for course in courses:
+		course_id = course['id']
+		video_order = course['video_order']
+		video_order_dict = {video_name: index for index, video_name in enumerate(video_order)}
+		video_order_map[course_id] = video_order_dict
 
 	scores_pro = {video_id: 0 for video_id in hyper_topk}
-	for video_id in hyper_topk:
-		# 获取预测视频的名称
-		y_video_name = idx2u[prevent_video]
-		predicted_video_name = idx2u[video_id]
-		predicted_video_courses = []
-		for course, videos in course_video.items():
-			if predicted_video_name in videos:
-				predicted_video_courses.append(course)
-			if y_video_name in videos:
-				prev_course.append(course)
+	predicted_video_courses = {idx2u[video_id]: [] for video_id in hyper_topk}
+	prev_courses = []
 
-		for predicted_course in predicted_video_courses:
-			for c_p in prev_course:
-				if predicted_course == c_p:
-					for course in courses:
-						if course['id'] == predicted_course:
-							video_order = course['video_order']
-							try:
-								for index, video_name in enumerate(video_order):
-									if video_name == y_video_name:
-										y_index = index
-									if video_name == predicted_video_name:
-										predicted_index = index
-								distance = abs(y_index - predicted_index)
-								# print("distance:", distance)
+	# 构建预测视频和前置视频的课程列表  
+	for course, videos in course_video.items():
+		for video_id, video_name in idx2u.items():
+			if video_name in videos:
+				if video_id in hyper_topk:
+					predicted_video_courses[video_name].append(course)
+				if video_id == prevent_video:
+					prev_courses.append(course)
 
-								if distance == 1:
-									scores_pro[video_id] += 10
-								elif distance == 2:
-									scores_pro[video_id] += 9
-								elif distance == 3:
-									scores_pro[video_id] += 8
-								elif distance == 4:
-									scores_pro[video_id] += 5
-							except ValueError:
-								pass
+				# 计算分数  
+	for predicted_video_name, predicted_course_list in predicted_video_courses.items():
+		for prev_course in prev_courses:
+			if prev_course in predicted_course_list:
+				prev_video_order = video_order_map[prev_course]
+				predicted_video_order = video_order_map[predicted_course_list[0]]  # 假设所有预测视频在同一课程中  
+
+				y_index = prev_video_order.get(y_video_name, None)
+				predicted_index = predicted_video_order.get(predicted_video_name, None)
+
+				if y_index is not None and predicted_index is not None:
+					distance = abs(y_index - predicted_index)
+					if distance == 1:
+						scores_increment = 10
+					elif distance == 2:
+						scores_increment = 9
+					elif distance == 3:
+						scores_increment = 8
+					elif distance == 4:
+						scores_increment = 5
+					else:
+						scores_increment = 0
+
+					for video_id in hyper_topk:
+						if idx2u[video_id] == predicted_video_name:
+							scores_pro[video_id] += scores_increment
+							break  # 假设每个视频ID只对应一个预测视频名称  
 
 	return scores_pro
 
