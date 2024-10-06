@@ -1,3 +1,4 @@
+
 import numpy as np
 import json
 import pickle
@@ -10,13 +11,16 @@ def load_idx2u():
 
 
 def load_u2idx():
-	u2idx = {}  # Default to an empty dictionary if loading fails
-	try:  
-            with open('/kaggle/working/GCN/data/r_MOOC10000/u2idx.pickle', 'rb') as f:  
-                u2idx = pickle.load(f)  
-	 except ValueError:  
-            pass     
-            
+	u2idx = {}
+	try:
+		with open('/kaggle/working/GCN/data/r_MOOC10000/u2idx.pickle', 'rb') as f:
+			u2idx = pickle.load(f)
+
+	except ValueError:
+		pass
+	return u2idx
+
+
 
 def load_course_video():
 	data = {}
@@ -191,7 +195,7 @@ class Metrics(object):
 				# 合并结果
 				sorted_top20 = scored_video_ids + unscored_video_ids
 				if next_id is not None:
-					sorted_top20.insert(0, next_id)				
+					sorted_top20.insert(0, next_id)
 
 				for k in k_list:
 					topk = sorted_top20[:k]
@@ -201,5 +205,3 @@ class Metrics(object):
 
 		scores = {k: np.mean(v) for k, v in scores.items()}
 		return scores, scores_len
-
-
