@@ -17,7 +17,7 @@ def load_u2idx():
 			u2idx = pickle.load(f)
 
 	except ValueError:
-		pass
+		u2idx = None
 	return u2idx
 
 
