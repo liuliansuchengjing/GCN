@@ -185,7 +185,7 @@ class Metrics(object):
 									  video_id not in scores_pro or scores_pro[video_id] == 0]
 				# 合并结果
 				sorted_top20 = scored_video_ids + unscored_video_ids
-				sorted_top20 = np.concatenate(([next_id], sorted_top20)
+				sorted_top20 = np.concatenate([next_id], sorted_top20)
 
 				for k in k_list:
 					topk = sorted_top20[:k]
