@@ -134,7 +134,7 @@ class Metrics(object):
         y_prev = np.array(y_prev)
         # 加载数据
         idx2u = load_idx2u()
-        u2idx = load_u2idx
+        u2idx = load_u2idx()
         course_video = load_course_video()
         courses = load_course()
 
