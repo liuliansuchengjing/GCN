@@ -1,4 +1,3 @@
-
 import numpy as np
 import json
 import pickle
@@ -10,25 +9,9 @@ def load_idx2u():
         return pickle.load(f)
 
 
-def load_u2idx(file_path='/kaggle/working/GCN/data/r_MOOC10000/u2idx.pickle'):
-    u2idx = {}  # Default to an empty dictionary
-    try:
-        with open(file_path, 'rb') as f:
-            loaded_data = pickle.load(f)
-            # Check if the loaded data is a dictionary
-            if isinstance(loaded_data, dict):
-                u2idx = loaded_data
-            else:
-                # Optionally, you could raise an error here or log a warning
-                print(f"Warning: Loaded data is not a dictionary, but of type {type(loaded_data)}")
-    except (pickle.PickleError, EOFError) as e:
-        # Handle pickle-specific errors and end-of-file errors
-        print(f"An error occurred while loading the pickle file: {e}")
-    except Exception as e:
-        # Handle any other unexpected exceptions
-        print(f"An unexpected error occurred: {e}")
-
-    return u2idx
+def load_u2idx():
+    with open('/kaggle/working/GCN/data/r_MOOC10000/u2idx.pickle', 'rb') as f:
+        return pickle.load(f)
 
 
 def load_course_video():
@@ -182,7 +165,11 @@ class Metrics(object):
                                                 scores_pro[video_id] += 10
                                                 next_id = None
                                             else:
-                                                next_id = u2idx[next_name]
+                                                if next_name in u2idx:
+                                                    next_id = u2idx[next_name]
+                                                else:
+                                                    # 处理键不存在的情况，例如返回一个默认值或抛出一个更具体的错误  
+                                                    next_id = None
                                             if distance == 2:
                                                 scores_pro[video_id] += 9
                                             elif distance == 3:
