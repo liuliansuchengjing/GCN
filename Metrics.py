@@ -164,7 +164,10 @@ class Metrics(object):
 											if distance == 1:
 												scores_pro[video_id] += 10
 											else:
-												next_id = u2idx[next_name]
+												try:
+													next_id = u2idx[next_name]
+												except ValueError:
+													next_id = None
 												# print("next_id.type():",next_id.type())
 											if distance == 2:
 												scores_pro[video_id] += 9
@@ -186,7 +189,8 @@ class Metrics(object):
 									  video_id not in scores_pro or scores_pro[video_id] == 0]
 				# 合并结果
 				sorted_top20 = scored_video_ids + unscored_video_ids
-				sorted_top20.insert(0, next_id)
+				if next_id is not None:
+					sorted_top20.insert(0, next_id)				
 
 				for k in k_list:
 					topk = sorted_top20[:k]
