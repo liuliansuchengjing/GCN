@@ -62,8 +62,7 @@ def course_order_score(prevent_video, hyper_topk):
 										y_index = index
 									if video_name == predicted_video_name:
 										predicted_index = index
-								distance = abs(y_index - predicted_index)
-								print("distance:", distance)
+								distance =  predicted_index - y_index
 
 								if distance == 1:
 									scores_pro[video_id] += 10
