@@ -163,12 +163,12 @@ class Metrics(object):
 												scores_pro[video_id] += 8
 											elif distance == 4:
 												scores_pro[video_id] += 5
-											elif distance == 5:
-												scores_pro[video_id] += 4
-											elif distance == 6:
-												scores_pro[video_id] += 2
-											elif distance == 7:
-												scores_pro[video_id] += 1
+											# elif distance == 5:
+											# 	scores_pro[video_id] += 4
+											# elif distance == 6:
+											# 	scores_pro[video_id] += 2
+											# elif distance == 7:
+											# 	scores_pro[video_id] += 1
 										except ValueError:
 											pass
 
