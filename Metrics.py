@@ -14,10 +14,9 @@ def load_u2idx():
 	try:  
             with open('/kaggle/working/GCN/data/r_MOOC10000/u2idx.pickle', 'rb') as f:  
                 u2idx = pickle.load(f)  
-                 
-        except ValueError:  
-            pass
-
+	 except ValueError:  
+            pass     
+            
 
 def load_course_video():
 	data = {}
