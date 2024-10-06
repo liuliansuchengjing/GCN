@@ -154,6 +154,8 @@ class Metrics(object):
                                                 if video_name == y_video_name:
                                                     y_index = index
                                                     next_index = index + 1
+                                                else:
+                                                    next_index = None
                                                 if index == next_index:
                                                     next_name = video_name
                                                 if video_name == predicted_video_name:
@@ -168,7 +170,7 @@ class Metrics(object):
                                                 if next_name in u2idx:
                                                     next_id = u2idx[next_name]
                                                 else:
-                                                    # 处理键不存在的情况，例如返回一个默认值或抛出一个更具体的错误  
+                                                    # 处理键不存在的情况，例如返回一个默认值或抛出一个更具体的错误
                                                     next_id = None
                                             if distance == 2:
                                                 scores_pro[video_id] += 9
