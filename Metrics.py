@@ -163,6 +163,7 @@ class Metrics(object):
 
 											if distance == 1:
 												scores_pro[video_id] += 10
+												next_id = None
 											else:
 												try:
 													next_id = u2idx[next_name]
