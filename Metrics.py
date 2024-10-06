@@ -62,7 +62,8 @@ def course_order_score(prevent_video, hyper_topk):
 										y_index = index
 									if video_name == predicted_video_name:
 										predicted_index = index
-								distance =  predicted_index - y_index
+								distance = abs(y_index - predicted_index)
+								# print("distance:", distance)
 
 								if distance == 1:
 									scores_pro[video_id] += 10
@@ -197,19 +198,20 @@ class Metrics(object):
 				sorted_top20 = topk_reorder(scores_pro, top20)
 
 				for k in k_list:
+					topk = sorted_top20[:k]
 					if k == 20:
 						if y_ not in topk:
 							# 打印 topk 和 y_
 							print("topk:", topk)
 							print("y_list:", y_list)
+
 					
-					topk = sorted_top20[:k]
 					# print("topk:", topk)
 					scores['hits@' + str(k)].extend([1. if y_ in topk else 0.])
 					scores['map@'+str(k)].extend([self.apk([y_], topk, k)])
 
 			else:
-				y_list = []
+				y_list.clear()
 
 		scores = {k: np.mean(v) for k, v in scores.items()}
 		return scores, scores_len
