@@ -106,7 +106,7 @@ class Metrics(object):
         scores = {k: np.mean(v) for k, v in scores.items()}
         return scores, scores_len
 
-    def compute_metric_pro(self, y_prob, y_true, y_prev, k_list=[5, 10, 20]):
+    def compute_metric_pro(self, y_prob, y_true, y_prev, w_c, d_t, w_t, d_1, d_2, d_3, k_list=[5, 10, 20]):
         '''
             y_true: (#samples, )
             y_pred: (#samples, #users)
@@ -120,16 +120,18 @@ class Metrics(object):
         u2idx = load_u2idx()
         course_video = load_course_video()
         courses = load_course()
-
-
+        y_list = []
+        inform_list = []
         scores = {'hits@' + str(k): [] for k in k_list}
         scores.update({'map@' + str(k): [] for k in k_list})
-        for p_, y_, y_p in zip(y_prob, y_true, y_prev):
+        for p_, y_, y_p, wc, dt, wt, d1, d2, d3 in zip(y_prob, y_true, y_prev, w_c, d_t, w_t, d_1, d_2, d_3):
             prev_course = []
             if y_ != self.PAD:
+                y_list.append(y_)
+
+                inform_list.append()
                 scores_len += 1.0
                 p_sort_desc = p_.argsort()[::-1]
-
                 top20 = p_sort_desc[:20]
                 # print("1.top20:", top20)
                 scores_pro = {video_id: 0 for video_id in top20}
@@ -143,7 +145,7 @@ class Metrics(object):
                             predicted_video_courses.append(course)
                         if y_video_name in videos:
                             prev_course.append(course)
-                            
+
                     next_video_id = None
                     for predicted_course in predicted_video_courses:
                         for c_p in prev_course:
@@ -152,7 +154,7 @@ class Metrics(object):
                                     if course['id'] == predicted_course:
                                         video_order = course['video_order']
                                         try:
-                                            prev_cont_met = False                                            
+                                            prev_cont_met = False
                                             for index, video_name in enumerate(video_order):
                                                 if prev_cont_met:
                                                     if video_name in u2idx:
@@ -194,11 +196,26 @@ class Metrics(object):
                 if next_video_id is not None:
                     sorted_top20.insert(0, next_video_id)
 
+                video_name = idx2u[y_]
+                courses = []
+                for course, videos in course_video.items():
+                    if video_name in videos:
+                        courses.append(course)
+                sub_list = [video_name, wc, dt, wt, d1, d2, d3]
+                sub_list = sub_list + courses
+
                 for k in k_list:
                     topk = sorted_top20[:k]
-                    # print("topk:", topk)
+                    if k == 20:
+                        if y_ not in topk:
+                            print("topk:", topk)
+                            print("y_list:", sub_list)
+
                     scores['hits@' + str(k)].extend([1. if y_ in topk else 0.])
                     scores['map@' + str(k)].extend([self.apk([y_], topk, k)])
+
+            else:
+                y_list.clear()
 
         scores = {k: np.mean(v) for k, v in scores.items()}
         return scores, scores_len
