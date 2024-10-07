@@ -121,6 +121,7 @@ class Metrics(object):
         course_video = load_course_video()
         courses = load_course()
 
+
         scores = {'hits@' + str(k): [] for k in k_list}
         scores.update({'map@' + str(k): [] for k in k_list})
         for p_, y_, y_p in zip(y_prob, y_true, y_prev):
@@ -150,14 +151,19 @@ class Metrics(object):
                                     if course['id'] == predicted_course:
                                         video_order = course['video_order']
                                         try:
+                                            prev_cont_met = False
+                                            next_video_id = None
                                             for index, video_name in enumerate(video_order):
+                                                if prev_cont_met:
+                                                    if video_name in u2idx:
+                                                        next_video_id = u2idx[video_name] 
+                                                    else:
+                                                        next_video_id = None
                                                 if video_name == y_video_name:
                                                     y_index = index
-                                                    next_index = index + 1
+                                                    prev_cont_met = True
                                                 else:
-                                                    next_index = None
-                                                if index == next_index:
-                                                    next_name = video_name
+                                                    prev_cont_met = False
                                                 if video_name == predicted_video_name:
                                                     predicted_index = index
                                             # distance = abs(y_index - predicted_index)
@@ -165,25 +171,12 @@ class Metrics(object):
 
                                             if distance == 1:
                                                 scores_pro[video_id] += 10
-                                                next_id = None
-                                            else:
-                                                if next_name in u2idx:
-                                                    next_id = u2idx[next_name]
-                                                else:
-                                                    # 处理键不存在的情况，例如返回一个默认值或抛出一个更具体的错误
-                                                    next_id = None
                                             if distance == 2:
                                                 scores_pro[video_id] += 9
                                             elif distance == 3:
                                                 scores_pro[video_id] += 8
                                             elif distance == 4:
                                                 scores_pro[video_id] += 5
-                                        # elif distance == 5:
-                                        # 	scores_pro[video_id] += 4
-                                        # elif distance == 6:
-                                        # 	scores_pro[video_id] += 2
-                                        # elif distance == 7:
-                                        # 	scores_pro[video_id] += 1
                                         except ValueError:
                                             pass
 
@@ -198,8 +191,8 @@ class Metrics(object):
                                       video_id not in scores_pro or scores_pro[video_id] == 0]
                 # 合并结果
                 sorted_top20 = scored_video_ids + unscored_video_ids
-                if next_id is not None:
-                    sorted_top20.insert(0, next_id)
+                if next_video_id is not None:
+                    sorted_top20.insert(0, next_video_id)
 
                 for k in k_list:
                     topk = sorted_top20[:k]
