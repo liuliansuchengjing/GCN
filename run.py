@@ -210,17 +210,24 @@ def test_epoch_pro(model, validation_data, graph, hypergraph_list, k_list=[5, 10
                 validation_data):  # tqdm(validation_data, mininterval=2, desc='  - (Validation) ', leave=False):
             print("Validation batch ", i)
             # prepare data
-            tgt, tgt_timestamp, tgt_idx = batch
+            tgt, tgt_timestamp, tgt_idx, watch_count, duration_time, watch_time, d1, d2, d3 = batch
             y_gold = tgt[:, 1:].contiguous().view(-1).detach().cpu().numpy()
 
-            y_prev = tgt[:, :-1].contiguous().view(-1).detach().cpu().numpy()        
+            y_prev = tgt[:, :-1].contiguous().view(-1).detach().cpu().numpy()
+            watch_count = watch_count[:, :-1].contiguous().view(-1).detach().cpu().numpy()
+            duration_time = duration_time[:, :-1].contiguous().view(-1).detach().cpu().numpy()
+            watch_time = watch_time[:, :-1].contiguous().view(-1).detach().cpu().numpy()
+            d1 = d1[:, :-1].contiguous().view(-1).detach().cpu().numpy()
+            d2 = d2[:, :-1].contiguous().view(-1).detach().cpu().numpy()
+            d3 = d3[:, :-1].contiguous().view(-1).detach().cpu().numpy()
 
             # forward
             pred = model(tgt, tgt_timestamp, tgt_idx, graph, hypergraph_list)
             y_pred = pred.detach().cpu().numpy()
 
             # scores_batch, scores_len = metric.compute_metric(y_pred, y_gold, k_list)
-            scores_batch, scores_len = metric.compute_metric_pro(y_pred, y_gold, y_prev, k_list)
+            scores_batch, scores_len = metric.compute_metric_pro(
+                y_pred, y_gold, y_prev, watch_count, duration_time, watch_time, d1 ,d2, d3, k_list)
             n_total_words += scores_len
             for k in k_list:
                 scores['hits@' + str(k)] += scores_batch['hits@' + str(k)] * scores_len
