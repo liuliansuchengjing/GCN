@@ -129,7 +129,6 @@ class Metrics(object):
             if y_ != self.PAD:
                 y_list.append(y_)
 
-                inform_list.append()
                 scores_len += 1.0
                 p_sort_desc = p_.argsort()[::-1]
                 top20 = p_sort_desc[:20]
@@ -195,7 +194,7 @@ class Metrics(object):
                 sorted_top20 = scored_video_ids + unscored_video_ids
                 if next_video_id is not None:
                     sorted_top20.insert(0, next_video_id)
-
+                
                 video_name = idx2u[y_]
                 courses = []
                 for course, videos in course_video.items():
@@ -203,13 +202,14 @@ class Metrics(object):
                         courses.append(course)
                 sub_list = [video_name, wc, dt, wt, d1, d2, d3]
                 sub_list = sub_list + courses
+                inform_list.append(sub_list)
 
                 for k in k_list:
                     topk = sorted_top20[:k]
                     if k == 20:
                         if y_ not in topk:
                             print("topk:", topk)
-                            print("y_list:", sub_list)
+                            print("y_list:", inform_list)
 
                     scores['hits@' + str(k)].extend([1. if y_ in topk else 0.])
                     scores['map@' + str(k)].extend([self.apk([y_], topk, k)])
