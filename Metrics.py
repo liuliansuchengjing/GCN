@@ -143,7 +143,8 @@ class Metrics(object):
                             predicted_video_courses.append(course)
                         if y_video_name in videos:
                             prev_course.append(course)
-
+                            
+                    next_video_id = None
                     for predicted_course in predicted_video_courses:
                         for c_p in prev_course:
                             if predicted_course == c_p:
@@ -151,12 +152,11 @@ class Metrics(object):
                                     if course['id'] == predicted_course:
                                         video_order = course['video_order']
                                         try:
-                                            prev_cont_met = False
-                                            next_video_id = None
+                                            prev_cont_met = False                                            
                                             for index, video_name in enumerate(video_order):
                                                 if prev_cont_met:
                                                     if video_name in u2idx:
-                                                        next_video_id = u2idx[video_name] 
+                                                        next_video_id = u2idx[video_name]
                                                     else:
                                                         next_video_id = None
                                                 if video_name == y_video_name:
