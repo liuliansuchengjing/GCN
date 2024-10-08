@@ -127,7 +127,7 @@ def Split_data(data_name, train_rate =0.8, valid_rate = 0.1, random_seed = 300, 
         test_wc = watching_counts[valid_idx_:]
         # test_course = course_ids[valid_idx_:]
         test_dt = video_durations[valid_idx_:]
-        test_wt = local_watching_times[train_idx_:valid_idx_]
+        test_wt = local_watching_times[valid_idx_:]
         test_idx = cas_idx[valid_idx_:]
         test = [test, test_t, test_idx, test_wc, test_dt, test_wt]
             
@@ -263,9 +263,9 @@ class DataLoader(object):
             f_seq_data_wc = seq_data_wc.float()
             f_seq_data_dt = seq_data_dt.float()
             f_seq_data_wt = seq_data_wt.float()
-            seq_diffi_1 = f_seq_data_wc / f_seq_data_wt
+            seq_diffi_1 = f_seq_data_wt / f_seq_data_wc
             seq_diffi_2 = f_seq_data_wt / f_seq_data_dt
-            seq_diffi_3 = f_seq_data_wc / seq_diffi_2
+            seq_diffi_3 = seq_diffi_2 / f_seq_data_wc
             seq_idx = Variable(
                 torch.LongTensor(self.idx[start_idx:end_idx]), volatile=self.test)
 
