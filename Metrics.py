@@ -194,14 +194,14 @@ class Metrics(object):
                 sorted_top20 = scored_video_ids + unscored_video_ids
                 if next_video_id is not None:
                     sorted_top20.insert(0, next_video_id)
-                
+
                 video_name = idx2u[y_]
-                courses = []
+                this_courses = []
                 for course, videos in course_video.items():
                     if video_name in videos:
-                        courses.append(course)
+                        this_courses.append(course)
                 sub_list = [video_name, wc, dt, wt, d1, d2, d3]
-                sub_list = sub_list + courses
+                sub_list = sub_list + this_courses
                 inform_list.append(sub_list)
 
                 for k in k_list:
