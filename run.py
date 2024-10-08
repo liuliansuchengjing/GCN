@@ -214,12 +214,12 @@ def test_epoch_pro(model, validation_data, graph, hypergraph_list, k_list=[5, 10
             y_gold = tgt[:, 1:].contiguous().view(-1).detach().cpu().numpy()
 
             y_prev = tgt[:, :-1].contiguous().view(-1).detach().cpu().numpy()
-            watch_count = watch_count[:, :-1].contiguous().view(-1).detach().cpu().numpy()
-            duration_time = duration_time[:, :-1].contiguous().view(-1).detach().cpu().numpy()
-            watch_time = watch_time[:, :-1].contiguous().view(-1).detach().cpu().numpy()
-            d1 = d1[:, :-1].contiguous().view(-1).detach().cpu().numpy()
-            d2 = d2[:, :-1].contiguous().view(-1).detach().cpu().numpy()
-            d3 = d3[:, :-1].contiguous().view(-1).detach().cpu().numpy()
+            watch_count = watch_count[:, 1:].contiguous().view(-1).detach().cpu().numpy()
+            duration_time = duration_time[:, 1:].contiguous().view(-1).detach().cpu().numpy()
+            watch_time = watch_time[:, 1:].contiguous().view(-1).detach().cpu().numpy()
+            d1 = d1[:, 1:].contiguous().view(-1).detach().cpu().numpy()
+            d2 = d2[:, 1:].contiguous().view(-1).detach().cpu().numpy()
+            d3 = d3[:, 1:].contiguous().view(-1).detach().cpu().numpy()
 
             # forward
             pred = model(tgt, tgt_timestamp, tgt_idx, graph, hypergraph_list)
