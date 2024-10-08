@@ -208,14 +208,18 @@ class Metrics(object):
                     topk = sorted_top20[:k]
                     if k == 20:
                         if y_ not in topk:
+                            if len(inform_list) > 20:
+                                inform_list = inform_list[-20:]
                             print("topk:", topk)
                             print("y_list:", inform_list)
+                            print("----------------------------------------------------------------------------------")
 
                     scores['hits@' + str(k)].extend([1. if y_ in topk else 0.])
                     scores['map@' + str(k)].extend([self.apk([y_], topk, k)])
 
             else:
                 y_list.clear()
+                inform_list.clear
 
         scores = {k: np.mean(v) for k, v in scores.items()}
         return scores, scores_len
