@@ -199,7 +199,14 @@ class Metrics(object):
                 this_courses = []
                 for course, videos in course_video.items():
                     if video_name in videos:
-                        this_courses.append(course)
+                        for cour in courses:
+                            if cour['id'] == course:
+                                video_order = cour['video_order']
+                                for index, video in enumerate(video_order):
+                                    if video == video_name:
+                                        sub_courses = [course, index]
+                                        this_courses.append(sub_courses)                        
+
                 sub_list = [video_name, wc, dt, wt, d1, d2, d3]
                 sub_list = sub_list + this_courses
                 inform_list.append(sub_list)
