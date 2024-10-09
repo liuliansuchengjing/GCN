@@ -218,7 +218,7 @@ class Metrics(object):
                             if len(inform_list) > 20:
                                 inform_list = inform_list[-20:]
                             for v in topk:
-                                if v in idx2u:
+                                if v < len(idx2u):
                                     # 获取目标索引处的video_id（假设它是一个字符串）
                                     video_id1 = idx2u[v]
                                     if isinstance(video_id1, bytes):
@@ -230,7 +230,13 @@ class Metrics(object):
 
                                     for course, videos in course_video.items():
                                         if video_id_str in videos:
-                                            cou.append(course)
+                                            for cour in courses:
+                                                if cour['id'] == course:
+                                                    video_order = cour['video_order']
+                                                    for index, video in enumerate(video_order):
+                                                        if video == video_id_str:
+                                                            sub_cour = [course, index]
+                                                            cou.append(sub_cour)
 
                                     print(f"{video_id_str},{cou}")
 
