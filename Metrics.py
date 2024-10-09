@@ -205,7 +205,7 @@ class Metrics(object):
                                 for index, video in enumerate(video_order):
                                     if video == video_name:
                                         sub_courses = [course, index]
-                                        this_courses.append(sub_courses)                        
+                                        this_courses.append(sub_courses)
 
                 sub_list = [video_name, wc, dt, wt, d1, d2, d3]
                 sub_list = sub_list + this_courses
@@ -217,7 +217,26 @@ class Metrics(object):
                         if y_ not in topk:
                             if len(inform_list) > 20:
                                 inform_list = inform_list[-20:]
-                            print("topk:", topk)
+                            for v in topk:
+                                if v in idx2u:
+                                    # 获取目标索引处的video_id（假设它是一个字符串）
+                                    video_id1 = idx2u[v]
+                                    if isinstance(video_id1, bytes):
+                                        video_id_str = video_id1.decode('utf-8')
+                                    else:
+                                        video_id_str = video_id1
+
+                                    cou = []
+
+                                    for course, videos in course_video.items():
+                                        if video_id_str in videos:
+                                            cou.append(course)
+
+                                    print(f"{video_id_str},{cou}")
+
+                                else:
+                                    print(f"Index {video} is out of range.")
+                            # print("topk:", topk)
                             print("y_list:", inform_list)
                             print("----------------------------------------------------------------------------------")
 
