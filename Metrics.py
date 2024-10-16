@@ -115,143 +115,116 @@ class Metrics(object):
         y_prob = np.array(y_prob)
         y_true = np.array(y_true)
         y_prev = np.array(y_prev)
+
         # 加载数据
         idx2u = load_idx2u()
         u2idx = load_u2idx()
         course_video = load_course_video()
         courses = load_course()
-        y_list = []
-        inform_list = []
-        scores = {'hits@' + str(k): [] for k in k_list}
-        scores.update({'map@' + str(k): [] for k in k_list})
+
+        scores = {f'hits@{k}': [] for k in k_list}
+        scores.update({f'map@{k}': [] for k in k_list})
+
+        # 提取课程对应视频的映射关系
+        course_video_mapping = self.build_course_video_mapping(courses, course_video)
+
         for p_, y_, y_p, wc, dt, wt, d1, d2, d3 in zip(y_prob, y_true, y_prev, w_c, d_t, w_t, d_1, d_2, d_3):
-            prev_course = []
-            if y_ != self.PAD:
-                y_list.append(y_)
+            if y_ == self.PAD:
+                continue
 
-                scores_len += 1.0
-                p_sort_desc = p_.argsort()[::-1]
-                top20 = p_sort_desc[:20]
-                # print("1.top20:", top20)
-                scores_pro = {video_id: 0 for video_id in top20}
-                for video_id in top20:
-                    # 获取预测视频的名称
-                    y_video_name = idx2u[y_p]
-                    predicted_video_name = idx2u[video_id]
-                    predicted_video_courses = []
-                    for course, videos in course_video.items():
-                        if predicted_video_name in videos:
-                            predicted_video_courses.append(course)
-                        if y_video_name in videos:
-                            prev_course.append(course)
+            scores_len += 1
+            top20 = self.get_top_k_predictions(p_, k=20)
 
-                    next_video_id = None
-                    for predicted_course in predicted_video_courses:
-                        for c_p in prev_course:
-                            if predicted_course == c_p:
-                                for course in courses:
-                                    if course['id'] == predicted_course:
-                                        video_order = course['video_order']
-                                        try:
-                                            prev_cont_met = False
-                                            for index, video_name in enumerate(video_order):
-                                                if prev_cont_met:
-                                                    if video_name in u2idx:
-                                                        next_video_id = u2idx[video_name]
-                                                    else:
-                                                        next_video_id = None
-                                                if video_name == y_video_name:
-                                                    y_index = index
-                                                    prev_cont_met = True
-                                                else:
-                                                    prev_cont_met = False
-                                                if video_name == predicted_video_name:
-                                                    predicted_index = index
-                                            # distance = abs(y_index - predicted_index)
-                                            distance = predicted_index - y_index
+            # 计算预测视频的分数
+            scores_pro = self.score_predictions(top20, y_p, idx2u, u2idx, course_video_mapping, courses)
 
-                                            if distance == 1:
-                                                scores_pro[video_id] += 10
-                                            if distance == 2:
-                                                scores_pro[video_id] += 9
-                                            elif distance == 3:
-                                                scores_pro[video_id] += 8
-                                            elif distance == 4:
-                                                scores_pro[video_id] += 5
-                                        except ValueError:
-                                            pass
+            # 根据得分重新排序top20
+            sorted_top20 = self.reorder_top_predictions(top20, scores_pro)
 
-                # 根据得分对top20重新排序
-                # 得分的视频及其分数
-                scored_videos = [(video_id, score_pro) for video_id, score_pro in scores_pro.items() if score_pro > 0]
-                # 按照分数从高到低排序得分的视频
-                scored_videos.sort(key=lambda pair: pair[1], reverse=True)
-                scored_video_ids = [video_id for video_id, _ in scored_videos]
-                # 未得分的视频
-                unscored_video_ids = [video_id for video_id in top20 if
-                                      video_id not in scores_pro or scores_pro[video_id] == 0]
-                # 合并结果
-                sorted_top20 = scored_video_ids + unscored_video_ids
-                if next_video_id is not None:
-                    sorted_top20.insert(0, next_video_id)
-
-                video_name = idx2u[y_]
-                this_courses = []
-                for course, videos in course_video.items():
-                    if video_name in videos:
-                        for cour in courses:
-                            if cour['id'] == course:
-                                video_order = cour['video_order']
-                                for index, video in enumerate(video_order):
-                                    if video == video_name:
-                                        sub_courses = [course, index]
-                                        this_courses.append(sub_courses)
-
-                sub_list = [video_name, wc, dt, wt, d1, d2, d3]
-                sub_list = sub_list + this_courses
-                inform_list.append(sub_list)
-
-                for k in k_list:
-                    topk = sorted_top20[:k]
-                    if k == 20:
-                        if y_ not in topk:
-                            if len(inform_list) > 20:
-                                inform_list = inform_list[-20:]
-                            for v in topk:
-                                if v < len(idx2u):
-                                    # 获取目标索引处的video_id（假设它是一个字符串）
-                                    video_id1 = idx2u[v]
-                                    if isinstance(video_id1, bytes):
-                                        video_id_str = video_id1.decode('utf-8')
-                                    else:
-                                        video_id_str = video_id1
-
-                                    cou = []
-
-                                    for course, videos in course_video.items():
-                                        if video_id_str in videos:
-                                            for cour in courses:
-                                                if cour['id'] == course:
-                                                    video_order = cour['video_order']
-                                                    for index, video in enumerate(video_order):
-                                                        if video == video_id_str:
-                                                            sub_cour = [course, index]
-                                                            cou.append(sub_cour)
-
-                                    print(f"{video_id_str},{cou}")
-
-                                else:
-                                    print(f"Index {video} is out of range.")
-                            # print("topk:", topk)
-                            print("y_list:", inform_list)
-                            print("----------------------------------------------------------------------------------")
-
-                    scores['hits@' + str(k)].extend([1. if y_ in topk else 0.])
-                    scores['map@' + str(k)].extend([self.apk([y_], topk, k)])
-
-            else:
-                y_list.clear()
-                inform_list.clear
+            # 更新结果
+            for k in k_list:
+                topk = sorted_top20[:k]
+                scores[f'hits@{k}'].append(1.0 if y_ in topk else 0.0)
+                scores[f'map@{k}'].append(self.apk([y_], topk, k))
 
         scores = {k: np.mean(v) for k, v in scores.items()}
         return scores, scores_len
+
+    def build_course_video_mapping(self, courses, course_video):
+        """构建课程与视频的映射关系，减少重复查找"""
+        mapping = {}
+        for course in courses:
+            course_id = course['id']
+            video_order = course.get('video_order', [])
+            mapping[course_id] = video_order
+        return mapping
+
+    def get_top_k_predictions(self, p_, k=20):
+        """获取排序后的前K个预测视频"""
+        return p_.argsort()[::-1][:k]
+
+    def score_predictions(self, top20, y_p, idx2u, u2idx, course_video_mapping, courses):
+        """根据与历史视频的关联性给每个预测视频评分"""
+        scores_pro = {video_id: 0 for video_id in top20}
+        prev_video_name = idx2u[y_p]
+
+        for video_id in top20:
+            predicted_video_name = idx2u[video_id]
+            predicted_courses = self.get_courses_by_video(predicted_video_name, course_video_mapping)
+            prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
+
+            # 计算距离评分
+            scores_pro[video_id] += self.calculate_distance_score(predicted_courses, prev_courses, courses,
+                                                                  prev_video_name, predicted_video_name, u2idx)
+
+        return scores_pro
+
+    def calculate_distance_score(self, predicted_courses, prev_courses, courses, prev_video_name, predicted_video_name,
+                                 u2idx):
+        """计算课程内的相对视频位置的距离评分"""
+        score = 0
+        is_next_video = False  # 新增一个标志，判断是否找到了相邻视频
+
+        for pred_course in predicted_courses:
+            for prev_course in prev_courses:
+                if pred_course == prev_course:
+                    course_info = next((c for c in courses if c['id'] == pred_course), None)
+                    if course_info:
+                        video_order = course_info.get('video_order', [])
+                        try:
+                            y_index = video_order.index(prev_video_name)
+                            pred_index = video_order.index(predicted_video_name)
+                            distance = pred_index - y_index
+
+                            if distance == 1:
+                                score += 10  # 确保相邻视频加足够高的分数
+                                is_next_video = True  # 标记为找到了下一个视频
+                            elif distance == 2:
+                                score += 9
+                            elif distance == 3:
+                                score += 8
+                            elif distance == 4:
+                                score += 5
+                        except ValueError:
+                            continue
+
+        # 如果确实找到了相邻视频，可以在这里设置更高的优先级
+        if is_next_video:
+            score += 10  # 再次强化相邻视频的分数
+
+        return score
+
+    # 在 get_top_k_predictions 中插入下一个视频到首位
+    def reorder_top_predictions(self, top20, scores_pro, next_video_id=None):
+        """根据得分重新排序top20预测视频，优先将下一个视频插入到第一位"""
+        scored_videos = sorted(((v, scores_pro[v]) for v in top20 if scores_pro[v] > 0), key=lambda x: x[1],
+                               reverse=True)
+        unscored_videos = [v for v in top20 if scores_pro[v] == 0]
+
+        sorted_videos = [v for v, _ in scored_videos] + unscored_videos
+
+        # 如果找到 next_video_id，则将其插入到首位
+        if next_video_id is not None:
+            sorted_videos.insert(0, next_video_id)
+
+        return sorted_videos
