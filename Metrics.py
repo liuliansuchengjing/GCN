@@ -106,6 +106,14 @@ class Metrics(object):
         scores = {k: np.mean(v) for k, v in scores.items()}
         return scores, scores_len
 
+    def get_courses_by_video(self, video_name, course_video_mapping):
+        """根据视频名称获取其所属的课程"""
+        courses = []
+        for course, videos in course_video_mapping.items():
+            if video_name in videos:
+                courses.append(course)
+        return courses
+
     def compute_metric_pro(self, y_prob, y_true, y_prev, w_c, d_t, w_t, d_1, d_2, d_3, k_list=[5, 10, 20]):
         '''
             y_true: (#samples, )
