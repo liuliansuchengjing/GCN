@@ -106,7 +106,6 @@ class Metrics(object):
         scores = {k: np.mean(v) for k, v in scores.items()}
         return scores, scores_len
 
-    @staticmethod
     def get_courses_by_video(self, video_name, course_video_mapping):
         """根据视频名称获取其所属的课程"""
         courses = []
@@ -181,7 +180,6 @@ class Metrics(object):
                         continue
         return None
 
-    @staticmethod
     def build_course_video_mapping(self, courses):
         """构建课程与视频的映射关系，减少重复查找"""
         mapping = {}
@@ -191,7 +189,6 @@ class Metrics(object):
             mapping[course_id] = video_order
         return mapping
 
-    @staticmethod
     def get_top_k_predictions(self, p_, k=20):
         """获取排序后的前K个预测视频"""
         return p_.argsort()[::-1][:k]
@@ -214,7 +211,6 @@ class Metrics(object):
 
         return scores_pro, f_next_video
 
-    @staticmethod
     def calculate_distance_score(self, predicted_courses, prev_courses, courses, prev_video_name, predicted_video_name):
         """计算课程内的相对视频位置的距离评分"""
         score = 0
@@ -250,7 +246,6 @@ class Metrics(object):
         return score, f_next_video
 
     # 在 get_top_k_predictions 中插入下一个视频到首位
-    @staticmethod
     def reorder_top_predictions(self, top20, scores_pro, next_video_id=None):
         """根据得分重新排序top20预测视频，优先将下一个视频插入到第一位"""
         scored_videos = sorted(((v, scores_pro[v]) for v in top20 if scores_pro[v] > 0), key=lambda x: x[1],
