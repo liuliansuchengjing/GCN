@@ -141,20 +141,24 @@ class Metrics(object):
 
             scores_len += 1
             top20 = self.get_top_k_predictions(p_, k=20)
+            prev_video_name = idx2u[y_p]
+            prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
+            next_video_id = None
 
             # 计算预测视频的分数
-            scores_pro, f_next_video = self.score_predictions(top20, y_p, idx2u, course_video_mapping, courses)
+            scores_pro, f_next_video = self.score_predictions(top20, y_p, idx2u, course_video_mapping, courses, prev_courses)
 
             if f_next_video:
                 # 通过前一个视频找到相邻的下一个视频
-                prev_video_name = idx2u[y_p]
-                next_video_id = self.find_next_video(prev_video_name, course_video_mapping, u2idx, courses)
+                # prev_video_name = idx2u[y_p]
+                next_video_id = self.find_next_video(prev_video_name, prev_courses, u2idx, courses)
 
             # 根据得分重新排序top20
             sorted_topk = self.reorder_top_predictions(top20, scores_pro)
 
             if d3 < 0.25:
-                prev_video = self.find_prev_video(prev_video_name, course_video_mapping, u2idx, courses)
+
+                prev_video = self.find_prev_video(prev_video_name, prev_courses, u2idx, courses)
                 if prev_video is not None:
                     # sorted_videos.insert(0, prev_video)
                     sorted_topk = prev_video + sorted_topk
@@ -172,9 +176,9 @@ class Metrics(object):
         scores = {k: np.mean(v) for k, v in scores.items()}
         return scores, scores_len
 
-    def find_next_video(self, prev_video_name, course_video_mapping, u2idx, courses):
+    def find_next_video(self, prev_video_name, prev_courses, u2idx, courses):
         """在课程中找到相邻的下一个视频"""
-        prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
+        # prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
         for course_id in prev_courses:
             for course in courses:
                 if course['id'] == course_id:
@@ -203,7 +207,7 @@ class Metrics(object):
         """获取排序后的前K个预测视频"""
         return p_.argsort()[::-1][:k]
 
-    def score_predictions(self, top20, y_p, idx2u, course_video_mapping, courses):
+    def score_predictions(self, top20, y_p, idx2u, course_video_mapping, courses, prev_courses):
         """根据与历史视频的关联性给每个预测视频评分"""
         scores_pro = {video_id: 0 for video_id in top20}
         prev_video_name = idx2u[y_p]
@@ -211,7 +215,7 @@ class Metrics(object):
         for video_id in top20:
             predicted_video_name = idx2u[video_id]
             predicted_courses = self.get_courses_by_video(predicted_video_name, course_video_mapping)
-            prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
+            # prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
 
             # 计算距离评分
             score, f_next_video = self.calculate_distance_score(predicted_courses, prev_courses, courses,
@@ -266,9 +270,9 @@ class Metrics(object):
 
         return sorted_videos
 
-    def find_prev_video(self, prev_video_name, course_video_mapping, u2idx, courses):
+    def find_prev_video(self, prev_video_name, prev_courses, u2idx, courses):
         """在课程中找到相邻的下一个视频"""
-        prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
+        # prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
         prev_video_list = []
         prev_video = []
         for course_id in prev_courses:
