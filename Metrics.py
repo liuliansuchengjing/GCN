@@ -151,7 +151,7 @@ class Metrics(object):
                 next_video_id = self.find_next_video(prev_video_name, course_video_mapping, u2idx, courses)
 
             # 根据得分重新排序top20
-            sorted_top20 = self.reorder_top_predictions(top20, scores_pro, next_video_id)
+            sorted_top20 = self.reorder_top_predictions(top20, scores_pro)
 
             if d3 < 0.25:
                 prev_video = self.find_prev_video(prev_video_name, course_video_mapping, u2idx, courses)
