@@ -153,11 +153,11 @@ class Metrics(object):
                 # prev_video_name = idx2u[y_p]
                 next_video_id = self.find_next_video(prev_video_name, prev_courses, u2idx, courses)
 
-            # 根据得分重新排序top20
+            # 根据得分重新排序topk
             sorted_topk = self.reorder_top_predictions(top50, scores_pro)
 
             # if d3 < 0.25:
-            # 
+            #
             #     prev_video = self.find_prev_video(prev_video_name, prev_courses, u2idx, courses)
             #     if prev_video is not None:
             #         # sorted_videos.insert(0, prev_video)
@@ -207,12 +207,13 @@ class Metrics(object):
         """获取排序后的前K个预测视频"""
         return p_.argsort()[::-1][:k]
 
-    def score_predictions(self, top20, y_p, idx2u, course_video_mapping, courses, prev_courses):
+    def score_predictions(self, topk, y_p, idx2u, course_video_mapping, courses, prev_courses):
         """根据与历史视频的关联性给每个预测视频评分"""
-        scores_pro = {video_id: 0 for video_id in top20}
+        # scores_pro = {video_id: 0 for video_id in topk}
+        scores_pro = {video_id: (20-i) if i < 20 else 0 for i, video_id in enumerate(topk)}
         prev_video_name = idx2u[y_p]
 
-        for video_id in top20:
+        for video_id in topk:
             predicted_video_name = idx2u[video_id]
             predicted_courses = self.get_courses_by_video(predicted_video_name, course_video_mapping)
             # prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
@@ -242,16 +243,16 @@ class Metrics(object):
                             distance = pred_index - y_index
 
                             if distance == 1:
-                                score += 10  # 确保相邻视频加足够高的分数
+                                score += 9  # 确保相邻视频加足够高的分数
                                 f_next_video = False  # 标记为不需要再找下一个视频
                             elif distance == -1:
-                                score += 10
+                                score += 7
                             elif abs(distance) == 2:
-                                score += 9
+                                score += 6
                             elif abs(distance) == 3:
-                                score += 8
-                            elif abs(distance) == 4:
                                 score += 5
+                            elif abs(distance) == 4:
+                                score += 4
                         except ValueError:
                             continue
 
@@ -262,11 +263,11 @@ class Metrics(object):
         return score, f_next_video
 
     # 在 get_top_k_predictions 中插入下一个视频到首位
-    def reorder_top_predictions(self, top20, scores_pro):
-        """根据得分重新排序top20预测视频，优先将下一个视频插入到第一位"""
-        scored_videos = sorted(((v, scores_pro[v]) for v in top20 if scores_pro[v] > 0), key=lambda x: x[1],
+    def reorder_top_predictions(self, topk, scores_pro):
+        """根据得分重新排序topk预测视频，优先将下一个视频插入到第一位"""
+        scored_videos = sorted(((v, scores_pro[v]) for v in topk if scores_pro[v] > 0), key=lambda x: x[1],
                                reverse=True)
-        unscored_videos = [v for v in top20 if scores_pro[v] == 0]
+        unscored_videos = [v for v in topk if scores_pro[v] == 0]
 
         sorted_videos = [v for v, _ in scored_videos] + unscored_videos
 
