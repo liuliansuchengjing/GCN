@@ -140,13 +140,13 @@ class Metrics(object):
                 continue
 
             scores_len += 1
-            top20 = self.get_top_k_predictions(p_, k=20)
+            top50 = self.get_top_k_predictions(p_, k=50)
             prev_video_name = idx2u[y_p]
             prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
             next_video_id = None
 
             # 计算预测视频的分数
-            scores_pro, f_next_video = self.score_predictions(top20, y_p, idx2u, course_video_mapping, courses, prev_courses)
+            scores_pro, f_next_video = self.score_predictions(top50, y_p, idx2u, course_video_mapping, courses, prev_courses)
 
             if f_next_video:
                 # 通过前一个视频找到相邻的下一个视频
@@ -154,14 +154,14 @@ class Metrics(object):
                 next_video_id = self.find_next_video(prev_video_name, prev_courses, u2idx, courses)
 
             # 根据得分重新排序top20
-            sorted_topk = self.reorder_top_predictions(top20, scores_pro)
+            sorted_topk = self.reorder_top_predictions(top50, scores_pro)
 
-            if d3 < 0.25:
-
-                prev_video = self.find_prev_video(prev_video_name, prev_courses, u2idx, courses)
-                if prev_video is not None:
-                    # sorted_videos.insert(0, prev_video)
-                    sorted_topk = prev_video + sorted_topk
+            # if d3 < 0.25:
+            # 
+            #     prev_video = self.find_prev_video(prev_video_name, prev_courses, u2idx, courses)
+            #     if prev_video is not None:
+            #         # sorted_videos.insert(0, prev_video)
+            #         sorted_topk = prev_video + sorted_topk
 
             # 如果找到 next_video_id，则将其插入到首位
             if next_video_id is not None:
@@ -244,11 +244,13 @@ class Metrics(object):
                             if distance == 1:
                                 score += 10  # 确保相邻视频加足够高的分数
                                 f_next_video = False  # 标记为不需要再找下一个视频
-                            elif distance == 2:
+                            elif distance == -1:
+                                score += 10
+                            elif abs(distance) == 2:
                                 score += 9
-                            elif distance == 3:
+                            elif abs(distance) == 3:
                                 score += 8
-                            elif distance == 4:
+                            elif abs(distance) == 4:
                                 score += 5
                         except ValueError:
                             continue
