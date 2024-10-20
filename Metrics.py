@@ -278,7 +278,9 @@ class Metrics(object):
                     try:
                         y_index = video_order.index(prev_video_name)
                         for i in range(5, 0, -1):
-                            prev_video_name.append(video_order[y_index - i])
+                            if (y_index - i) >= 0:
+                                prev_video_name.append(video_order[y_index - i])
+
                         for v in prev_video_name:
                             if v in u2idx:
                                 prev_video.append(u2idx[v])
