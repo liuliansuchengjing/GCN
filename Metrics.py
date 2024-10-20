@@ -269,7 +269,7 @@ class Metrics(object):
     def find_prev_video(self, prev_video_name, course_video_mapping, u2idx, courses):
         """在课程中找到相邻的下一个视频"""
         prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
-        prev_video_name = []
+        prev_video_list = []
         prev_video = []
         for course_id in prev_courses:
             for course in courses:
@@ -279,9 +279,9 @@ class Metrics(object):
                         y_index = video_order.index(prev_video_name)
                         for i in range(5, 0, -1):
                             if (y_index - i) >= 0:
-                                prev_video_name.append(video_order[y_index - i])
+                                prev_video_list.append(video_order[y_index - i])
 
-                        for v in prev_video_name:
+                        for v in prev_video_list:
                             if v in u2idx:
                                 prev_video.append(u2idx[v])
                         return prev_video
