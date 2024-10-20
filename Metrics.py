@@ -243,16 +243,16 @@ class Metrics(object):
                             distance = pred_index - y_index
 
                             if distance == 1:
-                                score += 9  # 确保相邻视频加足够高的分数
+                                score += 10  # 确保相邻视频加足够高的分数
                                 f_next_video = False  # 标记为不需要再找下一个视频
                             elif distance == -1:
-                                score += 7
+                                score += 10
                             elif abs(distance) == 2:
-                                score += 6
+                                score += 10
                             elif abs(distance) == 3:
-                                score += 5
+                                score += 10
                             elif abs(distance) == 4:
-                                score += 4
+                                score += 10
                         except ValueError:
                             continue
 
