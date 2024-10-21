@@ -170,7 +170,8 @@ class Metrics(object):
             topk_diversity_video = self.random_videos_from_courses(topk_course_list, course_video_mapping, 2, seed=58)
             prev_diversity_video = self.random_videos_from_courses(prev_course_list, course_video_mapping, 2, seed=58)
 
-            sorted_topk.insert(20, prev_diversity_video + topk_diversity_video)
+            original_sorted_topk = sorted_topk.copy()
+            sorted_topk = sorted_topk[:20] + [item for item in prev_diversity_video] + [item for item in topk_diversity_video] + original_sorted_topk[20:]
 
 
 
