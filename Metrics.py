@@ -188,6 +188,7 @@ class Metrics(object):
             #     for v in prev_video:
             #         if v not in sorted_topk:
             #             sorted_topk.insert(0, next_video_id)
+            print("Topk:",sorted_topk)
 
             # 更新结果
             for k in k_list:
