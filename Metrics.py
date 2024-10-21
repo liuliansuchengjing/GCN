@@ -147,8 +147,8 @@ class Metrics(object):
             initial_topk = self.get_top_k_predictions(p_, k=40)
             topk_course_list = []
 
-            # prev_video_name = idx2u[y_p]
-            # prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
+            prev_video_name = idx2u[y_p]
+            prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
             # if prev_courses and prev_courses[0] not in prev_course_list:
             #     prev_course_list.insert(0, prev_courses[0])
 
@@ -166,10 +166,10 @@ class Metrics(object):
             #     topk_course = self.get_courses_by_video(topk_v_name, course_video_mapping)
             #     if topk_course and topk_course[0] not in topk_course_list:
             #         topk_course_list.append(topk_course[0])
-
+            #
             # topk_diversity_video = self.random_videos_from_courses(topk_course_list, course_video_mapping, 2, seed=58)
             # prev_diversity_video = self.random_videos_from_courses(prev_course_list, course_video_mapping, 2, seed=58)
-
+            #
             # original_sorted_topk = sorted_topk.copy()
             # sorted_topk = sorted_topk[:20] + [item for item in prev_diversity_video] + [item for item in topk_diversity_video] + original_sorted_topk[20:]
 
