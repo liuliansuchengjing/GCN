@@ -140,13 +140,13 @@ class Metrics(object):
                 continue
 
             scores_len += 1
-            top50 = self.get_top_k_predictions(p_, k=50)
+            initial_topk = self.get_top_k_predictions(p_, k=20)
             prev_video_name = idx2u[y_p]
             prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
             next_video_id = None
 
             # 计算预测视频的分数
-            scores_pro, f_next_video = self.score_predictions(top50, y_p, idx2u, course_video_mapping, courses, prev_courses)
+            scores_pro, f_next_video = self.score_predictions(initial_topk, y_p, idx2u, course_video_mapping, courses, prev_courses)
 
             if f_next_video:
                 # 通过前一个视频找到相邻的下一个视频
@@ -154,7 +154,7 @@ class Metrics(object):
                 next_video_id = self.find_next_video(prev_video_name, prev_courses, u2idx, courses)
 
             # 根据得分重新排序topk
-            sorted_topk = self.reorder_top_predictions(top50, scores_pro)
+            sorted_topk = self.reorder_top_predictions(initial_topk, scores_pro)
 
             # if d3 < 0.25:
             #
@@ -163,9 +163,17 @@ class Metrics(object):
             #         # sorted_videos.insert(0, prev_video)
             #         sorted_topk = prev_video + sorted_topk
 
-            # 如果找到 next_video_id，则将其插入到首位
-            if next_video_id is not None:
-                sorted_topk.insert(0, next_video_id)
+
+
+            # # 如果找到 next_video_id，则将其插入到首位
+            # if next_video_id is not None:
+            #     sorted_topk.insert(0, next_video_id)
+
+            prev_video = self.find_prev_video(prev_video_name, prev_courses, u2idx, courses)
+            if prev_video is not None:
+                for v in prev_video:
+                    if v not in sorted_topk:
+                        sorted_topk.insert(0, next_video_id)
 
             # 更新结果
             for k in k_list:
@@ -284,9 +292,12 @@ class Metrics(object):
                     video_order = course.get('video_order', [])
                     try:
                         y_index = video_order.index(prev_video_name)
-                        for i in range(5, 0, -1):
+                        for i in range(4, 0, -1):
                             if (y_index - i) >= 0:
                                 prev_video_list.append(video_order[y_index - i])
+
+                            if (y_index + i) < len(video_order):
+                                prev_video_list.append(video_order[y_index + i])
 
                         for v in prev_video_list:
                             if v in u2idx:
