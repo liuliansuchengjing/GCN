@@ -140,7 +140,7 @@ class Metrics(object):
                 continue
 
             scores_len += 1
-            initial_topk = self.get_top_k_predictions(p_, k=20)
+            initial_topk = self.get_top_k_predictions(p_, k=100)
             prev_video_name = idx2u[y_p]
             prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
             next_video_id = None
@@ -165,15 +165,15 @@ class Metrics(object):
 
 
 
-            # # 如果找到 next_video_id，则将其插入到首位
-            # if next_video_id is not None:
-            #     sorted_topk.insert(0, next_video_id)
+            # 如果找到 next_video_id，则将其插入到首位
+            if next_video_id is not None:
+                sorted_topk.insert(0, next_video_id)
 
-            prev_video = self.find_prev_video(prev_video_name, prev_courses, u2idx, courses)
-            if prev_video is not None:
-                for v in prev_video:
-                    if v not in sorted_topk:
-                        sorted_topk.insert(0, next_video_id)
+            # prev_video = self.find_prev_video(prev_video_name, prev_courses, u2idx, courses)
+            # if prev_video is not None:
+            #     for v in prev_video:
+            #         if v not in sorted_topk:
+            #             sorted_topk.insert(0, next_video_id)
 
             # 更新结果
             for k in k_list:
