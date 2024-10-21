@@ -149,11 +149,11 @@ class Metrics(object):
 
             prev_video_name = idx2u[y_p]
             prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
-            if prev_courses[0] not in prev_course_list:
-                prev_course_list.insert(0, prev_courses[0])
+            if prev_courses is not None:
+                if prev_courses[0] not in prev_course_list:
+                    prev_course_list.insert(0, prev_courses[0])                
 
             next_video_id = None
-
 
             # 计算预测视频的分数
             scores_pro, f_next_video = self.score_predictions(initial_topk, y_p, idx2u, course_video_mapping, courses, prev_courses)
@@ -165,8 +165,9 @@ class Metrics(object):
             for v in sorted_topk:
                 topk_v_name = idx2u[v]
                 topk_course = self.get_courses_by_video(topk_v_name, course_video_mapping)
-                topk_course_list.append(topk_course[0])
-
+                if topk_course is not None:
+                    if topk_course[0] not in topk_course_list:
+                        topk_course_list.append(topk_course[0])             
 
             topk_diversity_video = self.random_videos_from_courses(topk_course_list, course_video_mapping, 2, seed=58)
             prev_diversity_video = self.random_videos_from_courses(prev_course_list, course_video_mapping, 2, seed=58)
@@ -237,21 +238,21 @@ class Metrics(object):
 
         return selected_videos
 
-    def build_course_video_mapping(self, courses):
-        """构建课程与视频的映射关系，减少重复查找"""
-        mapping = {}
-        for course in courses:
-            course_id = course['id']
-            video_order = course.get('video_order', [])
-            mapping[course_id] = video_order
-        return mapping
-
     # def build_course_video_mapping(self, courses):
     #     """构建课程与视频的映射关系，减少重复查找"""
-    #     mapping = defaultdict(list)
+    #     mapping = {}
     #     for course in courses:
-    #         mapping[course['id']].extend(course.get('video_order', []))
-    #     return dict(mapping)
+    #         course_id = course['id']
+    #         video_order = course.get('video_order', [])
+    #         mapping[course_id] = video_order
+    #     return mapping
+
+    def build_course_video_mapping(self, courses):
+        """构建课程与视频的映射关系，减少重复查找"""
+        mapping = defaultdict(list)
+        for course in courses:
+            mapping[course['id']].extend(course.get('video_order', []))
+        return dict(mapping)
 
     def get_top_k_predictions(self, p_, k=20):
         """获取排序后的前K个预测视频"""
