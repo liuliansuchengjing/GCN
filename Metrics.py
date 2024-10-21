@@ -3,6 +3,7 @@ import json
 import pickle
 import csv
 import random
+from collections import defaultdict
 
 
 def load_idx2u():
@@ -245,6 +246,13 @@ class Metrics(object):
             mapping[course_id] = video_order
         return mapping
 
+    # def build_course_video_mapping(self, courses):
+    #     """构建课程与视频的映射关系，减少重复查找"""
+    #     mapping = defaultdict(list)
+    #     for course in courses:
+    #         mapping[course['id']].extend(course.get('video_order', []))
+    #     return dict(mapping)
+
     def get_top_k_predictions(self, p_, k=20):
         """获取排序后的前K个预测视频"""
         return p_.argsort()[::-1][:k]
@@ -314,26 +322,6 @@ class Metrics(object):
         sorted_videos = [v for v, _ in scored_videos] + unscored_videos
 
         return sorted_videos
-
-    def random_videos_from_courses(self, course_list, course_video_mapping, num_videos=3, seed=None):
-        """
-        从 topk_course_list 中的每个课程在 course_video_mapping 中随机抽取 num_videos 个视频（不重复），可以设置种子。
-        """
-        selected_videos = []
-
-        if seed is not None:
-            random.seed(seed)  # 设置随机种子
-
-        # for course_id in course_list:
-        for index, course_id in enumerate(course_list):
-            if index == 3:
-                break
-            if course_id in course_video_mapping:
-                videos = course_video_mapping[course_id]
-                # 从视频列表中随机抽取 num_videos 个不重复的视频
-                selected_videos.extend(random.sample(videos, min(len(videos), num_videos)))  # 确保不会超出列表长度
-
-        return selected_videos
 
 
     def find_prev_video(self, prev_video_name, prev_courses, u2idx, courses):
