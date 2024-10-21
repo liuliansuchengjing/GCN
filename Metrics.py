@@ -149,8 +149,8 @@ class Metrics(object):
 
             prev_video_name = idx2u[y_p]
             prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
-            # if prev_courses and prev_courses[0] not in prev_course_list:
-            #     prev_course_list.insert(0, prev_courses[0])
+            if prev_courses and prev_courses[0] not in prev_course_list:
+                prev_course_list.insert(0, prev_courses[0])
 
             next_video_id = None
 
@@ -160,18 +160,18 @@ class Metrics(object):
 
             # 根据得分重新排序topk
             sorted_topk = self.reorder_top_predictions(initial_topk, scores_pro)
-            # sorted_top20 = sorted_topk[:20]
-            # for v in sorted_topk:
-            #     topk_v_name = idx2u[v]
-            #     topk_course = self.get_courses_by_video(topk_v_name, course_video_mapping)
-            #     if topk_course and topk_course[0] not in topk_course_list:
-            #         topk_course_list.append(topk_course[0])
-            #
-            # topk_diversity_video = self.random_videos_from_courses(topk_course_list, course_video_mapping, 2, seed=58)
-            # prev_diversity_video = self.random_videos_from_courses(prev_course_list, course_video_mapping, 2, seed=58)
-            #
-            # original_sorted_topk = sorted_topk.copy()
-            # sorted_topk = sorted_topk[:20] + [item for item in prev_diversity_video] + [item for item in topk_diversity_video] + original_sorted_topk[20:]
+            sorted_top20 = sorted_topk[:20]
+            for v in sorted_topk:
+                topk_v_name = idx2u[v]
+                topk_course = self.get_courses_by_video(topk_v_name, course_video_mapping)
+                if topk_course and topk_course[0] not in topk_course_list:
+                    topk_course_list.append(topk_course[0])
+            
+            topk_diversity_video = self.random_videos_from_courses(topk_course_list, course_video_mapping, 2, seed=58)
+            prev_diversity_video = self.random_videos_from_courses(prev_course_list, course_video_mapping, 2, seed=58)
+            
+            original_sorted_topk = sorted_topk.copy()
+            sorted_topk = sorted_topk[:20] + [item for item in prev_diversity_video] + [item for item in topk_diversity_video] + original_sorted_topk[20:]
 
 
 
@@ -188,6 +188,7 @@ class Metrics(object):
             #     for v in prev_video:
             #         if v not in sorted_topk:
             #             sorted_topk.insert(0, next_video_id)
+            print("TopK:", sorted_topk)
 
             # 更新结果
             for k in k_list:
