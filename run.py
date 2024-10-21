@@ -255,7 +255,7 @@ def test_model(MSHGAT, data_path):
     model.load_state_dict(torch.load(opt.save_path))
     model.cuda()
 
-    scores = test_epoch_pro(model, test_data, relation_graph, hypergraph_list)
+    scores = test_epoch_pro(model, test_data, relation_graph, hypergraph_list, k_list=[5, 10, 20, 50, 70, 100])
     print('  - (Test) ')
     for metric in scores.keys():
         print(metric + ' ' + str(scores[metric]))
