@@ -145,8 +145,6 @@ class Metrics(object):
             scores_len += 1
             initial_topk = self.get_top_k_predictions(p_, k=40)
             topk_course_list = []
-            topk_diversity_video = []
-            prev_diversity_video = []
 
             prev_video_name = idx2u[y_p]
             prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
@@ -172,7 +170,7 @@ class Metrics(object):
             topk_diversity_video = self.random_videos_from_courses(topk_course_list, course_video_mapping, 2, seed=58)
             prev_diversity_video = self.random_videos_from_courses(prev_course_list, course_video_mapping, 2, seed=58)
 
-            sorted_topk = sorted_topk.insert(20, prev_diversity_video + topk_diversity_video)
+            sorted_topk.insert(20, prev_diversity_video + topk_diversity_video)
 
 
 
@@ -216,7 +214,7 @@ class Metrics(object):
                     except ValueError:
                         continue
         return None
-    
+
     def random_videos_from_courses(self, course_list, course_video_mapping, num_videos=3, seed=None):
         """
         从 topk_course_list 中的每个课程在 course_video_mapping 中随机抽取 num_videos 个视频（不重复），可以设置种子。
