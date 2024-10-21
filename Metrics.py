@@ -2,6 +2,7 @@ import numpy as np
 import json
 import pickle
 import csv
+import random
 
 
 def load_idx2u():
@@ -128,6 +129,7 @@ class Metrics(object):
         idx2u = load_idx2u()
         u2idx = load_u2idx()
         courses = load_course()
+        prev_course_list = []
 
         scores = {f'hits@{k}': [] for k in k_list}
         scores.update({f'map@{k}': [] for k in k_list})
@@ -137,34 +139,47 @@ class Metrics(object):
 
         for p_, y_, y_p, wc, dt, wt, d1, d2, d3 in zip(y_prob, y_true, y_prev, w_c, d_t, w_t, d_1, d_2, d_3):
             if y_ == self.PAD:
+                prev_course_list = []
                 continue
 
             scores_len += 1
             initial_topk = self.get_top_k_predictions(p_, k=40)
+            topk_course_list = []
+            topk_diversity_video = []
+            prev_diversity_video = []
+
             prev_video_name = idx2u[y_p]
             prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
+            if prev_courses[0] not in prev_course_list:
+                prev_course_list.insert(0, prev_courses[0])
+
             next_video_id = None
+
 
             # 计算预测视频的分数
             scores_pro, f_next_video = self.score_predictions(initial_topk, y_p, idx2u, course_video_mapping, courses, prev_courses)
+
+
+            # 根据得分重新排序topk
+            sorted_topk = self.reorder_top_predictions(initial_topk, scores_pro)
+            # sorted_top20 = sorted_topk[:20]
+            for v in sorted_topk:
+                topk_v_name = idx2u[v]
+                topk_course = self.get_courses_by_video(topk_v_name, course_video_mapping)
+                topk_course_list.append(topk_course[0])
+
+
+            topk_diversity_video = self.random_videos_from_courses(topk_course_list, course_video_mapping, 2, seed=58)
+            prev_diversity_video = self.random_videos_from_courses(prev_course_list, course_video_mapping, 2, seed=58)
+
+            sorted_topk = sorted_topk.insert(20, topk_diversity_video, prev_diversity_video)
+
+
 
             if f_next_video:
                 # 通过前一个视频找到相邻的下一个视频
                 # prev_video_name = idx2u[y_p]
                 next_video_id = self.find_next_video(prev_video_name, prev_courses, u2idx, courses)
-
-            # 根据得分重新排序topk
-            sorted_topk = self.reorder_top_predictions(initial_topk, scores_pro)
-
-            # if d3 < 0.25:
-            #
-            #     prev_video = self.find_prev_video(prev_video_name, prev_courses, u2idx, courses)
-            #     if prev_video is not None:
-            #         # sorted_videos.insert(0, prev_video)
-            #         sorted_topk = prev_video + sorted_topk
-
-
-
             # 如果找到 next_video_id，则将其插入到首位
             if next_video_id is not None:
                 sorted_topk.insert(0, next_video_id)
@@ -270,7 +285,7 @@ class Metrics(object):
 
         return score, f_next_video
 
-    # 在 get_top_k_predictions 中插入下一个视频到首位
+
     def reorder_top_predictions(self, topk, scores_pro):
         """根据得分重新排序topk预测视频，优先将下一个视频插入到第一位"""
         scored_videos = sorted(((v, scores_pro[v]) for v in topk if scores_pro[v] > 0), key=lambda x: x[1],
@@ -280,6 +295,27 @@ class Metrics(object):
         sorted_videos = [v for v, _ in scored_videos] + unscored_videos
 
         return sorted_videos
+
+    def random_videos_from_courses(self, course_list, course_video_mapping, num_videos=3, seed=None):
+        """
+        从 topk_course_list 中的每个课程在 course_video_mapping 中随机抽取 num_videos 个视频（不重复），可以设置种子。
+        """
+        selected_videos = []
+
+        if seed is not None:
+            random.seed(seed)  # 设置随机种子
+
+        # for course_id in course_list:
+        for index, course_id in enumerate(course_list):
+            if index == 3:
+                break
+            if course_id in course_video_mapping:
+                videos = course_video_mapping[course_id]
+                # 从视频列表中随机抽取 num_videos 个不重复的视频
+                selected_videos.extend(random.sample(videos, min(len(videos), num_videos)))  # 确保不会超出列表长度
+
+        return selected_videos
+
 
     def find_prev_video(self, prev_video_name, prev_courses, u2idx, courses):
         """在课程中找到相邻的下一个视频"""
