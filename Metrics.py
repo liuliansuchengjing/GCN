@@ -199,23 +199,31 @@ class Metrics(object):
         scores = {k: np.mean(v) for k, v in scores.items()}
         return scores, scores_len
 
-    def find_next_video(self, prev_video_name, prev_courses, u2idx, courses):
-        """在课程中找到相邻的下一个视频"""
-        # prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
-        for course_id in prev_courses:
-            for course in courses:
-                if course['id'] == course_id:
-                    video_order = course.get('video_order', [])
-                    try:
-                        y_index = video_order.index(prev_video_name)
-                        # 如果下一个视频存在，返回它的ID
-                        if y_index + 1 < len(video_order):
-                            next_video_name = video_order[y_index + 1]
-                            if next_video_name in u2idx:
-                                return u2idx[next_video_name]
-                    except ValueError:
-                        continue
-        return None
+    def random_videos_from_courses(self, course_list, course_video_mapping, num_videos=3, seed=None):
+        """
+        从 topk_course_list 中的每个课程在 course_video_mapping 中随机抽取 num_videos 个视频（不重复），可以设置种子。
+        """
+        selected_videos = []
+
+        if seed is not None:
+            random.seed(seed)  # 设置随机种子
+
+        # for course_id in course_list:
+        for index, course_id in enumerate(course_list):
+            if index == 3:
+                break
+            if course_id in course_video_mapping:
+                videos = course_video_mapping[course_id]
+                # 从视频列表中随机抽取 num_videos 个不重复的视频
+                selected_video_names = random.sample(videos, min(len(videos), num_videos))
+                for video_name in selected_video_names:
+                    if video_name in self.u2idx:
+                        selected_videos.append(self.u2idx[video_name])
+                    else:
+                        # 如果视频名称不在 u2idx 中，可以选择跳过或进行其他处理
+                        pass
+
+        return selected_videos
 
     def build_course_video_mapping(self, courses):
         """构建课程与视频的映射关系，减少重复查找"""
