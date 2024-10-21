@@ -166,12 +166,12 @@ class Metrics(object):
                 topk_course = self.get_courses_by_video(topk_v_name, course_video_mapping)
                 if topk_course and topk_course[0] not in topk_course_list:
                     topk_course_list.append(topk_course[0])
-            
+
             topk_diversity_video = self.random_videos_from_courses(topk_course_list, course_video_mapping, 2, seed=58)
             prev_diversity_video = self.random_videos_from_courses(prev_course_list, course_video_mapping, 2, seed=58)
-            
+
             original_sorted_topk = sorted_topk.copy()
-            sorted_topk = sorted_topk[:20] + [item for item in prev_diversity_video] + [item for item in topk_diversity_video] + original_sorted_topk[20:]
+            sorted_topk = sorted_topk[:14] + [item for item in prev_diversity_video] + [item for item in topk_diversity_video] + original_sorted_topk[14:]
 
 
 
@@ -188,7 +188,6 @@ class Metrics(object):
             #     for v in prev_video:
             #         if v not in sorted_topk:
             #             sorted_topk.insert(0, next_video_id)
-            print("TopK:", sorted_topk)
 
             # 更新结果
             for k in k_list:
@@ -233,7 +232,13 @@ class Metrics(object):
             if course_id in course_video_mapping:
                 videos = course_video_mapping[course_id]
                 # 从视频列表中随机抽取 num_videos 个不重复的视频
-                selected_videos.extend(random.sample(videos, min(len(videos), num_videos)))  # 确保不会超出列表长度
+                selected_video_names = random.sample(videos, min(len(videos), num_videos))
+                for video_name in selected_video_names:
+                    if video_name in self.u2idx:
+                        selected_videos.append(self.u2idx[video_name])
+                    else:
+                        # 如果视频名称不在 u2idx 中，可以选择跳过或进行其他处理
+                        pass
 
         return selected_videos
 
