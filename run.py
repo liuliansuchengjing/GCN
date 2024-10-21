@@ -175,7 +175,8 @@ def test_epoch(model, validation_data, graph, hypergraph_list, k_list=[5, 10, 20
                 validation_data):  # tqdm(validation_data, mininterval=2, desc='  - (Validation) ', leave=False):
             # print("Validation batch ", i)
             # prepare data
-            tgt, tgt_timestamp, tgt_idx = batch
+            # tgt, tgt_timestamp, tgt_idx = batch
+            tgt, tgt_timestamp, tgt_idx, watch_count, duration_time, watch_time, d1, d2, d3 = batch
             y_gold = tgt[:, 1:].contiguous().view(-1).detach().cpu().numpy()
 
             # forward
@@ -255,7 +256,8 @@ def test_model(MSHGAT, data_path):
     model.load_state_dict(torch.load(opt.save_path))
     model.cuda()
 
-    scores = test_epoch_pro(model, test_data, relation_graph, hypergraph_list, k_list=[5, 10, 20, 50, 70, 100])
+    # scores = test_epoch_pro(model, test_data, relation_graph, hypergraph_list, k_list=[5, 10, 20, 50, 70, 100])
+    scores = test_epoch(model, test_data, relation_graph, hypergraph_list, k_list=[5, 10, 20, 50, 70, 100])
     print('  - (Test) ')
     for metric in scores.keys():
         print(metric + ' ' + str(scores[metric]))
