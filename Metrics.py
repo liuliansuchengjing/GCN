@@ -251,6 +251,7 @@ class Metrics(object):
             #     next_video_id = self.find_next_video(prev_video_name, prev_courses, u2idx, courses)
             # 如果找到 next_video_id，则将其插入到首位
             next_video_id = self.find_next_video(prev_video_name, prev_courses, u2idx, courses)
+            initial_topk = initial_topk.tolist() 
             if next_video_id is not None and next_video_id not in initial_topk:
                 initial_topk.insert(0, next_video_id)
 
