@@ -239,10 +239,8 @@ class Metrics(object):
 
 
             # 找到某个视频的焦点概念
-            print("Topk:", sorted_topk)
             focus_concepts = graph.find_focus_concept(prev_video_name)
             optimize_topk = self.optimize_topk_based_on_concept(knowledge_graph, focus_concepts, sorted_topk, idx2u, graph, all_shortest_paths)
-            print("optimize_topk:", optimize_topk)
 
             # optimize_topk = optimize_topk + sorted_topk[10:]
 
@@ -395,14 +393,16 @@ class Metrics(object):
 
         return sorted_videos
 
-
-    def optimize_topk_based_on_concept(self, knowledge_graph, focus_concepts, sorted_topk, idx2u, graph, all_shortest_paths):
+    def optimize_topk_based_on_concept(self, knowledge_graph, focus_concepts, sorted_topk, idx2u, graph,
+                                       all_shortest_paths):
         optimized_topk_list = []
-        zero_score_videos = []  # 用来存储得分为0的视频
+        zero_score_videos_set = set()  # 用于去重存储得分为0的视频
+        seen_videos = set()  # 追踪已处理的视频
 
         for video in sorted_topk:
             video_name = idx2u[video]  # 获取视频名称
-            if video_name in knowledge_graph:  # 确保视频存在于知识图谱中
+            if video_name in knowledge_graph and video not in seen_videos:  # 确保视频存在且未被处理过
+                seen_videos.add(video)  # 记录已处理视频
                 # 获取与视频相关联的概念
                 video_concepts = [concept for concept in knowledge_graph.neighbors(video_name) if
                                   concept.startswith('K_')]
@@ -412,14 +412,15 @@ class Metrics(object):
                     for focus_concept in focus_concepts:
                         shortest_path = graph.get_shortest_path_length(concept, focus_concept, all_shortest_paths)
 
-                        if shortest_path == float('inf'):
-                            relevance_score += 0
-                            zero_score_videos.append(video)
-                        else:
+                        if shortest_path != float('inf'):
                             relevance_score += 1 / (1 + shortest_path)
-                            # 如果有得分，存储为字典
-                            video_dict = {'video_id': video, 'relevance_score': relevance_score}
-                            optimized_topk_list.append(video_dict)
+
+                # 如果得分大于0，将其添加到优化列表中
+                if relevance_score > 0:
+                    optimized_topk_list.append({'video_id': video, 'relevance_score': relevance_score})
+                # 如果得分为0，将其添加到零分列表中，但确保去重
+                else:
+                    zero_score_videos_set.add(video)
 
         # 对有得分的视频按照相关性得分从高到低进行排序
         optimized_topk = sorted(optimized_topk_list, key=lambda x: x['relevance_score'], reverse=True)
@@ -428,9 +429,11 @@ class Metrics(object):
         sorted_videos_with_scores = [video_dict['video_id'] for video_dict in optimized_topk]
 
         # 将得分为0的视频保持原有顺序，追加到排序后的视频ID列表末尾
-        final_topk = sorted_videos_with_scores + zero_score_videos
+        final_topk = sorted_videos_with_scores + list(zero_score_videos_set)
 
         return final_topk
+
+
 
 
 
