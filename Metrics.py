@@ -425,7 +425,7 @@ class Metrics(object):
             else:
                 print(f"Video {video_name} not in graph. Skipping.")
         optimized_topk = sorted(optimized_topk_list, key=lambda x: x['relevance_score'], reverse=True)
-        return optimized_topk
+        return [video for video, score in optimized_topk]
 
 
 
