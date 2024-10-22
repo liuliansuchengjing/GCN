@@ -384,24 +384,24 @@ class Metrics(object):
 
         return sorted_videos
 
-    def optimize_topk_based_on_concept(self, knowledge_graph, student_focus_concepts, topk_video_list, idx2u):
-        for video in topk_video_list:
+    
+    def optimize_topk_based_on_concept(knowledge_graph, focus_concepts, sorted_topk, idx2u):
+        optimized_topk_list = []
+        for video in sorted_topk:
             video_name = idx2u[video]
+            video_dict = {'video_id': video}
             video_concepts = [concept for concept in knowledge_graph.neighbors(video_name) if concept.startswith('K_')]
-            # 计算概念相关性得分
             relevance_score = 0
             for concept in video_concepts:
-                for focus_concept in student_focus_concepts:
+                for focus_concept in focus_concepts:
                     try:
                         shortest_path = nx.shortest_path_length(knowledge_graph, source=concept, target=focus_concept)
                         relevance_score += 1 / (1 + shortest_path)
                     except nx.NetworkXNoPath:
-                        # 如果没有路径，可以考虑给予一个默认的较大距离值
-                        relevance_score += 1 / (1 + 1000)  # 假设一个较大的默认距离
-            video['relevance_score'] = relevance_score
-
-        # 根据相关性得分对Topk视频进行重新排名
-        optimized_topk = sorted(topk_video_list, key=lambda x: x['relevance_score'], reverse=True)
+                        relevance_score += 1 / (1 + 1000)
+            video_dict['relevance_score'] = relevance_score
+            optimized_topk_list.append(video_dict)
+        optimized_topk = sorted(optimized_topk_list, key=lambda x: x['relevance_score'], reverse=True)
         return optimized_topk
 
 
