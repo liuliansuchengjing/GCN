@@ -392,8 +392,12 @@ class Metrics(object):
             relevance_score = 0
             for concept in video_concepts:
                 for focus_concept in student_focus_concepts:
-                    shortest_path = nx.shortest_path_length(knowledge_graph, source=concept, target=focus_concept)
-                    relevance_score += 1 / (1 + shortest_path)
+                    try:
+                        shortest_path = nx.shortest_path_length(knowledge_graph, source=concept, target=focus_concept)
+                        relevance_score += 1 / (1 + shortest_path)
+                    except nx.NetworkXNoPath:
+                        # 如果没有路径，可以考虑给予一个默认的较大距离值
+                        relevance_score += 1 / (1 + 1000)  # 假设一个较大的默认距离
             video['relevance_score'] = relevance_score
 
         # 根据相关性得分对Topk视频进行重新排名
