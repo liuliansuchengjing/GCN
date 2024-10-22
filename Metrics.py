@@ -404,6 +404,29 @@ class Metrics(object):
         optimized_topk = sorted(optimized_topk_list, key=lambda x: x['relevance_score'], reverse=True)
         return optimized_topk
 
+    def optimize_topk_based_on_concept(self, knowledge_graph, focus_concepts, sorted_topk, idx2u):
+        optimized_topk_list = []
+        for video in sorted_topk:
+            video_name = idx2u[video]
+            if video_name in knowledge_graph:
+                video_concepts = [concept for concept in knowledge_graph.neighbors(video_name) if
+                                  concept.startswith('K_')]
+                relevance_score = 0
+                for concept in video_concepts:
+                    for focus_concept in focus_concepts:
+                        try:
+                            shortest_path = nx.shortest_path_length(knowledge_graph, source=concept,
+                                                                    target=focus_concept)
+                            relevance_score += 1 / (1 + shortest_path)
+                        except nx.NetworkXNoPath:
+                            relevance_score += 1 / (1 + 1000)
+                video_dict = {'video_id': video, 'relevance_score': relevance_score}
+                optimized_topk_list.append(video_dict)
+            else:
+                print(f"Video {video_name} not in graph. Skipping.")
+        optimized_topk = sorted(optimized_topk_list, key=lambda x: x['relevance_score'], reverse=True)
+        return optimized_topk
+
 
 
 
