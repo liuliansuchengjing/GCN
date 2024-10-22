@@ -192,6 +192,8 @@ class Metrics(object):
             scores_len += 1
             initial_topk = self.get_top_k_predictions(p_, k=20)
             topk_course_list = []
+            prev_video_name = idx2u[y_p]
+            prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
 
             graph = ConceptGraph(
                 concept_file='/kaggle/input/riginmooccube/MOOCCube/relations/parent-son.json',
@@ -206,8 +208,7 @@ class Metrics(object):
             knowledge_graph = graph.draw_knowledge_graph()
             optimize_topk = self.optimize_topk_based_on_concept(knowledge_graph, focus_concepts, initial_topk, idx2u)
 
-            prev_video_name = idx2u[y_p]
-            prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
+            
             # if prev_courses and prev_courses[0] not in prev_course_list:
             #     prev_course_list.insert(0, prev_courses[0])
 
