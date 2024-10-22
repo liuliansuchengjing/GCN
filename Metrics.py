@@ -422,8 +422,8 @@ class Metrics(object):
                             relevance_score += 1 / (1 + 1000)
                 video_dict = {'video_id': video, 'relevance_score': relevance_score}
                 optimized_topk_list.append(video_dict)
-            else:
-                print(f"Video {video_name} not in graph. Skipping.")
+            # else:
+            #     print(f"Video {video_name} not in graph. Skipping.")
         optimized_topk = sorted(optimized_topk_list, key=lambda x: x['relevance_score'], reverse=True)
         return [video for video, score in optimized_topk]
 
