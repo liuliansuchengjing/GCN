@@ -384,8 +384,8 @@ class Metrics(object):
 
         return sorted_videos
 
-    
-    def optimize_topk_based_on_concept(knowledge_graph, focus_concepts, sorted_topk, idx2u):
+
+    def optimize_topk_based_on_concept(self, knowledge_graph, focus_concepts, sorted_topk, idx2u):
         optimized_topk_list = []
         for video in sorted_topk:
             video_name = idx2u[video]
