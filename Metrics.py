@@ -224,7 +224,7 @@ class Metrics(object):
 
             # 根据得分重新排序topk
             sorted_topk = self.reorder_top_predictions(initial_topk, scores_pro)
-            sorted_top10 = sorted_topk[:10]
+            # sorted_top10 = sorted_topk[:10]
             # for v in sorted_topk:
             #     topk_v_name = idx2u[v]
             #     topk_course = self.get_courses_by_video(topk_v_name, course_video_mapping)
@@ -240,9 +240,9 @@ class Metrics(object):
 
             # 找到某个视频的焦点概念
             focus_concepts = graph.find_focus_concept(prev_video_name)
-            optimize_topk = self.optimize_topk_based_on_concept(knowledge_graph, focus_concepts, sorted_top10, idx2u, graph, all_shortest_paths)
+            optimize_topk = self.optimize_topk_based_on_concept(knowledge_graph, focus_concepts, sorted_topk, idx2u, graph, all_shortest_paths)
 
-            optimize_topk = optimize_topk + sorted_topk[10:]
+            # optimize_topk = optimize_topk + sorted_topk[10:]
 
             if f_next_video:
                 # 通过前一个视频找到相邻的下一个视频
