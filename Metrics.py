@@ -4,6 +4,52 @@ import pickle
 import csv
 import random
 from collections import defaultdict
+import networkx as nx
+import matplotlib.pyplot as plt
+
+class ConceptGraph:
+    def __init__(self, concept_file, video_concept_file, parent_son_file):
+        self.concept_file = concept_file
+        self.video_concept_file = video_concept_file
+        self.parent_son_file = parent_son_file
+        self.video_concept_mapping = self.load_video_concept_mapping()
+
+    def load_video_concept_mapping(self):
+        """加载视频-概念映射关系，存储为字典，减少重复 I/O 操作"""
+        video_concept_mapping = {}
+        with open(self.video_concept_file, 'r', encoding='utf-8') as file:
+            for line in file:
+                video, concept = line.strip().split('\t')
+                if video not in video_concept_mapping:
+                    video_concept_mapping[video] = []
+                video_concept_mapping[video].append(concept)
+        return video_concept_mapping
+
+    def find_focus_concept(self, last_video):
+        """通过查找加载好的视频-概念映射，快速找到指定视频的概念"""
+        return self.video_concept_mapping.get(last_video, [])
+
+    def draw_knowledge_graph(self):
+        """绘制知识图谱"""
+        # 创建一个有向图
+        knowledge_graph = nx.DiGraph()
+
+        # 读取parent-son文件，添加父子概念关系
+        with open(self.parent_son_file, 'r', encoding='utf-8') as file:
+            for line in file:
+                parent, child = line.strip().split('\t')
+                knowledge_graph.add_edge(parent, child)
+
+        # 添加视频与概念的关系
+        for video, concepts in self.video_concept_mapping.items():
+            if video not in knowledge_graph:
+                knowledge_graph.add_node(video, type='video')
+            for concept in concepts:
+                if concept not in knowledge_graph:
+                    knowledge_graph.add_node(concept, type='concept')
+                knowledge_graph.add_edge(video, concept)
+
+        return knowledge_graph
 
 
 def load_idx2u():
@@ -149,8 +195,8 @@ class Metrics(object):
 
             prev_video_name = idx2u[y_p]
             prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
-            if prev_courses and prev_courses[0] not in prev_course_list:
-                prev_course_list.insert(0, prev_courses[0])
+            # if prev_courses and prev_courses[0] not in prev_course_list:
+            #     prev_course_list.insert(0, prev_courses[0])
 
             next_video_id = None
 
@@ -160,19 +206,33 @@ class Metrics(object):
 
             # 根据得分重新排序topk
             sorted_topk = self.reorder_top_predictions(initial_topk, scores_pro)
-            sorted_top20 = sorted_topk[:20]
-            for v in sorted_topk:
-                topk_v_name = idx2u[v]
-                topk_course = self.get_courses_by_video(topk_v_name, course_video_mapping)
-                if topk_course and topk_course[0] not in topk_course_list:
-                    topk_course_list.append(topk_course[0])
+            # sorted_top20 = sorted_topk[:20]
+            # for v in sorted_topk:
+            #     topk_v_name = idx2u[v]
+            #     topk_course = self.get_courses_by_video(topk_v_name, course_video_mapping)
+            #     if topk_course and topk_course[0] not in topk_course_list:
+            #         topk_course_list.append(topk_course[0])
+            # 
+            # topk_diversity_video = self.random_videos_from_courses(topk_course_list, course_video_mapping, u2idx, 2, seed=58)
+            # prev_diversity_video = self.random_videos_from_courses(prev_course_list, course_video_mapping, u2idx, 2, seed=58)
+            # 
+            # original_sorted_topk = sorted_topk.copy()
+            # sorted_topk = sorted_topk[:14] + [item for item in prev_diversity_video] + [item for item in topk_diversity_video] + original_sorted_topk[14:]
 
-            topk_diversity_video = self.random_videos_from_courses(topk_course_list, course_video_mapping, u2idx, 2, seed=58)
-            prev_diversity_video = self.random_videos_from_courses(prev_course_list, course_video_mapping, u2idx, 2, seed=58)
+            graph = ConceptGraph(
+                concept_file='/kaggle/input/riginmooccube/MOOCCube/relations/parent-son.json',
+                video_concept_file='/kaggle/input/riginmooccube/MOOCCube/relations/video-concept.json',
+                parent_son_file='/kaggle/input/riginmooccube/MOOCCube/relations/parent-son.json'
+            )
 
-            original_sorted_topk = sorted_topk.copy()
-            sorted_topk = sorted_topk[:14] + [item for item in prev_diversity_video] + [item for item in topk_diversity_video] + original_sorted_topk[14:]
+            # 找到某个视频的焦点概念
+            focus_concepts = graph.find_focus_concept(prev_video_name)
 
+            print("Topk:", sorted_topk)
+            # 绘制知识图谱
+            knowledge_graph = graph.draw_knowledge_graph()
+            optimize_topk = self.optimize_topk_based_on_concept(self, knowledge_graph, focus_concepts, sorted_topk)
+            print("Optimize_Topk:", optimize_topk)
 
 
             if f_next_video:
@@ -181,17 +241,13 @@ class Metrics(object):
                 next_video_id = self.find_next_video(prev_video_name, prev_courses, u2idx, courses)
             # 如果找到 next_video_id，则将其插入到首位
             if next_video_id is not None:
-                sorted_topk.insert(0, next_video_id)
+                optimize_topk.insert(0, next_video_id)
 
-            # prev_video = self.find_prev_video(prev_video_name, prev_courses, u2idx, courses)
-            # if prev_video is not None:
-            #     for v in prev_video:
-            #         if v not in sorted_topk:
-            #             sorted_topk.insert(0, next_video_id)
+
 
             # 更新结果
             for k in k_list:
-                topk = sorted_topk[:k]
+                topk = optimize_topk[:k]
                 scores[f'hits@{k}'].append(1.0 if y_ in topk else 0.0)
                 scores[f'map@{k}'].append(self.apk([y_], topk, k))
 
@@ -328,33 +384,20 @@ class Metrics(object):
 
         return sorted_videos
 
+    def optimize_topk_based_on_concept(self, knowledge_graph, student_focus_concepts, topk_video_list):
+        for video in topk_video_list:
+            video_concepts = [concept for concept in knowledge_graph.neighbors(video) if concept.startswith('K_')]
+            # 计算概念相关性得分
+            relevance_score = 0
+            for concept in video_concepts:
+                for focus_concept in student_focus_concepts:
+                    shortest_path = nx.shortest_path_length(knowledge_graph, source=concept, target=focus_concept)
+                    relevance_score += 1 / (1 + shortest_path)
+            video['relevance_score'] = relevance_score
 
-    def find_prev_video(self, prev_video_name, prev_courses, u2idx, courses):
-        """在课程中找到相邻的下一个视频"""
-        # prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
-        prev_video_list = []
-        prev_video = []
-        for course_id in prev_courses:
-            for course in courses:
-                if course['id'] == course_id:
-                    video_order = course.get('video_order', [])
-                    try:
-                        y_index = video_order.index(prev_video_name)
-                        for i in range(4, 0, -1):
-                            if (y_index - i) >= 0:
-                                prev_video_list.append(video_order[y_index - i])
-
-                            if (y_index + i) < len(video_order):
-                                prev_video_list.append(video_order[y_index + i])
-
-                        for v in prev_video_list:
-                            if v in u2idx:
-                                prev_video.append(u2idx[v])
-                        return prev_video
-
-                    except ValueError:
-                        continue
-        return None
+        # 根据相关性得分对Topk视频进行重新排名
+        optimized_topk = sorted(topk_video_list, key=lambda x: x['relevance_score'], reverse=True)
+        return optimized_topk
 
 
 
