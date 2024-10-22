@@ -258,7 +258,7 @@ class Metrics(object):
 
             # 更新结果
             for k in k_list:
-                topk = optimize_topk[:k]
+                topk = initial_topk[:k]
                 scores[f'hits@{k}'].append(1.0 if y_ in topk else 0.0)
                 scores[f'map@{k}'].append(self.apk([y_], topk, k))
 
