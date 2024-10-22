@@ -231,7 +231,7 @@ class Metrics(object):
             print("Topk:", sorted_topk)
             # 绘制知识图谱
             knowledge_graph = graph.draw_knowledge_graph()
-            optimize_topk = self.optimize_topk_based_on_concept(knowledge_graph, focus_concepts, sorted_topk)
+            optimize_topk = self.optimize_topk_based_on_concept(knowledge_graph, focus_concepts, sorted_topk, idx2u)
             print("Optimize_Topk:", optimize_topk)
 
 
@@ -384,9 +384,10 @@ class Metrics(object):
 
         return sorted_videos
 
-    def optimize_topk_based_on_concept(self, knowledge_graph, student_focus_concepts, topk_video_list):
+    def optimize_topk_based_on_concept(self, knowledge_graph, student_focus_concepts, topk_video_list, idx2u):
         for video in topk_video_list:
-            video_concepts = [concept for concept in knowledge_graph.neighbors(video) if concept.startswith('K_')]
+            video_name = idx2u[video]
+            video_concepts = [concept for concept in knowledge_graph.neighbors(video_name) if concept.startswith('K_')]
             # 计算概念相关性得分
             relevance_score = 0
             for concept in video_concepts:
