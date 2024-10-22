@@ -212,10 +212,10 @@ class Metrics(object):
             #     topk_course = self.get_courses_by_video(topk_v_name, course_video_mapping)
             #     if topk_course and topk_course[0] not in topk_course_list:
             #         topk_course_list.append(topk_course[0])
-            # 
+            #
             # topk_diversity_video = self.random_videos_from_courses(topk_course_list, course_video_mapping, u2idx, 2, seed=58)
             # prev_diversity_video = self.random_videos_from_courses(prev_course_list, course_video_mapping, u2idx, 2, seed=58)
-            # 
+            #
             # original_sorted_topk = sorted_topk.copy()
             # sorted_topk = sorted_topk[:14] + [item for item in prev_diversity_video] + [item for item in topk_diversity_video] + original_sorted_topk[14:]
 
@@ -231,7 +231,7 @@ class Metrics(object):
             print("Topk:", sorted_topk)
             # 绘制知识图谱
             knowledge_graph = graph.draw_knowledge_graph()
-            optimize_topk = self.optimize_topk_based_on_concept(self, knowledge_graph, focus_concepts, sorted_topk)
+            optimize_topk = self.optimize_topk_based_on_concept(knowledge_graph, focus_concepts, sorted_topk)
             print("Optimize_Topk:", optimize_topk)
 
 
