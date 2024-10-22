@@ -239,9 +239,9 @@ class Metrics(object):
             # sorted_topk = sorted_topk[:14] + [item for item in prev_diversity_video] + [item for item in topk_diversity_video] + original_sorted_topk[14:]
 
 
-            # 找到某个视频的焦点概念
-            focus_concepts = graph.find_focus_concept(prev_video_name)
-            optimize_topk = self.optimize_topk_based_on_concept(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
+            # # 找到某个视频的焦点概念
+            # focus_concepts = graph.find_focus_concept(prev_video_name)
+            # optimize_topk = self.optimize_topk_based_on_concept(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
 
             # optimize_topk = optimize_topk + sorted_topk[10:]
 
@@ -252,7 +252,7 @@ class Metrics(object):
             # 如果找到 next_video_id，则将其插入到首位
             next_video_id = self.find_next_video(prev_video_name, prev_courses, u2idx, courses)
             if next_video_id is not None and next_video_id not in optimize_topk:
-                optimize_topk.insert(0, next_video_id)
+                initial_topk.insert(0, next_video_id)
 
 
 
