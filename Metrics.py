@@ -239,8 +239,10 @@ class Metrics(object):
 
 
             # 找到某个视频的焦点概念
+            print("Topk:", sorted_topk)
             focus_concepts = graph.find_focus_concept(prev_video_name)
             optimize_topk = self.optimize_topk_based_on_concept(knowledge_graph, focus_concepts, sorted_topk, idx2u, graph, all_shortest_paths)
+            print("optimize_topk:", optimize_topk)
 
             # optimize_topk = optimize_topk + sorted_topk[10:]
 
