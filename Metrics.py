@@ -217,8 +217,8 @@ class Metrics(object):
             prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
 
 
-            if prev_courses and prev_courses[0] not in prev_course_list:
-                prev_course_list.insert(0, prev_courses[0])
+            # if prev_courses and prev_courses[0] not in prev_course_list:
+            #     prev_course_list.insert(0, prev_courses[0])
 
             # next_video_id = None
             #
@@ -387,8 +387,9 @@ class Metrics(object):
 
     def optimize_topk_based_on_concept(self, knowledge_graph, focus_concepts, sorted_topk, idx2u, graph,
                                        all_shortest_paths):
-        video_scores = {}  # 用于存储视频及其累计相关性得分
+        # video_scores = {}  # 用于存储视频及其累计相关性得分
         zero_score_videos_set = set()  # 用于去重存储得分为0的视频
+        scores_opt = {video_id: (20 - i) if i < 20 else 0 for i, video_id in enumerate(sorted_topk)}
 
         for video in sorted_topk:
             video_name = idx2u[video]  # 获取视频名称
@@ -407,20 +408,17 @@ class Metrics(object):
 
                         if shortest_path != float('inf'):
                             # print("(opt)shortest_path:", shortest_path)
-                            relevance_score += 1 / (1 + shortest_path)
-
-            # 将相关性得分存入 video_scores
-            video_scores[video] = video_scores.get(video, 0) + relevance_score
+                            scores_opt[video] += (1 / (1 + shortest_path))*4
 
             # 如果得分为0，将其标记为零分视频
-            if video_scores[video] == 0:
+            if scores_opt[video] == 0:
                 zero_score_videos_set.add(video)
             else:
                 # 如果视频之前在 zero_score_videos_set 中，现在有得分，移除它
                 zero_score_videos_set.discard(video)
 
         # 将有得分的视频按得分排序
-        optimized_topk = sorted([(video, score) for video, score in video_scores.items() if score > 0],
+        optimized_topk = sorted([(video, score) for video, score in scores_opt.items() if score > 0],
                                 key=lambda x: x[1], reverse=True)
 
         for video, score in optimized_topk:
