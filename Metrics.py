@@ -27,9 +27,9 @@ class ConceptGraph:
 
     def find_focus_concept(self, last_video):
         """通过查找加载好的视频-概念映射，快速找到指定视频的概念"""
-        print("(find)last_video:", last_video)
+        # print("(find)last_video:", last_video)
         consept = self.video_concept_mapping.get(last_video, [])
-        print("(find)consept:", consept)
+        # print("(find)consept:", consept)
         return consept
 
 
@@ -221,19 +221,19 @@ class Metrics(object):
                 prev_course_list.insert(0, prev_courses[0])
 
             # next_video_id = None
-            # 
+            #
             # # 计算预测视频的分数
             # scores_pro, f_next_video = self.score_predictions(initial_topk, y_p, idx2u, course_video_mapping, courses, prev_courses)
-            # 
-            # 
+            #
+            #
             # # 根据得分重新排序topk
             # sorted_topk = self.reorder_top_predictions(initial_topk, scores_pro)
 
             # 找到某个视频的焦点概念
+            print("initial_topk:", initial_topk)
             focus_concepts = graph.find_focus_concept(prev_video_name)
-
             sorted_topk = self.optimize_topk_based_on_concept(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
-
+            print("sorted_topk:", sorted_topk)
 
             # if f_next_video:
             #     # 通过前一个视频找到相邻的下一个视频
@@ -395,10 +395,10 @@ class Metrics(object):
             relevance_score = 0  # 初始相关性得分为0
             if video_name in knowledge_graph:  # 确保视频存在于知识图谱中
                 # 获取与视频相关联的概念
-                print("(opt)video_name:", video_name)
+                # print("(opt)video_name:", video_name)
                 video_concepts = [concept for concept in knowledge_graph.neighbors(video_name) if
                                   concept.startswith('K_')]
-                print("(opt)video_concepts:", video_concepts)
+                # print("(opt)video_concepts:", video_concepts)
 
                 # 计算相关性得分
                 for concept in video_concepts:
@@ -406,7 +406,7 @@ class Metrics(object):
                         shortest_path = graph.get_shortest_path_length(concept, focus_concept, all_shortest_paths)
 
                         if shortest_path != float('inf'):
-                            print("(opt)shortest_path:", shortest_path)
+                            # print("(opt)shortest_path:", shortest_path)
                             relevance_score += 1 / (1 + shortest_path)
 
             # 将相关性得分存入 video_scores
