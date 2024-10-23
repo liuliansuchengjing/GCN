@@ -409,7 +409,7 @@ class Metrics(object):
 
                         if shortest_path != float('inf'):
                             # print("(opt)shortest_path:", shortest_path)
-                            scores_opt[video] += 1 / (1 + math.log(1 + shortest_path))                            
+                            scores_opt[video] += (1 / (1 + math.log(1 + shortest_path)))*0.5                            
 
             # 如果得分为0，将其标记为零分视频
             if scores_opt[video] == 0:
