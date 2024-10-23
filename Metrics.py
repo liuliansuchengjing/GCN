@@ -230,10 +230,10 @@ class Metrics(object):
             # sorted_topk = self.reorder_top_predictions(initial_topk, scores_pro)
 
             # 找到某个视频的焦点概念
-            print("initial_topk:", initial_topk)
+            # print("initial_topk:", initial_topk)
             focus_concepts = graph.find_focus_concept(prev_video_name)
             sorted_topk = self.optimize_topk_based_on_concept(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
-            print("sorted_topk:", sorted_topk)
+            # print("sorted_topk:", sorted_topk)
 
             # if f_next_video:
             #     # 通过前一个视频找到相邻的下一个视频
