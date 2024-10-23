@@ -6,6 +6,7 @@ import random
 from collections import defaultdict
 import networkx as nx
 import matplotlib.pyplot as plt
+import math
 
 class ConceptGraph:
     def __init__(self, concept_file, video_concept_file, parent_son_file):
