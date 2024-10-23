@@ -213,53 +213,38 @@ class Metrics(object):
             prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
 
 
-            # if prev_courses and prev_courses[0] not in prev_course_list:
-            #     prev_course_list.insert(0, prev_courses[0])
+            if prev_courses and prev_courses[0] not in prev_course_list:
+                prev_course_list.insert(0, prev_courses[0])
 
             next_video_id = None
 
             # 计算预测视频的分数
-            # scores_pro, f_next_video = self.score_predictions(initial_topk, y_p, idx2u, course_video_mapping, courses, prev_courses)
+            scores_pro, f_next_video = self.score_predictions(initial_topk, y_p, idx2u, course_video_mapping, courses, prev_courses)
 
 
             # 根据得分重新排序topk
-            # sorted_topk = self.reorder_top_predictions(initial_topk, scores_pro)
-            
-            # sorted_top10 = sorted_topk[:10]
-            # for v in sorted_topk:
-            #     topk_v_name = idx2u[v]
-            #     topk_course = self.get_courses_by_video(topk_v_name, course_video_mapping)
-            #     if topk_course and topk_course[0] not in topk_course_list:
-            #         topk_course_list.append(topk_course[0])
-            #
-            # topk_diversity_video = self.random_videos_from_courses(topk_course_list, course_video_mapping, u2idx, 2, seed=58)
-            # prev_diversity_video = self.random_videos_from_courses(prev_course_list, course_video_mapping, u2idx, 2, seed=58)
-            #
-            # original_sorted_topk = sorted_topk.copy()
-            # sorted_topk = sorted_topk[:14] + [item for item in prev_diversity_video] + [item for item in topk_diversity_video] + original_sorted_topk[14:]
+            sorted_topk = self.reorder_top_predictions(initial_topk, scores_pro)           
 
-
-            # # 找到某个视频的焦点概念
+            # 找到某个视频的焦点概念
             # focus_concepts = graph.find_focus_concept(prev_video_name)
+            # 
             # optimize_topk = self.optimize_topk_based_on_concept(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
 
-            # optimize_topk = optimize_topk + sorted_topk[10:]
 
             # if f_next_video:
             #     # 通过前一个视频找到相邻的下一个视频
             #     # prev_video_name = idx2u[y_p]
             #     next_video_id = self.find_next_video(prev_video_name, prev_courses, u2idx, courses)
             # 如果找到 next_video_id，则将其插入到首位
-            # next_video_id = self.find_next_video(prev_video_name, prev_courses, u2idx, courses)
-            # initial_topk = initial_topk.tolist() 
-            # if next_video_id is not None and next_video_id not in initial_topk:
-            #     initial_topk.insert(0, next_video_id)
+            next_video_id = self.find_next_video(prev_video_name, prev_courses, u2idx, courses)
+            if next_video_id is not None and next_video_id not in sorted_topk:
+                sorted_topk.insert(0, next_video_id)
 
 
 
             # 更新结果
             for k in k_list:
-                topk = initial_topk[:k]
+                topk = sorted_topk[:k]
                 scores[f'hits@{k}'].append(1.0 if y_ in topk else 0.0)
                 scores[f'map@{k}'].append(self.apk([y_], topk, k))
 
