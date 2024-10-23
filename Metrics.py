@@ -225,11 +225,8 @@ class Metrics(object):
 
             # 找到某个视频的焦点概念
             # print("initial_topk:", initial_topk)
-            initial_topk = list(initial_topk)
-            top10 = initial_topk[:10]
             focus_concepts = graph.find_focus_concept(prev_video_name)
-            sorted_topk = self.optimize_topk_based_on_concept(knowledge_graph, focus_concepts, top10, idx2u, graph, all_shortest_paths)
-            sorted_topk = sorted_topk + initial_topk[10:]
+            sorted_topk = self.optimize_topk_based_on_concept(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
             # print("sorted_topk:", sorted_topk)
 
             # # 计算预测视频的分数
