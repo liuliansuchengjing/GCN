@@ -423,6 +423,9 @@ class Metrics(object):
         return merged_scores
 
     def multiply_scores(self, scores_pro1, scores_pro2):
+
+        print(type(scores_pro1))
+        print(type(scores_pro2))
         merged_scores = {}
 
         # 遍历第一个字典，将所有键值对添加到merged_scores中
