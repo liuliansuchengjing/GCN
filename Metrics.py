@@ -44,7 +44,7 @@ class StudentWatchData:
         :param watch_time: 学生对该视频的观看时长
         :param total_time: 视频的总时长
         """
-        self.video_neme = video_name
+        self.video_name = video_name
         self.watch_time = watch_time
         self.total_time = total_time
 
