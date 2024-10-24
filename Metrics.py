@@ -386,59 +386,51 @@ class Metrics(object):
 
         return sorted_videos
 
-    def optimize_topk_based_on_concept(self, knowledge_graph, focus_concepts, sorted_topk, idx2u, graph,
-                                       all_shortest_paths):
-        # video_scores = {}  # 用于存储视频及其累计相关性得分
-        zero_score_videos_set = set()  # 用于去重存储得分为0的视频
-        scores_opt = {video_id: (40 - i) if i < 40 else 0 for i, video_id in enumerate(sorted_topk)}
+    def optimize_topk_based_on_concept(self, knowledge_graph, focus_concepts, sorted_topk, idx2u, graph, all_shortest_paths):
+    zero_score_videos_set = set()  # 存储得分为0的视频
+    scores_opt = {video_id: (20 - i) if i < 20 else 0 for i, video_id in enumerate(sorted_topk)}
 
-        for video in sorted_topk:
-            video_name = idx2u[video]  # 获取视频名称
-            relevance_score = 0  # 初始相关性得分为0
-            if video_name in knowledge_graph:  # 确保视频存在于知识图谱中
-                # 获取与视频相关联的概念
-                # print("(opt)video_name:", video_name)
-                video_concepts = [concept for concept in knowledge_graph.neighbors(video_name) if
-                                  concept.startswith('K_')]
-                # print("(opt)video_concepts:", video_concepts)
+    for video in sorted_topk:
+        video_name = idx2u[video]  # 获取视频名称
+        relevance_score = 0
+        if video_name in knowledge_graph:  # 确保视频存在于知识图谱中
+            video_concepts = [concept for concept in knowledge_graph.neighbors(video_name) if concept.startswith('K_')]
 
-                # 计算相关性得分
-                for concept in video_concepts:
-                    for focus_concept in focus_concepts:
-                        shortest_path = graph.get_shortest_path_length(concept, focus_concept, all_shortest_paths)
+            # 计算相关性得分
+            for concept in video_concepts:
+                for focus_concept in focus_concepts:
+                    shortest_path = graph.get_shortest_path_length(concept, focus_concept, all_shortest_paths)
 
-                        if shortest_path != float('inf'):
-                            # print("(opt)shortest_path:", shortest_path)
-                            scores_opt[video] += (1 / (1 + shortest_path))*0.75                            
+                    if shortest_path != float('inf'):
+                        # 使用log函数平滑分数，缩小高分和低分的差异
+                        scores_opt[video] += (1 / (1 + shortest_path)) * 4
 
-            # 如果得分为0，将其标记为零分视频
-            if scores_opt[video] == 0:
-                zero_score_videos_set.add(video)
-            else:
-                # 如果视频之前在 zero_score_videos_set 中，现在有得分，移除它
-                zero_score_videos_set.discard(video)
+        # 如果得分为0，将其标记为零分视频
+        if scores_opt[video] == 0:
+            zero_score_videos_set.add(video)
+        else:
+            zero_score_videos_set.discard(video)
 
-        # 将有得分的视频按得分排序
-        optimized_topk = sorted([(video, score) for video, score in scores_opt.items() if score > 0],
-                                key=lambda x: x[1], reverse=True)
+    # 将视频按得分分类为高、中、低相关性
+    high_relevance = [(video, score) for video, score in scores_opt.items() if score > 15]
+    medium_relevance = [(video, score) for video, score in scores_opt.items() if 5 < score <= 15]
+    low_relevance = [(video, score) for video, score in scores_opt.items() if 0 < score <= 5]
 
-        # for video, score in optimized_topk:
-        #     print(f"Course: {video}, Score: {score}")
+    # 保证每个相关性类别都有一定比例的视频被推荐
+    top_high_relevance = sorted(high_relevance, key=lambda x: x[1], reverse=True)[:5]
+    top_medium_relevance = random.sample(medium_relevance, min(5, len(medium_relevance)))
+    top_low_relevance = random.sample(low_relevance, min(5, len(low_relevance)))
 
-        # 提取排序后的视频ID
-        sorted_videos_with_scores = [video for video, score in optimized_topk]
+    # 合并最终推荐列表
+    optimized_topk = top_high_relevance + top_medium_relevance + top_low_relevance
 
-        # 将得分为0的视频保持原有顺序，追加到排序后的视频ID列表末尾
-        final_topk = sorted_videos_with_scores + list(zero_score_videos_set)
+    # 提取视频ID
+    sorted_videos_with_scores = [video for video, score in optimized_topk]
 
-        return final_topk
+    # 将得分为0的视频保持原有顺序，追加到排序后的视频ID列表末尾
+    final_topk = sorted_videos_with_scores + list(zero_score_videos_set)
 
-
-
-
-
-
-
-
+    return final_topk
+    
 
 
