@@ -226,8 +226,7 @@ class Metrics(object):
             # print("initial_topk:", initial_topk)
             focus_concepts = graph.find_focus_concept(prev_video_name)
             sorted_topk = self.optimize_topk_based_on_concept(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
-            initial_topk_list = list(initial_topk)
-            initial_topk_list = sorted_topk[0] + initial_topk_list
+            
             # print("sorted_topk:", sorted_topk)
 
             # 计算预测视频的分数
@@ -243,14 +242,14 @@ class Metrics(object):
             #     next_video_id = self.find_next_video(prev_video_name, prev_courses, u2idx, courses)
             # 如果找到 next_video_id，则将其插入到首位
             next_video_id = self.find_next_video(prev_video_name, prev_courses, u2idx, courses)
-            if next_video_id is not None and next_video_id not in initial_topk_list:
-                initial_topk_list.insert(0, next_video_id)
+            if next_video_id is not None and next_video_id not in sorted_topk:
+                sorted_topk.insert(0, next_video_id)
 
 
 
             # 更新结果
             for k in k_list:
-                topk = initial_topk_list[:k]
+                topk = sorted_topk[:k]
                 scores[f'hits@{k}'].append(1.0 if y_ in topk else 0.0)
                 scores[f'map@{k}'].append(self.apk([y_], topk, k))
 
@@ -389,7 +388,6 @@ class Metrics(object):
 
     def optimize_topk_based_on_concept(self, knowledge_graph, focus_concepts, sorted_topk, idx2u, graph,
                                        all_shortest_paths):
-        zero_score_videos_set = set()  # 存储得分为0的视频
         scores_opt = {video_id: (20 - i) if i < 20 else 0 for i, video_id in enumerate(sorted_topk)}  # 初始分数
 
         for video in sorted_topk:
@@ -405,21 +403,14 @@ class Metrics(object):
                         if shortest_path != float('inf'):
                             scores_opt[video] += (1 / (1 + shortest_path))  # 根据最短路径加分
 
-            # 如果得分为0，将其标记为零分视频
-            if scores_opt[video] == 0:
-                zero_score_videos_set.add(video)
-            else:
-                zero_score_videos_set.discard(video)  # 移除之前为零分的视频
+        # 找到分数最高的视频
+        max_score_video = max(scores_opt, key=scores_opt.get)
 
-        # 将有得分的视频按得分排序，确保最相关的视频在前面
-        optimized_topk = sorted([(video, score) for video, score in scores_opt.items() if score > 0],
-                                key=lambda x: x[1], reverse=True)
+        # 保持原始顺序排除分数最高的视频
+        remaining_videos = [video for video in sorted_topk if video != max_score_video]
 
-        # 提取排序后的视频ID
-        sorted_videos_with_scores = [video for video, score in optimized_topk]
-
-        # 将得分为0的视频保持原有顺序，追加到排序后的视频ID列表末尾
-        final_topk = sorted_videos_with_scores + list(zero_score_videos_set)
+        # 将分数最高的视频放在最前面，剩下的视频按原顺序排列
+        final_topk = [max_score_video] + remaining_videos
 
         return final_topk
 
