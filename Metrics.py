@@ -37,14 +37,14 @@ def Student_ConceptGraph(StudentWatchData_list, knowledge_graph):
 
 
 class StudentWatchData:
-    def __init__(self, video_neme, watch_time, total_time):
+    def __init__(self, video_name, watch_time, total_time):
         """
         初始化学生的观看记录
-        :param video_neme: 视频的唯一名称
+        :param video_name: 视频的唯一名称
         :param watch_time: 学生对该视频的观看时长
         :param total_time: 视频的总时长
         """
-        self.video_neme = video_neme
+        self.video_neme = video_name
         self.watch_time = watch_time
         self.total_time = total_time
 
