@@ -8,31 +8,32 @@ import networkx as nx
 
 
 def Student_ConceptGraph(StudentWatchData_list, knowledge_graph):
+    """
+    生成学生的概念图，包含每个概念的掌握度
+    :param StudentWatchData_list: 学生的观看记录（包含 StudentWatchData 对象的列表）
+    :param knowledge_graph: 知识图谱
+    :return: 学生的概念图
+    """
     # 初始化空的概念图
     student_concept_graph = nx.Graph()
 
     # 遍历学生的观看记录，生成概念掌握得分
-    for video_name, watch_time, total_time in StudentWatchData_list:
-        # 如果视频在视频与概念的关联表中
-        if video_name in knowledge_graph:
-            video_concepts = [concept for concept in knowledge_graph.neighbors(video_name) if
-                              concept.startswith('K_')]
-            # 计算学生对该视频的掌握度 (观看时长/视频总时长)
-            video_mastery = watch_time / total_time
+    for record in StudentWatchData_list:
+        video_name = record.video_name  # 访问 StudentWatchData 对象中的 video_name
+        watch_time = record.watch_time  # 访问 watch_time
+        total_time = record.total_time  # 访问 total_time
 
-            # 对每个概念分配该视频的掌握度
+        if video_name in knowledge_graph:  # 确保视频存在于知识图谱中
+            video_concepts = [concept for concept in knowledge_graph.neighbors(video_name) if concept.startswith('K_')]
+            video_mastery = watch_time / total_time  # 计算学生对该视频的掌握度
+
             for concept in video_concepts:
-                # 如果概念在图中已经存在，则累加掌握度
                 if student_concept_graph.has_node(concept):
                     student_concept_graph.nodes[concept]['mastery'] += video_mastery
                 else:
-                    # 否则创建该概念节点，并初始化掌握度
                     student_concept_graph.add_node(concept, mastery=video_mastery)
 
-    # 打印学生的概念图节点及其掌握度
-    print("Student Concept Mastery:")
-    for concept in student_concept_graph.nodes(data=True):
-        print(f"Concept: {concept[0]}, Mastery: {concept[1]['mastery']}")
+    return student_concept_graph
 
 
 class StudentWatchData:
