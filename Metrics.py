@@ -309,7 +309,7 @@ class Metrics(object):
                                                                   prev_video_name, predicted_video_name)
             scores_pro[video_id] += score
 
-        return score, f_next_video
+        return scores_pro, f_next_video
 
     def calculate_distance_score(self, predicted_courses, prev_courses, courses, prev_video_name, predicted_video_name):
         """计算课程内的相对视频位置的距离评分"""
@@ -423,9 +423,6 @@ class Metrics(object):
         return merged_scores
 
     def multiply_scores(self, scores_pro1, scores_pro2):
-
-        print(type(scores_pro1))
-        print(type(scores_pro2))
         merged_scores = {}
 
         # 遍历第一个字典，将所有键值对添加到merged_scores中
