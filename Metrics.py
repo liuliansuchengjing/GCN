@@ -5,7 +5,62 @@ import csv
 import random
 from collections import defaultdict
 import networkx as nx
-import matplotlib.pyplot as plt
+
+
+def Student_ConceptGraph(StudentWatchData_list, knowledge_graph):
+    # 初始化空的概念图
+    student_concept_graph = nx.Graph()
+
+    # 遍历学生的观看记录，生成概念掌握得分
+    for video_name, watch_time, total_time in StudentWatchData_list:
+        # 如果视频在视频与概念的关联表中
+        if video_name in knowledge_graph:
+            video_concepts = [concept for concept in knowledge_graph.neighbors(video_name) if
+                              concept.startswith('K_')]
+            # 计算学生对该视频的掌握度 (观看时长/视频总时长)
+            video_mastery = watch_time / total_time
+
+            # 对每个概念分配该视频的掌握度
+            for concept in video_concepts:
+                # 如果概念在图中已经存在，则累加掌握度
+                if student_concept_graph.has_node(concept):
+                    student_concept_graph.nodes[concept]['mastery'] += video_mastery
+                else:
+                    # 否则创建该概念节点，并初始化掌握度
+                    student_concept_graph.add_node(concept, mastery=video_mastery)
+
+    # 打印学生的概念图节点及其掌握度
+    print("Student Concept Mastery:")
+    for concept in student_concept_graph.nodes(data=True):
+        print(f"Concept: {concept[0]}, Mastery: {concept[1]['mastery']}")
+
+
+class StudentWatchData:
+    def __init__(self, video_neme, watch_time, total_time):
+        """
+        初始化学生的观看记录
+        :param video_neme: 视频的唯一名称
+        :param watch_time: 学生对该视频的观看时长
+        :param total_time: 视频的总时长
+        """
+        self.video_neme = video_neme
+        self.watch_time = watch_time
+        self.total_time = total_time
+
+    def calculate_mastery(self):
+        """
+        计算学生对该视频的掌握度 (观看时长 / 视频总时长)
+        :return: 掌握度 (0到1之间的浮点数)
+        """
+        if self.total_time == 0:
+            return 0
+        return self.watch_time / self.total_time
+
+    def __repr__(self):
+        """
+        定义类的字符串表示，方便调试和打印
+        """
+        return f"StudentWatchData(video_id={self.video_id}, watch_time={self.watch_time}, total_time={self.total_time})"
 
 class ConceptGraph:
     def __init__(self, concept_file, video_concept_file, parent_son_file):
@@ -187,7 +242,7 @@ class Metrics(object):
         idx2u = load_idx2u()
         u2idx = load_u2idx()
         courses = load_course()
-        prev_course_list = []
+        student_watch_data_list = []
 
         scores = {f'hits@{k}': [] for k in k_list}
         scores.update({f'map@{k}': [] for k in k_list})
@@ -207,14 +262,14 @@ class Metrics(object):
 
         for p_, y_, y_p, wc, dt, wt, d1, d2, d3 in zip(y_prob, y_true, y_prev, w_c, d_t, w_t, d_1, d_2, d_3):
             if y_ == self.PAD:
-                prev_course_list = []
+                student_watch_data_list = []
                 continue
 
             scores_len += 1
             initial_topk = self.get_top_k_predictions(p_, k=40)
-            topk_course_list = []
             prev_video_name = idx2u[y_p]
             prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
+            student_watch_data_list.append(StudentWatchData(prev_video_name, wt, dt))
 
 
             # if prev_courses and prev_courses[0] not in prev_course_list:
@@ -222,20 +277,19 @@ class Metrics(object):
 
             # next_video_id = None
 
-            # 找到某个视频的焦点概念
-            # print("initial_topk:", initial_topk)
-            focus_concepts = graph.find_focus_concept(prev_video_name)
-            score_opt = self.optimize_topk_based_on_concept(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
+            # 概念距离排序
+            # # print("initial_topk:", initial_topk)
+            # focus_concepts = graph.find_focus_concept(prev_video_name)
+            # score_opt = self.optimize_topk_based_on_concept(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
+            # # print("sorted_topk:", sorted_topk)
+            # 
+            # #nearby1-4
+            # scores_pro, f_next_video = self.score_predictions(initial_topk, y_p, idx2u, course_video_mapping, courses, prev_courses)
+            # score = self.multiply_scores(scores_pro, score_opt)
+            # # 根据得分重新排序topk
+            # sorted_topk = self.reorder_top_predictions(initial_topk, score)
 
-            # print("sorted_topk:", sorted_topk)
-
-            #计算预测视频的分数
-            scores_pro, f_next_video = self.score_predictions(initial_topk, y_p, idx2u, course_video_mapping, courses,
-                                                              prev_courses)
-
-            score = self.multiply_scores(scores_pro, score_opt)
-            # 根据得分重新排序topk
-            sorted_topk = self.reorder_top_predictions(initial_topk, score)
+            prefer_topk = self.optimize_based_on_studentprefer(student_watch_data_list, knowledge_graph, topk, idx2u)
 
             # if f_next_video:
             #     # 通过前一个视频找到相邻的下一个视频
@@ -243,12 +297,12 @@ class Metrics(object):
             #     next_video_id = self.find_next_video(prev_video_name, prev_courses, u2idx, courses)
             # 如果找到 next_video_id，则将其插入到首位
             next_video_id = self.find_next_video(prev_video_name, prev_courses, u2idx, courses)
-            if next_video_id is not None and next_video_id not in sorted_topk:
-                sorted_topk.insert(0, next_video_id)
+            if next_video_id is not None and next_video_id not in prefer_topk:
+                prefer_topk.insert(0, next_video_id)
 
             # 更新结果
             for k in k_list:
-                topk = sorted_topk[:k]
+                topk = prefer_topk[:k]
                 scores[f'hits@{k}'].append(1.0 if y_ in topk else 0.0)
                 scores[f'map@{k}'].append(self.apk([y_], topk, k))
 
@@ -366,7 +420,6 @@ class Metrics(object):
 
         for video in sorted_topk:
             video_name = idx2u[video]  # 获取视频名称
-            relevance_score = 0  # 初始相关性得分为0
             if video_name in knowledge_graph:  # 确保视频存在于知识图谱中
                 # 获取与视频相关联的概念
                 # print("(opt)video_name:", video_name)
@@ -439,13 +492,40 @@ class Metrics(object):
 
         return merged_scores
 
+    def optimize_based_on_studentprefer(self, StudentWatchData_list, knowledge_graph, topk, idx2u):
+        """
+        基于学生的概念掌握度优化 topk 推荐视频
+        :param StudentWatchData_list: 学生的观看记录
+        :param knowledge_graph: 知识图谱
+        :param topk: 初始推荐的 topk 视频列表
+        :param idx2u: 视频ID到名称的映射字典
+        :return: 优化后的 topk 视频列表
+        """
+        # 生成学生的概念图
+        student_concept_graph = Student_ConceptGraph(StudentWatchData_list, knowledge_graph)
 
+        # 初始化视频的匹配分数
+        video_scores = {video_id: (20 - i) if i < 20 else 0 for i, video_id in enumerate(topk)}
 
+        for video_id in topk:
+            video_name = idx2u[video_id]
+            if video_name in knowledge_graph:
+                # 获取视频关联的概念
+                video_concepts = [concept for concept in knowledge_graph.neighbors(video_name) if
+                                  concept.startswith('K_')]
 
+                # 计算视频与学生概念的匹配度
+                for concept in video_concepts:
+                    if student_concept_graph.has_node(concept):
+                        mastery = student_concept_graph.nodes[concept]['mastery']
+                        video_scores[video_id] += mastery
 
+        # 根据视频的匹配度排序
+        optimized_topk = sorted(video_scores.items(), key=lambda x: x[1], reverse=True)
 
+        # 提取排序后的视频ID
+        sorted_videos = [video_id for video_id, score in optimized_topk]
 
-
-
+        return sorted_videos
 
 
