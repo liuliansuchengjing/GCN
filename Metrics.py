@@ -282,14 +282,14 @@ class Metrics(object):
             # focus_concepts = graph.find_focus_concept(prev_video_name)
             # score_opt = self.optimize_topk_based_on_concept(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
             # # print("sorted_topk:", sorted_topk)
-            # 
+            #
             # #nearby1-4
             # scores_pro, f_next_video = self.score_predictions(initial_topk, y_p, idx2u, course_video_mapping, courses, prev_courses)
             # score = self.multiply_scores(scores_pro, score_opt)
             # # 根据得分重新排序topk
             # sorted_topk = self.reorder_top_predictions(initial_topk, score)
 
-            prefer_topk = self.optimize_based_on_studentprefer(student_watch_data_list, knowledge_graph, topk, idx2u)
+            prefer_topk = self.optimize_based_on_studentprefer(student_watch_data_list, knowledge_graph, initial_topk, idx2u)
 
             # if f_next_video:
             #     # 通过前一个视频找到相邻的下一个视频
