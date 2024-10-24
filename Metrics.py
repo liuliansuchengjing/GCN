@@ -233,7 +233,7 @@ class Metrics(object):
             scores_pro, f_next_video = self.score_predictions(initial_topk, y_p, idx2u, course_video_mapping, courses,
                                                               prev_courses)
 
-            score = self.multiply_scores(self, scores_pro, score_opt)
+            score = self.multiply_scores(scores_pro, score_opt)
             # 根据得分重新排序topk
             sorted_topk = self.reorder_top_predictions(initial_topk, score)
 
