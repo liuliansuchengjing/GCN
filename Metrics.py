@@ -519,7 +519,7 @@ class Metrics(object):
                 for concept in video_concepts:
                     if student_concept_graph.has_node(concept):
                         mastery = student_concept_graph.nodes[concept]['mastery']
-                        video_scores[video_id] += mastery
+                        video_scores[video_id] += mastery*0.5
 
         # print("video_scores:",video_scores)
         # 根据视频的匹配度排序
