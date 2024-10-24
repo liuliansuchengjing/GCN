@@ -225,16 +225,17 @@ class Metrics(object):
             # 找到某个视频的焦点概念
             # print("initial_topk:", initial_topk)
             focus_concepts = graph.find_focus_concept(prev_video_name)
-            sorted_topk = self.optimize_topk_based_on_concept(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
-            
+            score_opt = self.optimize_topk_based_on_concept(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
+
             # print("sorted_topk:", sorted_topk)
 
-            # 计算预测视频的分数
-            # scores_pro, f_next_video = self.score_predictions(opt_topk, y_p, idx2u, course_video_mapping, courses,
-            #                                                   prev_courses)
-            #
-            # # 根据得分重新排序topk
-            # sorted_topk = self.reorder_top_predictions(initial_topk, scores_pro)
+            #计算预测视频的分数
+            scores_pro, f_next_video = self.score_predictions(initial_topk, y_p, idx2u, course_video_mapping, courses,
+                                                              prev_courses)
+
+            score = self.multiply_scores(self, scores_pro, score_opt)
+            # 根据得分重新排序topk
+            sorted_topk = self.reorder_top_predictions(initial_topk, score)
 
             # if f_next_video:
             #     # 通过前一个视频找到相邻的下一个视频
@@ -244,8 +245,6 @@ class Metrics(object):
             next_video_id = self.find_next_video(prev_video_name, prev_courses, u2idx, courses)
             if next_video_id is not None and next_video_id not in sorted_topk:
                 sorted_topk.insert(0, next_video_id)
-
-
 
             # 更新结果
             for k in k_list:
@@ -273,32 +272,6 @@ class Metrics(object):
                     except ValueError:
                         continue
         return None
-
-    def random_videos_from_courses(self, course_list, course_video_mapping, u2idx, num_videos=3, seed=None):
-        """
-        从 topk_course_list 中的每个课程在 course_video_mapping 中随机抽取 num_videos 个视频（不重复），可以设置种子。
-        """
-        selected_videos = []
-
-        if seed is not None:
-            random.seed(seed)  # 设置随机种子
-
-        # for course_id in course_list:
-        for index, course_id in enumerate(course_list):
-            if index == 3:
-                break
-            if course_id in course_video_mapping:
-                videos = course_video_mapping[course_id]
-                # 从视频列表中随机抽取 num_videos 个不重复的视频
-                selected_video_names = random.sample(videos, min(len(videos), num_videos))
-                for video_name in selected_video_names:
-                    if video_name in u2idx:
-                        selected_videos.append(u2idx[video_name])
-                    else:
-                        # 如果视频名称不在 u2idx 中，可以选择跳过或进行其他处理
-                        pass
-
-        return selected_videos
 
     # def build_course_video_mapping(self, courses):
     #     """构建课程与视频的映射关系，减少重复查找"""
@@ -334,10 +307,9 @@ class Metrics(object):
             # 计算距离评分
             score, f_next_video = self.calculate_distance_score(predicted_courses, prev_courses, courses,
                                                                   prev_video_name, predicted_video_name)
-
             scores_pro[video_id] += score
 
-        return scores_pro, f_next_video
+        return score, f_next_video
 
     def calculate_distance_score(self, predicted_courses, prev_courses, courses, prev_video_name, predicted_video_name):
         """计算课程内的相对视频位置的距离评分"""
@@ -377,7 +349,7 @@ class Metrics(object):
 
 
     def reorder_top_predictions(self, topk, scores_pro):
-        """根据得分重新排序topk预测视频，优先将下一个视频插入到第一位"""
+        """根据得分重新排序topk预测视频"""
         scored_videos = sorted(((v, scores_pro[v]) for v in topk if scores_pro[v] > 0), key=lambda x: x[1],
                                reverse=True)
         unscored_videos = [v for v in topk if scores_pro[v] == 0]
@@ -388,31 +360,84 @@ class Metrics(object):
 
     def optimize_topk_based_on_concept(self, knowledge_graph, focus_concepts, sorted_topk, idx2u, graph,
                                        all_shortest_paths):
-        scores_opt = {video_id: (20 - i) if i < 20 else 0 for i, video_id in enumerate(sorted_topk)}  # 初始分数
+        # video_scores = {}  # 用于存储视频及其累计相关性得分
+        zero_score_videos_set = set()  # 用于去重存储得分为0的视频
+        scores_opt = {video_id: (20 - i) if i < 20 else 0 for i, video_id in enumerate(sorted_topk)}
 
         for video in sorted_topk:
             video_name = idx2u[video]  # 获取视频名称
+            relevance_score = 0  # 初始相关性得分为0
             if video_name in knowledge_graph:  # 确保视频存在于知识图谱中
+                # 获取与视频相关联的概念
+                # print("(opt)video_name:", video_name)
                 video_concepts = [concept for concept in knowledge_graph.neighbors(video_name) if
-                                  concept.startswith('K_')]  # 获取相关概念
+                                  concept.startswith('K_')]
+                # print("(opt)video_concepts:", video_concepts)
 
-                # 计算视频的相关性得分
+                # 计算相关性得分
                 for concept in video_concepts:
                     for focus_concept in focus_concepts:
                         shortest_path = graph.get_shortest_path_length(concept, focus_concept, all_shortest_paths)
+
                         if shortest_path != float('inf'):
-                            scores_opt[video] += (1 / (1 + shortest_path))  # 根据最短路径加分
+                            # print("(opt)shortest_path:", shortest_path)
+                            scores_opt[video] += (1 / (1 + shortest_path))
 
-        # 找到分数最高的视频
-        max_score_video = max(scores_opt, key=scores_opt.get)
+            # 如果得分为0，将其标记为零分视频
+            if scores_opt[video] == 0:
+                zero_score_videos_set.add(video)
+            else:
+                # 如果视频之前在 zero_score_videos_set 中，现在有得分，移除它
+                zero_score_videos_set.discard(video)
 
-        # 保持原始顺序排除分数最高的视频
-        remaining_videos = [video for video in sorted_topk if video != max_score_video]
+        # # 将有得分的视频按得分排序
+        # optimized_topk = sorted([(video, score) for video, score in scores_opt.items() if score > 0],
+        #                         key=lambda x: x[1], reverse=True)
+        #
+        # # for video, score in optimized_topk:
+        # #     print(f"Course: {video}, Score: {score}")
+        #
+        # # 提取排序后的视频ID
+        # sorted_videos_with_scores = [video for video, score in optimized_topk]
+        #
+        # # 将得分为0的视频保持原有顺序，追加到排序后的视频ID列表末尾
+        # final_topk = sorted_videos_with_scores + list(zero_score_videos_set)
+        #
+        # return final_topk
+        return scores_opt
 
-        # 将分数最高的视频放在最前面，剩下的视频按原顺序排列
-        final_topk = [max_score_video] + remaining_videos
+    def merge_scores(self, scores_pro1, scores_pro2):
+        merged_scores = {}
 
-        return final_topk
+        # 遍历第一个字典，将所有键值对添加到merged_scores中
+        for video_id, score in scores_pro1.items():
+            merged_scores[video_id] = score
+
+        # 遍历第二个字典，如果键已经在merged_scores中，则将分数相加，否则直接添加
+        for video_id, score in scores_pro2.items():
+            if video_id in merged_scores:
+                merged_scores[video_id] += score  # 分数相加
+            else:
+                merged_scores[video_id] = score  # 如果不存在，直接添加
+
+        return merged_scores
+
+    def multiply_scores(self, scores_pro1, scores_pro2):
+        merged_scores = {}
+
+        # 遍历第一个字典，将所有键值对添加到merged_scores中
+        for video_id, score in scores_pro1.items():
+            if video_id in scores_pro2:
+                merged_scores[video_id] = score * scores_pro2[video_id]  # 分数相乘
+            else:
+                merged_scores[video_id] = score  # 如果不存在，直接保留原始分数
+
+        # 遍历第二个字典，处理那些不在第一个字典中的video_id
+        for video_id, score in scores_pro2.items():
+            if video_id not in merged_scores:
+                merged_scores[video_id] = score  # 直接添加不存在的video_id
+
+        return merged_scores
 
 
 
