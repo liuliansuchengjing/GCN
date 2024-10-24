@@ -506,7 +506,7 @@ class Metrics(object):
         student_concept_graph = Student_ConceptGraph(StudentWatchData_list, knowledge_graph)
 
         # 初始化视频的匹配分数
-        video_scores = {video_id: (20 - i) if i < 20 else 0 for i, video_id in enumerate(topk)}
+        video_scores = {video_id: (40 - i) if i < 40 else 0 for i, video_id in enumerate(topk)}
 
         for video_id in topk:
             video_name = idx2u[video_id]
@@ -521,6 +521,7 @@ class Metrics(object):
                         mastery = student_concept_graph.nodes[concept]['mastery']
                         video_scores[video_id] -= mastery
 
+        print("video_scores:",video_scores)
         # 根据视频的匹配度排序
         optimized_topk = sorted(video_scores.items(), key=lambda x: x[1], reverse=True)
 
