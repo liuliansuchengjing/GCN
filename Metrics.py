@@ -279,10 +279,16 @@ class Metrics(object):
             # next_video_id = None
 
             # 概念距离排序
-            # # print("initial_topk:", initial_topk)
-            # focus_concepts = graph.find_focus_concept(prev_video_name)
-            # score_opt = self.optimize_topk_based_on_concept(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
-            # # print("sorted_topk:", sorted_topk)
+            # print("initial_topk:", initial_topk)
+            if wc>4:
+                focus_concepts = graph.find_focus_concept(prev_video_name)
+                opt_topk = self.optimize_topk_based_on_concept(knowledge_graph, focus_concepts, initial_topk, idx2u,
+                                                               graph, all_shortest_paths)
+
+            else:
+                opt_topk =list(initial_topk)
+
+                # print("sorted_topk:", sorted_topk)
             #
             # #nearby1-4
             # scores_pro, f_next_video = self.score_predictions(initial_topk, y_p, idx2u, course_video_mapping, courses, prev_courses)
@@ -290,7 +296,8 @@ class Metrics(object):
             # # 根据得分重新排序topk
             # sorted_topk = self.reorder_top_predictions(initial_topk, score)
 
-            prefer_topk = self.optimize_based_on_studentprefer(student_watch_data_list, knowledge_graph, initial_topk, idx2u)
+            # # 喜好排序
+            # prefer_topk = self.optimize_based_on_studentprefer(student_watch_data_list, knowledge_graph, initial_topk, idx2u)
 
             # if f_next_video:
             #     # 通过前一个视频找到相邻的下一个视频
@@ -298,12 +305,12 @@ class Metrics(object):
             #     next_video_id = self.find_next_video(prev_video_name, prev_courses, u2idx, courses)
             # 如果找到 next_video_id，则将其插入到首位
             next_video_id = self.find_next_video(prev_video_name, prev_courses, u2idx, courses)
-            if next_video_id is not None and next_video_id not in prefer_topk:
-                prefer_topk.insert(0, next_video_id)
+            if next_video_id is not None and next_video_id not in opt_topk:
+                opt_topk.insert(0, next_video_id)
 
             # 更新结果
             for k in k_list:
-                topk = prefer_topk[:k]
+                topk = opt_topk[:k]
                 scores[f'hits@{k}'].append(1.0 if y_ in topk else 0.0)
                 scores[f'map@{k}'].append(self.apk([y_], topk, k))
 
