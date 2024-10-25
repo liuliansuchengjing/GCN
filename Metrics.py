@@ -284,6 +284,7 @@ class Metrics(object):
                 focus_concepts = graph.find_focus_concept(prev_video_name)
                 opt_topk = self.optimize_topk_based_on_concept(knowledge_graph, focus_concepts, initial_topk, idx2u,
                                                                graph, all_shortest_paths)
+                opt_topk = list(opt_topk)
 
             else:
                 opt_topk =list(initial_topk)
