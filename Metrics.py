@@ -506,7 +506,7 @@ class Metrics(object):
         student_concept_graph = Student_ConceptGraph(StudentWatchData_list, knowledge_graph)
 
         # 初始化视频的匹配分数
-        video_scores = {video_id: (40 - i) if i < 40 else 0 for i, video_id in enumerate(topk)}
+        video_scores = {video_id: 0 for video_id in topk}
 
         for video_id in topk:
             video_name = idx2u[video_id]
