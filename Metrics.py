@@ -505,8 +505,9 @@ class Metrics(object):
         # 生成学生的概念图
         student_concept_graph = Student_ConceptGraph(StudentWatchData_list, knowledge_graph)
 
-        # 初始化视频的匹配分数
-        video_scores = {video_id: 0 for video_id in topk}
+        # # 初始化视频的匹配分数
+        # video_scores = {video_id: 0 for video_id in topk}
+        video_scores = {video_id: (40 - i) if i < 40 else 0 for i, video_id in enumerate(topk)}
 
         for video_id in topk:
             video_name = idx2u[video_id]
@@ -519,7 +520,8 @@ class Metrics(object):
                 for concept in video_concepts:
                     if student_concept_graph.has_node(concept):
                         mastery = student_concept_graph.nodes[concept]['mastery']
-                        video_scores[video_id] += mastery
+                        if mastery > 1:
+                            video_scores[video_id] += 1                        
 
         # print("video_scores:",video_scores)
         # 根据视频的匹配度排序
