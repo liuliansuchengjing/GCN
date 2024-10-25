@@ -523,7 +523,7 @@ class Metrics(object):
                         if mastery > 1.5:
                             video_scores[video_id] += 0.5                        
 
-        print("video_scores:",video_scores)
+        # print("video_scores:",video_scores)
         # 根据视频的匹配度排序
         optimized_topk = sorted(video_scores.items(), key=lambda x: x[1], reverse=True)
 
