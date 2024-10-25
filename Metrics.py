@@ -520,7 +520,7 @@ class Metrics(object):
                 for concept in video_concepts:
                     if student_concept_graph.has_node(concept):
                         mastery = student_concept_graph.nodes[concept]['mastery']
-                        if mastery > 1.1:
+                        if mastery > 1.5:
                             video_scores[video_id] += 1                        
 
         # print("video_scores:",video_scores)
