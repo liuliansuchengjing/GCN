@@ -284,8 +284,6 @@ class Metrics(object):
                 focus_concepts = graph.find_focus_concept(prev_video_name)
                 opt_topk = self.optimize_topk_based_on_concept(knowledge_graph, focus_concepts, initial_topk, idx2u,
                                                                graph, all_shortest_paths)
-                opt_topk = list(opt_topk)
-
             else:
                 opt_topk =list(initial_topk)
 
@@ -452,21 +450,21 @@ class Metrics(object):
                 # 如果视频之前在 zero_score_videos_set 中，现在有得分，移除它
                 zero_score_videos_set.discard(video)
 
-        # # 将有得分的视频按得分排序
-        # optimized_topk = sorted([(video, score) for video, score in scores_opt.items() if score > 0],
-        #                         key=lambda x: x[1], reverse=True)
-        #
-        # # for video, score in optimized_topk:
-        # #     print(f"Course: {video}, Score: {score}")
-        #
-        # # 提取排序后的视频ID
-        # sorted_videos_with_scores = [video for video, score in optimized_topk]
-        #
-        # # 将得分为0的视频保持原有顺序，追加到排序后的视频ID列表末尾
-        # final_topk = sorted_videos_with_scores + list(zero_score_videos_set)
-        #
-        # return final_topk
-        return scores_opt
+        # 将有得分的视频按得分排序
+        optimized_topk = sorted([(video, score) for video, score in scores_opt.items() if score > 0],
+                                key=lambda x: x[1], reverse=True)
+        
+        # for video, score in optimized_topk:
+        #     print(f"Course: {video}, Score: {score}")
+        
+        # 提取排序后的视频ID
+        sorted_videos_with_scores = [video for video, score in optimized_topk]
+        
+        # 将得分为0的视频保持原有顺序，追加到排序后的视频ID列表末尾
+        final_topk = sorted_videos_with_scores + list(zero_score_videos_set)
+        
+        return final_topk
+        # return scores_opt
 
     def merge_scores(self, scores_pro1, scores_pro2):
         merged_scores = {}
