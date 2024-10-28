@@ -280,7 +280,7 @@ class Metrics(object):
 
             # 概念距离排序
             # print("initial_topk:", initial_topk)
-            if wc>1 and d2<1:
+            if wc > 1:
                 focus_concepts = graph.find_focus_concept(prev_video_name)
                 opt_topk = self.optimize_topk_based_on_concept(knowledge_graph, focus_concepts, initial_topk, idx2u,
                                                                graph, all_shortest_paths)
@@ -441,7 +441,7 @@ class Metrics(object):
 
                         if shortest_path != float('inf'):
                             # print("(opt)shortest_path:", shortest_path)
-                            scores_opt[video] += (1 / (1 + shortest_path))
+                            scores_opt[video] += (1 / (1 + shortest_path))*2
 
             # 如果得分为0，将其标记为零分视频
             if scores_opt[video] == 0:
