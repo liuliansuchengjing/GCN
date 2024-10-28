@@ -263,7 +263,6 @@ class Metrics(object):
         course_video_mapping = self.build_course_video_mapping(courses)
         # 绘制知识图谱
         graph = ConceptGraph(
-            concept_file='/kaggle/input/riginmooccube/MOOCCube/relations/parent-son.json',
             video_concept_file='/kaggle/input/riginmooccube/MOOCCube/relations/video-concept.json',
             parent_son_file='/kaggle/input/riginmooccube/MOOCCube/relations/parent-son.json'
         )
