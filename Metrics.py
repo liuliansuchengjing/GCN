@@ -63,12 +63,13 @@ class StudentWatchData:
         """
         return f"StudentWatchData(video_id={self.video_id}, watch_time={self.watch_time}, total_time={self.total_time})"
 
+
 class ConceptGraph:
-    def __init__(self, concept_file, video_concept_file, parent_son_file):
-        self.concept_file = concept_file
+    def __init__(self, video_concept_file, parent_son_file):
         self.video_concept_file = video_concept_file
         self.parent_son_file = parent_son_file
         self.video_concept_mapping = self.load_video_concept_mapping()
+        self.parent_to_children = {}  # 用于存储父节点和其子节点的映射关系
 
     def load_video_concept_mapping(self):
         """加载视频-概念映射关系，存储为字典，减少重复 I/O 操作"""
@@ -83,22 +84,26 @@ class ConceptGraph:
 
     def find_focus_concept(self, last_video):
         """通过查找加载好的视频-概念映射，快速找到指定视频的概念"""
-        # print("(find)last_video:", last_video)
         consept = self.video_concept_mapping.get(last_video, [])
-        # print("(find)consept:", consept)
         return consept
-
 
     def draw_knowledge_graph(self):
         """绘制知识图谱"""
-        # 创建一个有向图
-        knowledge_graph = nx.DiGraph()
+        # 创建一个无向图
+        knowledge_graph = nx.Graph()
 
         # 读取parent-son文件，添加父子概念关系
         with open(self.parent_son_file, 'r', encoding='utf-8') as file:
             for line in file:
                 parent, child = line.strip().split('\t')
                 knowledge_graph.add_edge(parent, child)
+
+                # 将子概念添加到对应父概念的列表中
+                if parent not in self.parent_to_children:
+                    self.parent_to_children[parent] = []
+                self.parent_to_children[parent].append(child)
+
+        # 为每个父节点下的所有子概念添加间接连接（无向图中已经连通，无需额外处理）
 
         # 添加视频与概念的关系
         for video, concepts in self.video_concept_mapping.items():
@@ -111,8 +116,14 @@ class ConceptGraph:
 
         return knowledge_graph
 
-    # 使用预计算的最短路径
+    # 使用预计算的最短路径，并在兄弟节点情况下返回自定义距离
     def get_shortest_path_length(self, source, target, all_shortest_paths):
+        # 检查是否是兄弟节点
+        for parent, children in self.parent_to_children.items():
+            if source in children and target in children:
+                return 1  # 兄弟节点间的距离设为1
+
+        # 如果不是兄弟节点，使用预计算的最短路径
         if source in all_shortest_paths and target in all_shortest_paths[source]:
             return all_shortest_paths[source][target]
         else:
