@@ -134,6 +134,17 @@ class ConceptGraph:
         except nx.exception.NetworkXNoPath:
             return float('inf')  # 无路径时返回无穷大
 
+    def get_shortest_path_length_with_limit(self, source, target, concept_graph, max_depth=3):
+        print("get_shortest_path_length")
+        try:
+            path_lengths = nx.single_source_shortest_path_length(concept_graph, source, max_depth)
+            if target in path_lengths:
+                return path_lengths[target]
+            else:
+                return float('inf')
+        except nx.exception.NetworkXNoPath:
+            return float('inf')  # 无路径时返回无穷大
+
 def load_idx2u():
     with open('/kaggle/working/GCN/data/r_MOOC10000/idx2u.pickle', 'rb') as f:
         return pickle.load(f)
@@ -449,7 +460,8 @@ class Metrics(object):
                 # 计算相关性得分
                 for concept in video_concepts:
                     for focus_concept in focus_concepts:
-                        shortest_path = graph.direct_get_shortest_path_length(concept, focus_concept, concept_graph)
+                        # shortest_path = graph.direct_get_shortest_path_length(concept, focus_concept, concept_graph)
+                        shortest_path = graph.get_shortest_path_length_with_limit(concept, focus_concept, concept_graph, 3)
 
                         if shortest_path != float('inf'):
                             # print("(opt)shortest_path:", shortest_path)
