@@ -143,7 +143,7 @@ class ConceptGraph:
 
     # 使用预计算的最短路径
     def get_shortest_path_length(self, source, target, all_shortest_paths):
-        print("get_shortest_path_length")
+        # print("get_shortest_path_length")
         if source in all_shortest_paths and target in all_shortest_paths[source]:
             return all_shortest_paths[source][target]
         else:
