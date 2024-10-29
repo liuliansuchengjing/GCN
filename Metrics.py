@@ -88,6 +88,28 @@ class ConceptGraph:
         # print("(find)consept:", consept)
         return consept
 
+    # def draw_knowledge_graph(self):
+    #     """绘制知识图谱"""
+    #     # 创建一个有向图
+    #     # knowledge_graph = nx.DiGraph()
+    #     knowledge_graph = nx.Graph()
+    #
+    #     # 读取parent-son文件，添加父子概念关系
+    #     with open(self.parent_son_file, 'r', encoding='utf-8') as file:
+    #         for line in file:
+    #             parent, child = line.strip().split('\t')
+    #             knowledge_graph.add_edge(parent, child)
+    #
+    #     # 添加视频与概念的关系
+    #     for video, concepts in self.video_concept_mapping.items():
+    #         if video not in knowledge_graph:
+    #             knowledge_graph.add_node(video, type='video')
+    #         for concept in concepts:
+    #             if concept not in knowledge_graph:
+    #                 knowledge_graph.add_node(concept, type='concept')
+    #             knowledge_graph.add_edge(video, concept)
+    #
+    #     return knowledge_graph
     def draw_knowledge_graph(self):
         # 创建知识图谱，包括视频-概念和父子关系
         knowledge_graph = nx.DiGraph()
@@ -113,37 +135,19 @@ class ConceptGraph:
                 knowledge_graph.add_edge(video, concept)
 
         # 创建仅包含概念节点的子图
-        concept_nodes = [node for node, data in knowledge_graph.nodes(data=True) if data.get('type') == 'concept']
-        # print("Concept nodes:", concept_nodes)
-        concept_graph = knowledge_graph.subgraph(concept_nodes)
+        concept_graph = knowledge_graph.subgraph(
+            [node for node, data in knowledge_graph.nodes(data=True) if data.get('type') == 'concept']
+        ).copy()
 
         return knowledge_graph, concept_graph
 
     # 使用预计算的最短路径
     def get_shortest_path_length(self, source, target, all_shortest_paths):
-        # print("get_shortest_path_length")
+        print("get_shortest_path_length")
         if source in all_shortest_paths and target in all_shortest_paths[source]:
             return all_shortest_paths[source][target]
         else:
             return float('inf')  # 无路径时返回无穷大
-
-    # def direct_get_shortest_path_length(self, source, target, concept_graph):
-    #     # print("get_shortest_path_length")
-    #     try:
-    #         return nx.shortest_path_length(concept_graph, source, target)
-    #     except nx.exception.NetworkXNoPath:
-    #         return float('inf')  # 无路径时返回无穷大
-
-    # def get_shortest_path_length_with_limit(self, source, target, concept_graph, max_depth=3):
-    #     # print("get_shortest_path_length")
-    #     try:
-    #         path_lengths = nx.single_source_shortest_path_length(concept_graph, source, max_depth)
-    #         if target in path_lengths:
-    #             return path_lengths[target]
-    #         else:
-    #             return float('inf')
-    #     except nx.exception.NetworkXNoPath:
-    #         return float('inf')  # 无路径时返回无穷大
 
 def load_idx2u():
     with open('/kaggle/working/GCN/data/r_MOOC10000/idx2u.pickle', 'rb') as f:
@@ -282,13 +286,10 @@ class Metrics(object):
             parent_son_file='/kaggle/input/riginmooccube/MOOCCube/relations/parent-son.json'
         )
         knowledge_graph, concept_graph = graph.draw_knowledge_graph()
-        # 预先计算所有节点之间的最短路径
-        print("预先计算所有节点之间的最短路径")
         max_path_length = 2  # 或者设置为2，依赖你的需求
+        print("预先计算所有节点之间的最短路径")
         all_shortest_paths = dict(nx.all_pairs_shortest_path_length(concept_graph, cutoff=max_path_length))
-        # all_shortest_paths = dict(nx.all_pairs_shortest_path_length(knowledge_graph))
-        print("(计算完成)预先计算所有节点之间的最短路径")
-
+        print("()预先计算所有节点之间的最短路径")
 
         for p_, y_, y_p, wc, dt, wt, d1, d2, d3 in zip(y_prob, y_true, y_prev, w_c, d_t, w_t, d_1, d_2, d_3):
             if y_ == self.PAD:
