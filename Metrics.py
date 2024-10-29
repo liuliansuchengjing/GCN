@@ -127,23 +127,23 @@ class ConceptGraph:
         else:
             return float('inf')  # 无路径时返回无穷大
 
-    def direct_get_shortest_path_length(self, source, target, concept_graph):
-        # print("get_shortest_path_length")
-        try:
-            return nx.shortest_path_length(concept_graph, source, target)
-        except nx.exception.NetworkXNoPath:
-            return float('inf')  # 无路径时返回无穷大
+    # def direct_get_shortest_path_length(self, source, target, concept_graph):
+    #     # print("get_shortest_path_length")
+    #     try:
+    #         return nx.shortest_path_length(concept_graph, source, target)
+    #     except nx.exception.NetworkXNoPath:
+    #         return float('inf')  # 无路径时返回无穷大
 
-    def get_shortest_path_length_with_limit(self, source, target, concept_graph, max_depth=3):
-        # print("get_shortest_path_length")
-        try:
-            path_lengths = nx.single_source_shortest_path_length(concept_graph, source, max_depth)
-            if target in path_lengths:
-                return path_lengths[target]
-            else:
-                return float('inf')
-        except nx.exception.NetworkXNoPath:
-            return float('inf')  # 无路径时返回无穷大
+    # def get_shortest_path_length_with_limit(self, source, target, concept_graph, max_depth=3):
+    #     # print("get_shortest_path_length")
+    #     try:
+    #         path_lengths = nx.single_source_shortest_path_length(concept_graph, source, max_depth)
+    #         if target in path_lengths:
+    #             return path_lengths[target]
+    #         else:
+    #             return float('inf')
+    #     except nx.exception.NetworkXNoPath:
+    #         return float('inf')  # 无路径时返回无穷大
 
 def load_idx2u():
     with open('/kaggle/working/GCN/data/r_MOOC10000/idx2u.pickle', 'rb') as f:
@@ -283,6 +283,8 @@ class Metrics(object):
         )
         knowledge_graph, concept_graph = graph.draw_knowledge_graph()
         # 预先计算所有节点之间的最短路径
+        max_path_length = 2  # 或者设置为2，依赖你的需求
+        all_shortest_paths = dict(nx.all_pairs_shortest_path_length(concept_graph, cutoff=max_path_length))
         # all_shortest_paths = dict(nx.all_pairs_shortest_path_length(knowledge_graph))
 
 
@@ -307,7 +309,7 @@ class Metrics(object):
             # print("initial_topk:", initial_topk)
             if wc > 1:
                 focus_concepts = graph.find_focus_concept(prev_video_name)
-                opt_topk = self.optimize_topk_based_on_concept(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, concept_graph)
+                opt_topk = self.optimize_topk_based_on_concept(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
             else:
                 opt_topk =list(initial_topk)
 
@@ -443,7 +445,7 @@ class Metrics(object):
 
         return sorted_videos
 
-    def optimize_topk_based_on_concept(self, knowledge_graph, focus_concepts, sorted_topk, idx2u, graph, concept_graph):
+    def optimize_topk_based_on_concept(self, knowledge_graph, focus_concepts, sorted_topk, idx2u, graph, all_shortest_paths):
         # video_scores = {}  # 用于存储视频及其累计相关性得分
         zero_score_videos_set = set()  # 用于去重存储得分为0的视频
         scores_opt = {video_id: (20 - i) if i < 20 else 0 for i, video_id in enumerate(sorted_topk)}
@@ -461,7 +463,7 @@ class Metrics(object):
                 for concept in video_concepts:
                     for focus_concept in focus_concepts:
                         # shortest_path = graph.direct_get_shortest_path_length(concept, focus_concept, concept_graph)
-                        shortest_path = graph.get_shortest_path_length_with_limit(concept, focus_concept, concept_graph, 1)
+                        shortest_path = graph.get_shortest_path_length(concept, focus_concept, all_shortest_paths)
 
                         if shortest_path != float('inf'):
                             # print("(opt)shortest_path:", shortest_path)
