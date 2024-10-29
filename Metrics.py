@@ -283,9 +283,11 @@ class Metrics(object):
         )
         knowledge_graph, concept_graph = graph.draw_knowledge_graph()
         # 预先计算所有节点之间的最短路径
+        print("预先计算所有节点之间的最短路径")
         max_path_length = 2  # 或者设置为2，依赖你的需求
         all_shortest_paths = dict(nx.all_pairs_shortest_path_length(concept_graph, cutoff=max_path_length))
         # all_shortest_paths = dict(nx.all_pairs_shortest_path_length(knowledge_graph))
+        print("(计算完成)预先计算所有节点之间的最短路径")
 
 
         for p_, y_, y_p, wc, dt, wt, d1, d2, d3 in zip(y_prob, y_true, y_prev, w_c, d_t, w_t, d_1, d_2, d_3):
