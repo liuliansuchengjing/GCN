@@ -103,10 +103,6 @@ class ConceptGraph:
                 knowledge_graph.add_edge(parent, child)
                 knowledge_graph.add_edge(child, parent)  # 添加逆向边
 
-                # 将子概念添加到对应父概念的列表中
-                if parent not in self.parent_to_children:
-                    self.parent_to_children[parent] = []
-                self.parent_to_children[parent].append(child)
 
         # 为每个父节点下的所有子概念添加间接连接（无向图中已经连通，无需额外处理）
 
@@ -119,7 +115,12 @@ class ConceptGraph:
                     knowledge_graph.add_node(concept, type='concept')
                 knowledge_graph.add_edge(video, concept)
 
-        return knowledge_graph
+        # 创建仅包含概念节点的子图
+        concept_graph = knowledge_graph.subgraph(
+            [node for node, data in knowledge_graph.nodes(data=True) if data.get('type') == 'concept']
+        ).copy()
+
+        return knowledge_graph, concept_graph
 
     # 使用预计算的最短路径，并在兄弟节点情况下返回自定义距离
     def get_shortest_path_length(self, source, target):
