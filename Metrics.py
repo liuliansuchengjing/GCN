@@ -97,6 +97,7 @@ class ConceptGraph:
             for line in file:
                 parent, child = line.strip().split('\t')
                 knowledge_graph.add_edge(parent, child)
+                knowledge_graph.add_edge(child, parent)  # 添加逆向边
 
                 # 将子概念添加到对应父概念的列表中
                 if parent not in self.parent_to_children:
