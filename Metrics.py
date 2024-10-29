@@ -135,7 +135,7 @@ class ConceptGraph:
             return float('inf')  # 无路径时返回无穷大
 
     def get_shortest_path_length_with_limit(self, source, target, concept_graph, max_depth=3):
-        print("get_shortest_path_length")
+        # print("get_shortest_path_length")
         try:
             path_lengths = nx.single_source_shortest_path_length(concept_graph, source, max_depth)
             if target in path_lengths:
