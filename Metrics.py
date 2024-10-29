@@ -461,7 +461,7 @@ class Metrics(object):
                 for concept in video_concepts:
                     for focus_concept in focus_concepts:
                         # shortest_path = graph.direct_get_shortest_path_length(concept, focus_concept, concept_graph)
-                        shortest_path = graph.get_shortest_path_length_with_limit(concept, focus_concept, concept_graph, 3)
+                        shortest_path = graph.get_shortest_path_length_with_limit(concept, focus_concept, concept_graph, 1)
 
                         if shortest_path != float('inf'):
                             # print("(opt)shortest_path:", shortest_path)
