@@ -69,7 +69,6 @@ class ConceptGraph:
         self.video_concept_file = video_concept_file
         self.parent_son_file = parent_son_file
         self.video_concept_mapping = self.load_video_concept_mapping()
-        self.parent_to_children = {}  # 用于存储父节点和其子节点的映射关系
 
     def load_video_concept_mapping(self):
         """加载视频-概念映射关系，存储为字典，减少重复 I/O 操作"""
@@ -84,15 +83,16 @@ class ConceptGraph:
 
     def find_focus_concept(self, last_video):
         """通过查找加载好的视频-概念映射，快速找到指定视频的概念"""
+        # print("(find)last_video:", last_video)
         consept = self.video_concept_mapping.get(last_video, [])
+        # print("(find)consept:", consept)
         return consept
 
     def draw_knowledge_graph(self):
-        """绘制知识图谱"""
-        # 创建一个无向图
+        # 创建知识图谱，包括视频-概念和父子关系
         knowledge_graph = nx.DiGraph()
 
-        # 读取parent-son文件，添加父子概念关系
+        # 添加父子概念关系（无向边）
         with open(self.parent_son_file, 'r', encoding='utf-8') as file:
             for line in file:
                 parent, child = line.strip().split('\t')
@@ -101,12 +101,9 @@ class ConceptGraph:
                 if child not in knowledge_graph:
                     knowledge_graph.add_node(child, type='concept')
                 knowledge_graph.add_edge(parent, child)
-                knowledge_graph.add_edge(child, parent)  # 添加逆向边
+                knowledge_graph.add_edge(child, parent)  # 使父子关系无向
 
-
-        # 为每个父节点下的所有子概念添加间接连接（无向图中已经连通，无需额外处理）
-
-        # 添加视频与概念的关系
+        # 添加视频与概念的关系（有向边）
         for video, concepts in self.video_concept_mapping.items():
             if video not in knowledge_graph:
                 knowledge_graph.add_node(video, type='video')
@@ -116,19 +113,26 @@ class ConceptGraph:
                 knowledge_graph.add_edge(video, concept)
 
         # 创建仅包含概念节点的子图
-        concept_graph = knowledge_graph.subgraph(
-            [node for node, data in knowledge_graph.nodes(data=True) if data.get('type') == 'concept']
-        ).copy()
+        concept_nodes = [node for node, data in knowledge_graph.nodes(data=True) if data.get('type') == 'concept']
+        # print("Concept nodes:", concept_nodes)
+        concept_graph = knowledge_graph.subgraph(concept_nodes)
 
         return knowledge_graph, concept_graph
 
-    # 使用预计算的最短路径，并在兄弟节点情况下返回自定义距离
-    def get_shortest_path_length(self, source, target):
+    # 使用预计算的最短路径
+    def get_shortest_path_length(self, source, target, all_shortest_paths):
+        # print("get_shortest_path_length")
+        if source in all_shortest_paths and target in all_shortest_paths[source]:
+            return all_shortest_paths[source][target]
+        else:
+            return float('inf')  # 无路径时返回无穷大
+
+    def direct_get_shortest_path_length(self, source, target):
+        # print("get_shortest_path_length")
         try:
             return nx.shortest_path_length(concept_graph, source, target)
-        except nx.NetworkError:
-            return float('inf')
-
+        except nx.exception.NetworkXNoPath:
+            return float('inf')  # 无路径时返回无穷大
 
 def load_idx2u():
     with open('/kaggle/working/GCN/data/r_MOOC10000/idx2u.pickle', 'rb') as f:
@@ -445,7 +449,7 @@ class Metrics(object):
                 # 计算相关性得分
                 for concept in video_concepts:
                     for focus_concept in focus_concepts:
-                        shortest_path = graph.get_shortest_path_length(concept, focus_concept)
+                        shortest_path = graph.direct_get_shortest_path_length(concept, focus_concept)
 
                         if shortest_path != float('inf'):
                             # print("(opt)shortest_path:", shortest_path)
