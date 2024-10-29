@@ -96,6 +96,10 @@ class ConceptGraph:
         with open(self.parent_son_file, 'r', encoding='utf-8') as file:
             for line in file:
                 parent, child = line.strip().split('\t')
+                if parent not in knowledge_graph:
+                    knowledge_graph.add_node(parent, type='concept')
+                if child not in knowledge_graph:
+                    knowledge_graph.add_node(child, type='concept')
                 knowledge_graph.add_edge(parent, child)
                 knowledge_graph.add_edge(child, parent)  # 添加逆向边
 
@@ -118,17 +122,11 @@ class ConceptGraph:
         return knowledge_graph
 
     # 使用预计算的最短路径，并在兄弟节点情况下返回自定义距离
-    def get_shortest_path_length(self, source, target, all_shortest_paths):
-        # 检查是否是兄弟节点
-        for parent, children in self.parent_to_children.items():
-            if source in children and target in children:
-                return 1  # 兄弟节点间的距离设为1
-
-        # 如果不是兄弟节点，使用预计算的最短路径
-        if source in all_shortest_paths and target in all_shortest_paths[source]:
-            return all_shortest_paths[source][target]
-        else:
-            return float('inf')  # 无路径时返回无穷大
+    def get_shortest_path_length(self, source, target):
+        try:
+            return nx.shortest_path_length(concept_graph, source, target)
+        except nx.NetworkError:
+            return float('inf')
 
 
 def load_idx2u():
@@ -267,9 +265,9 @@ class Metrics(object):
             video_concept_file='/kaggle/input/riginmooccube/MOOCCube/relations/video-concept.json',
             parent_son_file='/kaggle/input/riginmooccube/MOOCCube/relations/parent-son.json'
         )
-        knowledge_graph = graph.draw_knowledge_graph()
+        knowledge_graph, concept_graph = graph.draw_knowledge_graph()
         # 预先计算所有节点之间的最短路径
-        all_shortest_paths = dict(nx.all_pairs_shortest_path_length(knowledge_graph))
+        # all_shortest_paths = dict(nx.all_pairs_shortest_path_length(knowledge_graph))
 
 
         for p_, y_, y_p, wc, dt, wt, d1, d2, d3 in zip(y_prob, y_true, y_prev, w_c, d_t, w_t, d_1, d_2, d_3):
@@ -293,8 +291,7 @@ class Metrics(object):
             # print("initial_topk:", initial_topk)
             if wc > 1:
                 focus_concepts = graph.find_focus_concept(prev_video_name)
-                opt_topk = self.optimize_topk_based_on_concept(knowledge_graph, focus_concepts, initial_topk, idx2u,
-                                                               graph, all_shortest_paths)
+                opt_topk = self.optimize_topk_based_on_concept(knowledge_graph, focus_concepts, initial_topk, idx2u, graph)
             else:
                 opt_topk =list(initial_topk)
 
@@ -430,8 +427,7 @@ class Metrics(object):
 
         return sorted_videos
 
-    def optimize_topk_based_on_concept(self, knowledge_graph, focus_concepts, sorted_topk, idx2u, graph,
-                                       all_shortest_paths):
+    def optimize_topk_based_on_concept(self, knowledge_graph, focus_concepts, sorted_topk, idx2u, graph):
         # video_scores = {}  # 用于存储视频及其累计相关性得分
         zero_score_videos_set = set()  # 用于去重存储得分为0的视频
         scores_opt = {video_id: (20 - i) if i < 20 else 0 for i, video_id in enumerate(sorted_topk)}
@@ -448,7 +444,7 @@ class Metrics(object):
                 # 计算相关性得分
                 for concept in video_concepts:
                     for focus_concept in focus_concepts:
-                        shortest_path = graph.get_shortest_path_length(concept, focus_concept, all_shortest_paths)
+                        shortest_path = graph.get_shortest_path_length(concept, focus_concept)
 
                         if shortest_path != float('inf'):
                             # print("(opt)shortest_path:", shortest_path)
