@@ -90,7 +90,7 @@ class ConceptGraph:
     def draw_knowledge_graph(self):
         """绘制知识图谱"""
         # 创建一个无向图
-        knowledge_graph = nx.Graph()
+        knowledge_graph = nx.DiGraph()
 
         # 读取parent-son文件，添加父子概念关系
         with open(self.parent_son_file, 'r', encoding='utf-8') as file:
