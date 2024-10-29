@@ -127,7 +127,7 @@ class ConceptGraph:
         else:
             return float('inf')  # 无路径时返回无穷大
 
-    def direct_get_shortest_path_length(self, source, target):
+    def direct_get_shortest_path_length(self, source, target, concept_graph):
         # print("get_shortest_path_length")
         try:
             return nx.shortest_path_length(concept_graph, source, target)
@@ -296,7 +296,7 @@ class Metrics(object):
             # print("initial_topk:", initial_topk)
             if wc > 1:
                 focus_concepts = graph.find_focus_concept(prev_video_name)
-                opt_topk = self.optimize_topk_based_on_concept(knowledge_graph, focus_concepts, initial_topk, idx2u, graph)
+                opt_topk = self.optimize_topk_based_on_concept(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, concept_graph)
             else:
                 opt_topk =list(initial_topk)
 
@@ -432,7 +432,7 @@ class Metrics(object):
 
         return sorted_videos
 
-    def optimize_topk_based_on_concept(self, knowledge_graph, focus_concepts, sorted_topk, idx2u, graph):
+    def optimize_topk_based_on_concept(self, knowledge_graph, focus_concepts, sorted_topk, idx2u, graph, concept_graph):
         # video_scores = {}  # 用于存储视频及其累计相关性得分
         zero_score_videos_set = set()  # 用于去重存储得分为0的视频
         scores_opt = {video_id: (20 - i) if i < 20 else 0 for i, video_id in enumerate(sorted_topk)}
@@ -449,7 +449,7 @@ class Metrics(object):
                 # 计算相关性得分
                 for concept in video_concepts:
                     for focus_concept in focus_concepts:
-                        shortest_path = graph.direct_get_shortest_path_length(concept, focus_concept)
+                        shortest_path = graph.direct_get_shortest_path_length(concept, focus_concept, concept_graph)
 
                         if shortest_path != float('inf'):
                             # print("(opt)shortest_path:", shortest_path)
