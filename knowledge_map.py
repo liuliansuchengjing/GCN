@@ -79,8 +79,8 @@ class ConceptGraph:
 
 
 graph = ConceptGraph(
-            video_concept_file='E:\\SOFT\\pycharm\\MOOC\\MOOCCube\\MOOCCube\\relations\\video-concept.json',
-            parent_son_file='E:\\SOFT\\pycharm\\MOOC\\MOOCCube\\MOOCCube\\relations\\parent-son.json'
+            video_concept_file='/kaggle/input/riginmooccube/MOOCCube/relations/video-concept.json',
+            parent_son_file='/kaggle/input/riginmooccube/MOOCCube/relations/parent-son.json'
         )
 
 knowledge_graph = graph.draw_knowledge_graph()
