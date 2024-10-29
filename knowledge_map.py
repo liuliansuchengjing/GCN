@@ -87,7 +87,7 @@ knowledge_graph = graph.draw_knowledge_graph()
 
 # 预先计算所有节点之间的最短路径
 all_shortest_paths = dict(nx.all_pairs_shortest_path_length(knowledge_graph))
-concept1 = 'K_行向量_数学'
-concept2 = 'K_行向量_数学'
+concept1 = 'K_草原动物_地理学'
+concept2 = 'K_苔原_地理学'
 shortest_path = graph.get_shortest_path_length(concept1, concept2, all_shortest_paths)
 print(f"distance between {concept2} and {concept1}: {shortest_path} ")
