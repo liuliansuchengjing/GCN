@@ -484,8 +484,8 @@ class Metrics(object):
         optimized_topk = sorted([(video, score) for video, score in scores_opt.items() if score > 0],
                                 key=lambda x: x[1], reverse=True)
         
-        # for video, score in optimized_topk:
-        #     print(f"Course: {video}, Score: {score}")
+        for video, score in optimized_topk:
+            print(f"Course: {video}, Score: {score}")
         
         # 提取排序后的视频ID
         sorted_videos_with_scores = [video for video, score in optimized_topk]
