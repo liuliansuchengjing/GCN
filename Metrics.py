@@ -332,9 +332,9 @@ class Metrics(object):
             #     # prev_video_name = idx2u[y_p]
             #     next_video_id = self.find_next_video(prev_video_name, prev_courses, u2idx, courses)
             # 如果找到 next_video_id，则将其插入到首位
-            next_video_id = self.find_next_video(prev_video_name, prev_courses, u2idx, courses)
-            if next_video_id is not None and next_video_id not in opt_topk:
-                opt_topk.insert(0, next_video_id)
+            # next_video_id = self.find_next_video(prev_video_name, prev_courses, u2idx, courses)
+            # if next_video_id is not None and next_video_id not in opt_topk:
+            #     opt_topk.insert(0, next_video_id)
 
             # 更新结果
             for k in k_list:
@@ -451,8 +451,8 @@ class Metrics(object):
     def optimize_topk_based_on_concept(self, knowledge_graph, focus_concepts, sorted_topk, idx2u, graph, all_shortest_paths):
         # video_scores = {}  # 用于存储视频及其累计相关性得分
         zero_score_videos_set = set()  # 用于去重存储得分为0的视频
-        scores_opt = {video_id: (20 - i) if i < 20 else 0 for i, video_id in enumerate(sorted_topk)}
-        # scores_opt = {video_id: 0 for video_id in sorted_topk}
+        # scores_opt = {video_id: (20 - i) if i < 20 else 0 for i, video_id in enumerate(sorted_topk)}
+        scores_opt = {video_id: 0 for video_id in sorted_topk}
 
         for video in sorted_topk:
             video_name = idx2u[video]  # 获取视频名称
