@@ -469,7 +469,7 @@ class Metrics(object):
                         shortest_path = graph.get_shortest_path_length(concept, focus_concept, all_shortest_paths)
 
                         if shortest_path != float('inf') and shortest_path != 0:
-                            # print("(opt)shortest_path:", shortest_path)
+                            print("(opt)shortest_path:", shortest_path)
                             scores_opt[video] += (1 / (1 + shortest_path))
                             # print(f"distance between {concept} and {focus_concept}: {shortest_path} ")
 
