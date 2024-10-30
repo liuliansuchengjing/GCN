@@ -310,11 +310,13 @@ class Metrics(object):
 
             # 概念距离排序
             # print("initial_topk:", initial_topk)
-            if wc > 4:
-                focus_concepts = graph.find_focus_concept(prev_video_name)
-                opt_topk = self.optimize_topk_based_on_concept(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
-            else:
-                opt_topk =list(initial_topk)
+            # if wc > 4:
+            #     focus_concepts = graph.find_focus_concept(prev_video_name)
+            #     opt_topk = self.optimize_topk_based_on_concept(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
+            # else:
+            #     opt_topk =list(initial_topk)
+            focus_concepts = graph.find_focus_concept(prev_video_name)
+            opt_topk = self.optimize_topk_based_on_concept(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
 
                 # print("sorted_topk:", sorted_topk)
             #
