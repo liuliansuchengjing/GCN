@@ -287,9 +287,9 @@ class Metrics(object):
         )
         knowledge_graph, concept_graph = graph.draw_knowledge_graph()
         max_path_length = 2  # 或者设置为2，依赖你的需求
-        print("预先计算所有节点之间的最短路径")
+        # print("预先计算所有节点之间的最短路径")
         all_shortest_paths = dict(nx.all_pairs_shortest_path_length(concept_graph, cutoff=max_path_length))
-        print("()预先计算所有节点之间的最短路径")
+        # print("()预先计算所有节点之间的最短路径")
 
         for p_, y_, y_p, wc, dt, wt, d1, d2, d3 in zip(y_prob, y_true, y_prev, w_c, d_t, w_t, d_1, d_2, d_3):
             if y_ == self.PAD:
@@ -310,7 +310,7 @@ class Metrics(object):
 
             # 概念距离排序
             # print("initial_topk:", initial_topk)
-            if wc < 4:
+            if wc > 4:
                 focus_concepts = graph.find_focus_concept(prev_video_name)
                 opt_topk = self.optimize_topk_based_on_concept(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
             else:
