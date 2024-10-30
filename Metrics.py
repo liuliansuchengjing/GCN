@@ -310,7 +310,7 @@ class Metrics(object):
 
             # 概念距离排序
             # print("initial_topk:", initial_topk)
-            if wc > 10 and d2 < 0.8:
+            if wc > 10 and d2 < 0.6:
                 focus_concepts = graph.find_focus_concept(prev_video_name)
                 opt_topk = self.optimize_topk_based_on_concept(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
             else:
@@ -384,8 +384,8 @@ class Metrics(object):
 
     def score_predictions(self, topk, y_p, idx2u, course_video_mapping, courses, prev_courses):
         """根据与历史视频的关联性给每个预测视频评分"""
-        # scores_pro = {video_id: 0 for video_id in topk}
-        scores_pro = {video_id: (20-i) if i < 20 else 0 for i, video_id in enumerate(topk)}
+        scores_pro = {video_id: 0 for video_id in topk}
+        # scores_pro = {video_id: (20-i) if i < 20 else 0 for i, video_id in enumerate(topk)}
         prev_video_name = idx2u[y_p]
 
         for video_id in topk:
@@ -450,8 +450,8 @@ class Metrics(object):
     def optimize_topk_based_on_concept(self, knowledge_graph, focus_concepts, sorted_topk, idx2u, graph, all_shortest_paths):
         # video_scores = {}  # 用于存储视频及其累计相关性得分
         zero_score_videos_set = set()  # 用于去重存储得分为0的视频
-        scores_opt = {video_id: (20 - i) if i < 20 else 0 for i, video_id in enumerate(sorted_topk)}
-        # scores_opt = {video_id: 0 for video_id in sorted_topk}
+        # scores_opt = {video_id: (20 - i) if i < 20 else 0 for i, video_id in enumerate(sorted_topk)}
+        scores_opt = {video_id: 0 for video_id in sorted_topk}
 
         for video in sorted_topk:
             video_name = idx2u[video]  # 获取视频名称
@@ -470,7 +470,7 @@ class Metrics(object):
 
                         if shortest_path != float('inf') and shortest_path != 0:
                             # print("(opt)shortest_path:", shortest_path)
-                            scores_opt[video] += (1 / (1 + shortest_path))*0.5
+                            scores_opt[video] += (1 / (1 + shortest_path))
                             # print(f"distance between {concept} and {focus_concept}: {shortest_path} ")
 
             # 如果得分为0，将其标记为零分视频
