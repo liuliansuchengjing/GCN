@@ -470,7 +470,8 @@ class Metrics(object):
 
                         if shortest_path != float('inf') and shortest_path != 0:
                             # print("(opt)shortest_path:", shortest_path)
-                            scores_opt[video] += (1 / (1 + shortest_path))*0.5
+                            # scores_opt[video] += (1 / (1 + shortest_path))
+                            scores_opt[video] = 1
                             # print(f"distance between {concept} and {focus_concept}: {shortest_path} ")
 
             # 如果得分为0，将其标记为零分视频
