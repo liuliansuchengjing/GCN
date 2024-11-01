@@ -311,7 +311,7 @@ class Metrics(object):
             # 概念距离排序
             # print("initial_topk:", initial_topk)
             # if wc > 2 and d2 < 0.6:
-            if wc > 1 or d2 > 1:
+            if wc > 2 or d2 > 1:
                 focus_concepts = graph.find_focus_concept(prev_video_name)
                 opt_topk = self.optimize_topk_based_on_concept1(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
             # elif d2 < 0.5 and d3 < 0.1:
