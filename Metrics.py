@@ -477,7 +477,7 @@ class Metrics(object):
                             elif d2<0.6:
                                 scores_opt[video] -= (1 / (1 + shortest_path))
                             # print("(opt)shortest_path:", shortest_path)
-                            scores_opt[video] += (1 / (1 + shortest_path))
+                            # scores_opt[video] += (1 / (1 + shortest_path))
                             # scores_opt[video] += 0.22
                             # print(f"distance between {concept} and {focus_concept}: {shortest_path} ")
 
