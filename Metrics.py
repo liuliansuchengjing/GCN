@@ -311,7 +311,7 @@ class Metrics(object):
             # 概念距离排序
             # print("initial_topk:", initial_topk)
             # if wc > 2 and d2 < 0.6:
-            if d2 > 1:
+            if d2 > 1.2:
                 focus_concepts = graph.find_focus_concept(prev_video_name)
                 opt_topk = self.optimize_topk_based_on_concept(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
             else:
@@ -469,7 +469,7 @@ class Metrics(object):
                         # shortest_path = graph.direct_get_shortest_path_length(concept, focus_concept, concept_graph)
                         shortest_path = graph.get_shortest_path_length(concept, focus_concept, all_shortest_paths)
 
-                        if shortest_path != float('inf') and shortest_path != 2:
+                        if shortest_path != float('inf') and shortest_path != 0:
                             # print("(opt)shortest_path:", shortest_path)
                             scores_opt[video] += (1 / (1 + shortest_path))
                             # scores_opt[video] += 0.22
