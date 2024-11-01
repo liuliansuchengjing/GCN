@@ -311,11 +311,13 @@ class Metrics(object):
             # 概念距离排序
             # print("initial_topk:", initial_topk)
             # if wc > 2 and d2 < 0.6:
-            if d2 > 1.2:
-                focus_concepts = graph.find_focus_concept(prev_video_name)
-                opt_topk = self.optimize_topk_based_on_concept(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
-            else:
-                opt_topk =list(initial_topk)
+            # if d2 > 1.2:
+            #     focus_concepts = graph.find_focus_concept(prev_video_name)
+            #     opt_topk = self.optimize_topk_based_on_concept(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
+            # else:
+            #     opt_topk =list(initial_topk)
+            focus_concepts = graph.find_focus_concept(prev_video_name)
+            opt_topk = self.optimize_topk_based_on_concept(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths, d2)
             
             #
             # #nearby1-4
@@ -448,7 +450,7 @@ class Metrics(object):
 
         return sorted_videos
 
-    def optimize_topk_based_on_concept(self, knowledge_graph, focus_concepts, sorted_topk, idx2u, graph, all_shortest_paths):
+    def optimize_topk_based_on_concept(self, knowledge_graph, focus_concepts, sorted_topk, idx2u, graph, all_shortest_paths, d2):
         # video_scores = {}  # 用于存储视频及其累计相关性得分
         zero_score_videos_set = set()  # 用于去重存储得分为0的视频
         scores_opt = {video_id: (20 - i) if i < 20 else 0 for i, video_id in enumerate(sorted_topk)}
@@ -469,7 +471,11 @@ class Metrics(object):
                         # shortest_path = graph.direct_get_shortest_path_length(concept, focus_concept, concept_graph)
                         shortest_path = graph.get_shortest_path_length(concept, focus_concept, all_shortest_paths)
 
-                        if shortest_path != float('inf') and shortest_path != 0:
+                        if shortest_path != float('inf') and shortest_path != 2:
+                            if d2>1.2:
+                                scores_opt[video] += (1 / (1 + shortest_path))
+                            elif d2<0.6:
+                                scores_opt[video] -= (1 / (1 + shortest_path))
                             # print("(opt)shortest_path:", shortest_path)
                             scores_opt[video] += (1 / (1 + shortest_path))
                             # scores_opt[video] += 0.22
