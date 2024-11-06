@@ -474,9 +474,10 @@ class Metrics(object):
                         shortest_path = graph.get_shortest_path_length(concept, focus_concept, all_shortest_paths)
 
                         if shortest_path != float('inf') and shortest_path != 2:
-                            if scores_opt[video] == scores[video]:
+                            scores_opt[video] += 0.4
+                            # if scores_opt[video] == scores[video]:
                                 # scores_opt[video] += (1 / (1 + shortest_path))
-                                scores_opt[video] += 2
+                                
                             
             # 如果得分为0，将其标记为零分视频
             if scores_opt[video] == 0:
