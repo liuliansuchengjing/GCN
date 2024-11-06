@@ -454,7 +454,8 @@ class Metrics(object):
     def optimize_topk_based_on_concept1(self, knowledge_graph, focus_concepts, sorted_topk, idx2u, graph, all_shortest_paths):
         # video_scores = {}  # 用于存储视频及其累计相关性得分
         zero_score_videos_set = set()  # 用于去重存储得分为0的视频
-        scores_opt = {video_id: (20 - i) if i < 20 else 0 for i, video_id in enumerate(sorted_topk)}
+        scores = {video_id: (20 - i) if i < 20 else 0 for i, video_id in enumerate(sorted_topk)}
+        scores_opt = scores
         # scores_opt = {video_id: 0 for video_id in sorted_topk}
 
         for video in sorted_topk:
@@ -472,14 +473,10 @@ class Metrics(object):
                         # shortest_path = graph.direct_get_shortest_path_length(concept, focus_concept, concept_graph)
                         shortest_path = graph.get_shortest_path_length(concept, focus_concept, all_shortest_paths)
 
-                        if shortest_path != float('inf') and shortest_path != 2:                            
-                            # print("(opt)shortest_path:", shortest_path)
-                            scores_opt[video] += (1 / (1 + shortest_path))
-                        elif shortest_path == float('inf'):
-                            scores_opt[video] -= 0.5
-                            # scores_opt[video] += 0.22
-                            # print(f"distance between {concept} and {focus_concept}: {shortest_path} ")
-
+                        if shortest_path != float('inf') and shortest_path != 2:
+                            if scores_opt[video] == scores[video]:
+                                scores_opt[video] += (1 / (1 + shortest_path))
+                            
             # 如果得分为0，将其标记为零分视频
             if scores_opt[video] == 0:
                 zero_score_videos_set.add(video)
