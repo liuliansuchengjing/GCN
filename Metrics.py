@@ -311,7 +311,7 @@ class Metrics(object):
             # 概念距离排序
             # print("initial_topk:", initial_topk)
             # if wc > 2 and d2 < 0.6:
-            if wc > 2 or d2 > 1:
+            if wc > 1 or d2 > 1:
                 focus_concepts = graph.find_focus_concept(prev_video_name)
                 opt_topk = self.optimize_topk_based_on_concept1(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
             # elif wc < 2 and d2 < 0.01:
@@ -454,7 +454,7 @@ class Metrics(object):
     def optimize_topk_based_on_concept1(self, knowledge_graph, focus_concepts, sorted_topk, idx2u, graph, all_shortest_paths):
         # video_scores = {}  # 用于存储视频及其累计相关性得分
         zero_score_videos_set = set()  # 用于去重存储得分为0的视频
-        scores = {video_id: (20 - i) if i < 20 else 0 for i, video_id in enumerate(sorted_topk)}
+        scores = {video_id: (40 - i) if i < 40 else 0 for i, video_id in enumerate(sorted_topk)}
         scores_opt = scores
         # scores_opt = {video_id: 0 for video_id in sorted_topk}
 
