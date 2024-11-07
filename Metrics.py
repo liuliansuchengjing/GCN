@@ -597,7 +597,7 @@ class Metrics(object):
         """
         # 生成学生的概念图
         if len(StudentWatchData_list)>10:
-            StudentWatchData_list = StudentWatchData_list[:10]
+            StudentWatchData_list = StudentWatchData_list[-10:]
         student_concept_graph = Student_ConceptGraph(StudentWatchData_list, knowledge_graph)
 
         # # 初始化视频的匹配分数
