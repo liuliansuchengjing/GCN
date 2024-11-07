@@ -314,9 +314,9 @@ class Metrics(object):
             if wc > 1 or d2 > 1:
                 focus_concepts = graph.find_focus_concept(prev_video_name)
                 opt_topk = self.optimize_topk_based_on_concept1(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
-            elif d2 < 0.01:
-                focus_concepts = graph.find_focus_concept(prev_video_name)
-                opt_topk = self.optimize_topk_based_on_concept2(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
+            # elif d2 < 0.01:
+            #     focus_concepts = graph.find_focus_concept(prev_video_name)
+            #     opt_topk = self.optimize_topk_based_on_concept2(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
             else:
                 opt_topk =list(initial_topk)
             
@@ -473,8 +473,11 @@ class Metrics(object):
                         # shortest_path = graph.direct_get_shortest_path_length(concept, focus_concept, concept_graph)
                         shortest_path = graph.get_shortest_path_length(concept, focus_concept, all_shortest_paths)
 
-                        if shortest_path != float('inf') and shortest_path != 2:
-                            scores_opt[video] += 1
+                        if shortest_path != float('inf'):                            
+                            if shortest_path == 0:
+                                scores_opt[video] += 1
+                            elif shortest_path == 2:
+                                scores_opt[video] += 0.3
                             # if scores_opt[video] == scores[video]:
                                 # scores_opt[video] += (1 / (1 + shortest_path))
                                 
