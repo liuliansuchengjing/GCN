@@ -454,7 +454,7 @@ class Metrics(object):
     def optimize_topk_based_on_concept1(self, knowledge_graph, focus_concepts, sorted_topk, idx2u, graph, all_shortest_paths):
         # video_scores = {}  # 用于存储视频及其累计相关性得分
         zero_score_videos_set = set()  # 用于去重存储得分为0的视频
-        scores = {video_id: (10 - i) if i < 10 else 0 for i, video_id in enumerate(sorted_topk)}
+        scores = {video_id: (15 - i) if i < 15 else 0 for i, video_id in enumerate(sorted_topk)}
         scores_opt = scores
         # scores_opt = {video_id: 0 for video_id in sorted_topk}
 
