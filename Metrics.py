@@ -331,7 +331,7 @@ class Metrics(object):
             # # 喜好排序
             prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
             prev_course = prev_courses[0]
-            opt_topk = self.optimize_based_on_studentprefer(focus_concepts, student_watch_data_list, graph, knowledge_graph, opt_topk, idx2u, prev_course, course_video_mapping)
+            opt_topk = self.optimize_based_on_studentprefer(focus_concepts, student_watch_data_list, graph, knowledge_graph, opt_topk, idx2u, prev_course, course_video_mapping, all_shortest_paths)
 
 
             # if f_next_video:
