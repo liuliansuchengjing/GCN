@@ -299,8 +299,9 @@ class Metrics(object):
             scores_len += 1
             initial_topk = self.get_top_k_predictions(p_, k=40)
             prev_video_name = idx2u[y_p]
-            prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
-            student_watch_data_list.append(StudentWatchData(prev_video_name, wt, dt))
+            # prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
+            # student_watch_data_list.append(StudentWatchData(prev_video_name, wt, dt))
+            student_watch_data_list.append(prev_video_name)
 
 
             # if prev_courses and prev_courses[0] not in prev_course_list:
