@@ -592,7 +592,10 @@ class Metrics(object):
 
 
     def optimize_based_on_studentprefer(self, focus_concepts, StudentWatchData_list, graph, knowledge_graph, topk, idx2u, prev_course, course_video_mapping, all_shortest_paths):
+        
+        # # 初始化视频的匹配分数
         zero_score_videos_set = set()
+        video_scores = {video_id: (40 - i) if i < 40 else 0 for i, video_id in enumerate(topk)}
         
         if len(StudentWatchData_list) > 10:
             StudentWatchData_list = StudentWatchData_list[-10:]
@@ -602,52 +605,47 @@ class Metrics(object):
             former_course = former_courses[0]
             if former_course != prev_course:
                 focus_concepts = graph.find_focus_concept(former_video_name)
-                break
+                for video in topk:
+                    video_name = idx2u[video]  # 获取视频名称
+                    if video_name in knowledge_graph:  # 确保视频存在于知识图谱中
+                        # 获取与视频相关联的概念
+                        # print("(opt)video_name:", video_name)
+                        video_concepts = [concept for concept in knowledge_graph.neighbors(video_name) if
+                                          concept.startswith('K_')]
+                        # print("(opt)video_concepts:", video_concepts)
 
-        # # 初始化视频的匹配分数
-        # video_scores = {video_id: 0 for video_id in topk}
-        video_scores = {video_id: (40 - i) if i < 40 else 0 for i, video_id in enumerate(topk)}
+                        # 计算相关性得分
+                        for concept in video_concepts:
+                            for focus_concept in focus_concepts:
+                                # shortest_path = graph.direct_get_shortest_path_length(concept, focus_concept, concept_graph)
+                                shortest_path = graph.get_shortest_path_length(concept, focus_concept, all_shortest_paths)
 
-        for video in topk:
-            video_name = idx2u[video]  # 获取视频名称
-            if video_name in knowledge_graph:  # 确保视频存在于知识图谱中
-                # 获取与视频相关联的概念
-                # print("(opt)video_name:", video_name)
-                video_concepts = [concept for concept in knowledge_graph.neighbors(video_name) if
-                                  concept.startswith('K_')]
-                # print("(opt)video_concepts:", video_concepts)
+                                if shortest_path != float('inf'):
+                                    if shortest_path == 0:
+                                        video_scores[video] += 0.5
 
-                # 计算相关性得分
-                for concept in video_concepts:
-                    for focus_concept in focus_concepts:
-                        # shortest_path = graph.direct_get_shortest_path_length(concept, focus_concept, concept_graph)
-                        shortest_path = graph.get_shortest_path_length(concept, focus_concept, all_shortest_paths)
+                    # 如果得分为0，将其标记为零分视频
+                    if video_scores[video] == 0:
+                        zero_score_videos_set.add(video)
+                    else:
+                        # 如果视频之前在 zero_score_videos_set 中，现在有得分，移除它
+                        zero_score_videos_set.discard(video)
 
-                        if shortest_path != float('inf'):
-                            if shortest_path == 0:
-                                video_scores[video] += 0.5
+                # 将有得分的视频按得分排序
+                optimized_topk = sorted([(video, score) for video, score in video_scores.items() if score > 0],
+                                        key=lambda x: x[1], reverse=True)
 
-            # 如果得分为0，将其标记为零分视频
-            if video_scores[video] == 0:
-                zero_score_videos_set.add(video)
-            else:
-                # 如果视频之前在 zero_score_videos_set 中，现在有得分，移除它
-                zero_score_videos_set.discard(video)
+                for video, score in optimized_topk:
+                    print(f"Course: {video}, Score: {score}")
 
-        # 将有得分的视频按得分排序
-        optimized_topk = sorted([(video, score) for video, score in video_scores.items() if score > 0],
-                                key=lambda x: x[1], reverse=True)
+                # 提取排序后的视频ID
+                sorted_videos_with_scores = [video for video, score in optimized_topk]
 
-        # for video, score in optimized_topk:
-        #     print(f"Course: {video}, Score: {score}")
+                # 将得分为0的视频保持原有顺序，追加到排序后的视频ID列表末尾
+                final_topk = sorted_videos_with_scores + list(zero_score_videos_set)
 
-        # 提取排序后的视频ID
-        sorted_videos_with_scores = [video for video, score in optimized_topk]
+                return final_topk
 
-        # 将得分为0的视频保持原有顺序，追加到排序后的视频ID列表末尾
-        final_topk = sorted_videos_with_scores + list(zero_score_videos_set)
-
-        return final_topk
         
     # def optimize_based_on_studentprefer(self, StudentWatchData_list, knowledge_graph, topk, idx2u):
     #     """
