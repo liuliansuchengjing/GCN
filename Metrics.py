@@ -592,6 +592,8 @@ class Metrics(object):
 
 
     def optimize_based_on_studentprefer(self, focus_concepts, StudentWatchData_list, graph, knowledge_graph, topk, idx2u, prev_course, course_video_mapping, all_shortest_paths):
+        zero_score_videos_set = set()
+        
         if len(StudentWatchData_list) > 10:
             StudentWatchData_list = StudentWatchData_list[-10:]
         reversed_list = StudentWatchData_list[::-1]
