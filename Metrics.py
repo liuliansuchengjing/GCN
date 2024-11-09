@@ -605,8 +605,8 @@ class Metrics(object):
                 break
 
         # # 初始化视频的匹配分数
-        video_scores = {video_id: 0 for video_id in topk}
-        # video_scores = {video_id: (40 - i) if i < 40 else 0 for i, video_id in enumerate(topk)}
+        # video_scores = {video_id: 0 for video_id in topk}
+        video_scores = {video_id: (40 - i) if i < 40 else 0 for i, video_id in enumerate(topk)}
 
         for video in topk:
             video_name = idx2u[video]  # 获取视频名称
@@ -625,7 +625,7 @@ class Metrics(object):
 
                         if shortest_path != float('inf'):
                             if shortest_path == 0:
-                                video_scores[video] -= 0.3
+                                video_scores[video] += 0.5
 
             # 如果得分为0，将其标记为零分视频
             if video_scores[video] == 0:
