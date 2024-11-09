@@ -312,8 +312,8 @@ class Metrics(object):
             # 概念距离排序
             # print("initial_topk:", initial_topk)
             # if wc > 2 and d2 < 0.6:
-            if wc > 1 or d2 > 1:
-                focus_concepts = graph.find_focus_concept(prev_video_name)
+            focus_concepts = graph.find_focus_concept(prev_video_name)
+            if wc > 1 or d2 > 1:                
                 opt_topk = self.optimize_topk_based_on_concept1(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
             # elif d2 < 0.01:
             #     focus_concepts = graph.find_focus_concept(prev_video_name)
@@ -331,7 +331,7 @@ class Metrics(object):
             # # 喜好排序
             prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
             prev_course = prev_courses[0]
-            opt_topk = self.optimize_based_on_studentprefer(student_watch_data_list, graph, knowledge_graph, opt_topk, idx2u, prev_course, course_video_mapping)
+            opt_topk = self.optimize_based_on_studentprefer(focus_concepts, student_watch_data_list, graph, knowledge_graph, opt_topk, idx2u, prev_course, course_video_mapping)
 
 
             # if f_next_video:
@@ -591,7 +591,7 @@ class Metrics(object):
         return merged_scores
 
 
-    def optimize_based_on_studentprefer(self, StudentWatchData_list, graph, knowledge_graph, topk, idx2u, prev_course, course_video_mapping):
+    def optimize_based_on_studentprefer(self, focus_concepts, StudentWatchData_list, graph, knowledge_graph, topk, idx2u, prev_course, course_video_mapping):
         if len(StudentWatchData_list) > 10:
             StudentWatchData_list = StudentWatchData_list[-10:]
         reversed_list = StudentWatchData_list[::-1]
@@ -600,6 +600,7 @@ class Metrics(object):
             former_course = former_courses[0]
             if former_course != prev_course:
                 focus_concepts = graph.find_focus_concept(former_video_name)
+                break
 
         # # 初始化视频的匹配分数
         video_scores = {video_id: 0 for video_id in topk}
@@ -622,7 +623,7 @@ class Metrics(object):
 
                         if shortest_path != float('inf'):
                             if shortest_path == 0:
-                                scores_opt[video] += 1
+                                scores_opt[video] += 0.5
 
             # 如果得分为0，将其标记为零分视频
             if video_scores[video] == 0:
