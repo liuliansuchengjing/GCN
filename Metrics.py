@@ -586,47 +586,104 @@ class Metrics(object):
 
         return merged_scores
 
-    def optimize_based_on_studentprefer(self, StudentWatchData_list, knowledge_graph, topk, idx2u):
-        """
-        基于学生的概念掌握度优化 topk 推荐视频
-        :param StudentWatchData_list: 学生的观看记录
-        :param knowledge_graph: 知识图谱
-        :param topk: 初始推荐的 topk 视频列表
-        :param idx2u: 视频ID到名称的映射字典
-        :return: 优化后的 topk 视频列表
-        """
-        # 生成学生的概念图
-        if len(StudentWatchData_list)>10:
+
+    def optimize_based_on_studentprefer(self, StudentWatchData_list, graph, knowledge_graph, topk, idx2u, prev_course, course_video_mapping):
+        if len(StudentWatchData_list) > 10:
             StudentWatchData_list = StudentWatchData_list[-10:]
-        student_concept_graph = Student_ConceptGraph(StudentWatchData_list, knowledge_graph)
+        reversed_list = StudentWatchData_list[::-1]
+        for video in reversed_list:
+            former_video_name = idx2u[video]
+            former_courses = self.get_courses_by_video(former_video_name, course_video_mapping)
+            former_course = former_courses[0]
+            if former_course != prev_course:
+                focus_concepts = graph.find_focus_concept(former_video_name)
 
         # # 初始化视频的匹配分数
-        # video_scores = {video_id: 0 for video_id in topk}
-        video_scores = {video_id: (40 - i) if i < 40 else 0 for i, video_id in enumerate(topk)}
+        video_scores = {video_id: 0 for video_id in topk}
+        # video_scores = {video_id: (40 - i) if i < 40 else 0 for i, video_id in enumerate(topk)}
 
-        for video_id in topk:
-            video_name = idx2u[video_id]
-            if video_name in knowledge_graph:
-                # 获取视频关联的概念
+        for video in topk:
+            video_name = idx2u[video]  # 获取视频名称
+            if video_name in knowledge_graph:  # 确保视频存在于知识图谱中
+                # 获取与视频相关联的概念
+                # print("(opt)video_name:", video_name)
                 video_concepts = [concept for concept in knowledge_graph.neighbors(video_name) if
                                   concept.startswith('K_')]
+                # print("(opt)video_concepts:", video_concepts)
 
-                # 计算视频与学生概念的匹配度
+                # 计算相关性得分
                 for concept in video_concepts:
-                    if student_concept_graph.has_node(concept):
-                        mastery = student_concept_graph.nodes[concept]['mastery']
-                        # video_scores[video_id] += mastery*0.2
-                        # video_scores[video_id] += mastery
-                        if mastery > 1:
-                            video_scores[video_id] += mastery*0.3
+                    for focus_concept in focus_concepts:
+                        # shortest_path = graph.direct_get_shortest_path_length(concept, focus_concept, concept_graph)
+                        shortest_path = graph.get_shortest_path_length(concept, focus_concept, all_shortest_paths)
 
-                            # print("video_scores:",video_scores)
-        # 根据视频的匹配度排序
-        optimized_topk = sorted(video_scores.items(), key=lambda x: x[1], reverse=True)
+                        if shortest_path != float('inf'):
+                            if shortest_path == 0:
+                                scores_opt[video] += 1
+
+            # 如果得分为0，将其标记为零分视频
+            if video_scores[video] == 0:
+                zero_score_videos_set.add(video)
+            else:
+                # 如果视频之前在 zero_score_videos_set 中，现在有得分，移除它
+                zero_score_videos_set.discard(video)
+
+        # 将有得分的视频按得分排序
+        optimized_topk = sorted([(video, score) for video, score in video_scores.items() if score > 0],
+                                key=lambda x: x[1], reverse=True)
+
+        for video, score in optimized_topk:
+            print(f"Course: {video}, Score: {score}")
 
         # 提取排序后的视频ID
-        sorted_videos = [video_id for video_id, score in optimized_topk]
+        sorted_videos_with_scores = [video for video, score in optimized_topk]
 
-        return sorted_videos
+        # 将得分为0的视频保持原有顺序，追加到排序后的视频ID列表末尾
+        final_topk = sorted_videos_with_scores + list(zero_score_videos_set)
+
+        return final_topk
+        
+    # def optimize_based_on_studentprefer(self, StudentWatchData_list, knowledge_graph, topk, idx2u):
+    #     """
+    #     基于学生的概念掌握度优化 topk 推荐视频
+    #     :param StudentWatchData_list: 学生的观看记录
+    #     :param knowledge_graph: 知识图谱
+    #     :param topk: 初始推荐的 topk 视频列表
+    #     :param idx2u: 视频ID到名称的映射字典
+    #     :return: 优化后的 topk 视频列表
+    #     """
+    #     # 生成学生的概念图
+    #     if len(StudentWatchData_list)>10:
+    #         StudentWatchData_list = StudentWatchData_list[-10:]
+    #     student_concept_graph = Student_ConceptGraph(StudentWatchData_list, knowledge_graph)
+
+    #     # # 初始化视频的匹配分数
+    #     # video_scores = {video_id: 0 for video_id in topk}
+    #     video_scores = {video_id: (40 - i) if i < 40 else 0 for i, video_id in enumerate(topk)}
+
+    #     for video_id in topk:
+    #         video_name = idx2u[video_id]
+    #         if video_name in knowledge_graph:
+    #             # 获取视频关联的概念
+    #             video_concepts = [concept for concept in knowledge_graph.neighbors(video_name) if
+    #                               concept.startswith('K_')]
+
+    #             # 计算视频与学生概念的匹配度
+    #             for concept in video_concepts:
+    #                 if student_concept_graph.has_node(concept):
+    #                     mastery = student_concept_graph.nodes[concept]['mastery']
+    #                     # video_scores[video_id] += mastery*0.2
+    #                     # video_scores[video_id] += mastery
+    #                     if mastery > 1:
+    #                         video_scores[video_id] += mastery*0.3
+
+    #                         # print("video_scores:",video_scores)
+    #     # 根据视频的匹配度排序
+    #     optimized_topk = sorted(video_scores.items(), key=lambda x: x[1], reverse=True)
+
+    #     # 提取排序后的视频ID
+    #     sorted_videos = [video_id for video_id, score in optimized_topk]
+
+    #     return sorted_videos
 
 
