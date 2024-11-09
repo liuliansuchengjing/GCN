@@ -328,7 +328,10 @@ class Metrics(object):
             # sorted_topk = self.reorder_top_predictions(initial_topk, score)
 
             # # 喜好排序
-            opt_topk = self.optimize_based_on_studentprefer(student_watch_data_list, knowledge_graph, opt_topk, idx2u)
+            prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
+            prev_course = prev_courses[0]
+            opt_topk = self.optimize_based_on_studentprefer(student_watch_data_list, graph, knowledge_graph, opt_topk, idx2u, prev_course, course_video_mapping)
+
 
             # if f_next_video:
             #     # 通过前一个视频找到相邻的下一个视频
