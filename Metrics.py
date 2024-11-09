@@ -595,8 +595,7 @@ class Metrics(object):
         if len(StudentWatchData_list) > 10:
             StudentWatchData_list = StudentWatchData_list[-10:]
         reversed_list = StudentWatchData_list[::-1]
-        for video in reversed_list:
-            former_video_name = idx2u[video]
+        for former_video_name in reversed_list:
             former_courses = self.get_courses_by_video(former_video_name, course_video_mapping)
             former_course = former_courses[0]
             if former_course != prev_course:
