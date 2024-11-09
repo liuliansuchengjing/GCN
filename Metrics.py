@@ -645,6 +645,7 @@ class Metrics(object):
                 final_topk = sorted_videos_with_scores + list(zero_score_videos_set)
 
                 return final_topk
+        return topk
 
         
     # def optimize_based_on_studentprefer(self, StudentWatchData_list, knowledge_graph, topk, idx2u):
