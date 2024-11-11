@@ -329,6 +329,7 @@ class Metrics(object):
             # sorted_topk = self.reorder_top_predictions(initial_topk, score)
 
             # # 喜好排序
+            focus_concepts = graph.find_focus_concept(prev_video_name)
             if wc > 1 or d2 > 1:
                 prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
                 prev_course = prev_courses[0]
