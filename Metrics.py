@@ -636,6 +636,13 @@ class Metrics(object):
         # 将有得分的视频按得分排序
         optimized_topk = sorted([(video, score) for video, score in video_scores.items() if score > 0],
                                 key=lambda x: x[1], reverse=True)
+        # 提取排序后的视频ID
+        sorted_videos_with_scores = [video for video, score in optimized_topk]
+
+        # 将得分为0的视频保持原有顺序，追加到排序后的视频ID列表末尾
+        final_topk = sorted_videos_with_scores + list(zero_score_videos_set)
+
+        return final_topk
 
         
     # def optimize_based_on_studentprefer(self, StudentWatchData_list, knowledge_graph, topk, idx2u):
