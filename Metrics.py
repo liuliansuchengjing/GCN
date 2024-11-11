@@ -329,9 +329,12 @@ class Metrics(object):
             # sorted_topk = self.reorder_top_predictions(initial_topk, score)
 
             # # 喜好排序
-            prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
-            prev_course = prev_courses[0]
-            opt_topk = self.optimize_based_on_studentprefer(focus_concepts, student_watch_data_list, graph, knowledge_graph, initial_topk, idx2u, prev_course, course_video_mapping, all_shortest_paths)
+            if wc > 1 or d2 > 1:
+                prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
+                prev_course = prev_courses[0]
+                opt_topk = self.optimize_based_on_studentprefer(focus_concepts, student_watch_data_list, graph, knowledge_graph, initial_topk, idx2u, prev_course, course_video_mapping, all_shortest_paths)
+            else:
+                opt_topk =list(initial_topk)
 
 
             # if f_next_video:
