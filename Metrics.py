@@ -309,35 +309,27 @@ class Metrics(object):
 
             # next_video_id = None
 
-            # # 概念距离排序
-            # # print("initial_topk:", initial_topk)
-            # # if wc > 2 and d2 < 0.6:
-            # focus_concepts = graph.find_focus_concept(prev_video_name)
-            # if wc > 1 or d2 > 1:                
-            #     opt_topk = self.optimize_topk_based_on_concept1(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
-            # # elif d2 < 0.01:
-            # #     focus_concepts = graph.find_focus_concept(prev_video_name)
-            # #     opt_topk = self.optimize_topk_based_on_concept2(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
-            # else:
-            #     opt_topk =list(initial_topk)
+            # # 概念距离排序            
+            focus_concepts = graph.find_focus_concept(prev_video_name)
+            if wc > 1 or d2 > 1:                
+                # opt_topk = self.optimize_topk_based_on_concept1(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
+                prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
+                prev_course = prev_courses[0]
+                opt_topk = self.optimize_based_on_studentprefer(focus_concepts, student_watch_data_list, graph, knowledge_graph, initial_topk, idx2u, prev_course, course_video_mapping, all_shortest_paths)
+            else:
+                opt_topk =list(initial_topk)
             
-            #
             # #nearby1-4
             # scores_pro, f_next_video = self.score_predictions(initial_topk, y_p, idx2u, course_video_mapping, courses, prev_courses)
             # score = self.multiply_scores(scores_pro, score_opt)
             # # 根据得分重新排序topk
             # sorted_topk = self.reorder_top_predictions(initial_topk, score)
 
-            # # 喜好排序
-            focus_concepts = graph.find_focus_concept(prev_video_name)
-            if wc > 1 or d2 > 1:
-                prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
-                prev_course = prev_courses[0]
-                opt_topk = self.optimize_based_on_studentprefer(focus_concepts, student_watch_data_list, graph, knowledge_graph, initial_topk, idx2u, prev_course, course_video_mapping, all_shortest_paths)
-            else:
-                opt_topk =list(initial_topk)
-
-
+            # # # 喜好排序            
+            # prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
+            # prev_course = prev_courses[0]
+            # opt_topk = self.optimize_based_on_studentprefer(focus_concepts, student_watch_data_list, graph, knowledge_graph, initial_topk, idx2u, prev_course, course_video_mapping, all_shortest_paths)
+            
             # if f_next_video:
             #     # 通过前一个视频找到相邻的下一个视频
             #     # prev_video_name = idx2u[y_p]
@@ -595,7 +587,7 @@ class Metrics(object):
         return merged_scores
 
 
-    def optimize_based_on_studentprefer(self, focus_concepts, StudentWatchData_list, graph, knowledge_graph, topk, idx2u, prev_course, course_video_mapping):
+    def optimize_based_on_studentprefer(self, focus_concepts, StudentWatchData_list, graph, knowledge_graph, topk, idx2u, prev_course, course_video_mapping, all_shortest_paths):
         zero_score_videos_set = set()               
         if len(StudentWatchData_list) > 10:
             StudentWatchData_list = StudentWatchData_list[-10:]
