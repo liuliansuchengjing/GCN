@@ -593,8 +593,7 @@ class Metrics(object):
         video_scores = {video_id: (15 - i) if i < 15 else 0 for i, video_id in enumerate(topk)}
 
         zero_score_videos_set = set()
-        # fir_score = 1.5
-        # sec_score = 0
+        score = 1.5
         if len(StudentWatchData_list) > 10:
             StudentWatchData_list = StudentWatchData_list[-10:]
         reversed_list = StudentWatchData_list[::-1]
@@ -603,8 +602,7 @@ class Metrics(object):
             former_course = former_courses[0]
             if former_course != prev_course:
                 focus_concepts = focus_concepts + graph.find_focus_concept(former_video_name)
-                # fir_score = 1
-                # sec_score = 0.5
+                score = 1
                 break
 
         for video in topk:
@@ -624,7 +622,7 @@ class Metrics(object):
 
                         if shortest_path != float('inf'):
                             if shortest_path == 0:
-                                video_scores[video] += 1
+                                video_scores[video] += score
 
             # 如果得分为0，将其标记为零分视频
             if video_scores[video] == 0:
