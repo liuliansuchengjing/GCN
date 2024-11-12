@@ -589,8 +589,8 @@ class Metrics(object):
 
     def optimize_based_on_studentprefer(self, focus_concepts, StudentWatchData_list, graph, knowledge_graph, topk, idx2u, prev_course, course_video_mapping, all_shortest_paths):
         # # 初始化视频的匹配分数
-        # video_scores = {video_id: 0 for video_id in topk}
-        video_scores = {video_id: (15 - i) if i < 15 else 0 for i, video_id in enumerate(topk)}
+        video_scores = {video_id: 0 for video_id in topk}
+        additional_scores = {video_id: (40 - i) if i < 40 else 0 for i, video_id in enumerate(topk)}
 
         zero_score_videos_set = set()
         score = 1.5
@@ -634,11 +634,15 @@ class Metrics(object):
         # 将有得分的视频按得分排序
         optimized_topk = sorted([(video, score) for video, score in video_scores.items() if score > 0],
                                 key=lambda x: x[1], reverse=True)
+        top5_videos = [video for video, score in optimized_topk[:5]]
+        limited_video_scores = {video: video_scores[video] if video in top5_videos else 0 for video in topk}
+        final_scores = {video: limited_video_scores.get(video, 0) + additional_scores.get(video, 0) for video in topk}
+        final_topk = [video for video, _ in sorted(final_scores.items(), key=lambda x: x[1], reverse=True)]
         # 提取排序后的视频ID
-        sorted_videos_with_scores = [video for video, score in optimized_topk]
+        # sorted_videos_with_scores = [video for video, score in optimized_topk]
 
         # 将得分为0的视频保持原有顺序，追加到排序后的视频ID列表末尾
-        final_topk = sorted_videos_with_scores + list(zero_score_videos_set)
+        # final_topk = sorted_videos_with_scores + list(zero_score_videos_set)
 
         return final_topk
 
