@@ -309,17 +309,20 @@ class Metrics(object):
 
             # next_video_id = None
 
-            # # 概念距离排序            
+            # # 概念距离排序
             focus_concepts = graph.find_focus_concept(prev_video_name)
             if wc > 1 or d2 > 1:
                 # opt_topk = self.optimize_topk_based_on_concept1(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
+                print("initial_topk:", initial_topk)
                 prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
                 prev_course = prev_courses[0]
                 opt_topk = self.optimize_based_on_studentprefer(focus_concepts, student_watch_data_list, graph,
                                                                 knowledge_graph, initial_topk, idx2u, prev_course,
                                                                 course_video_mapping, all_shortest_paths)
+                print("opt_topk:", opt_topk)
             else:
                 opt_topk = list(initial_topk)
+                
 
             # #nearby1-4
             # scores_pro, f_next_video = self.score_predictions(initial_topk, y_p, idx2u, course_video_mapping, courses, prev_courses)
@@ -327,7 +330,7 @@ class Metrics(object):
             # # 根据得分重新排序topk
             # sorted_topk = self.reorder_top_predictions(initial_topk, score)
 
-            # # # 喜好排序            
+            # # # 喜好排序
             # prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
             # prev_course = prev_courses[0]
             # opt_topk = self.optimize_based_on_studentprefer(focus_concepts, student_watch_data_list, graph, knowledge_graph, initial_topk, idx2u, prev_course, course_video_mapping, all_shortest_paths)
@@ -638,15 +641,16 @@ class Metrics(object):
         top5_videos = [video for video, score in optimized_topk[:5]]
         limited_video_scores = {video: video_scores[video] if video in top5_videos else 0 for video in topk}
         final_scores = {video: limited_video_scores.get(video, 0) + additional_scores.get(video, 0) for video in topk}
-        final_topk = [video for video, _ in sorted(final_scores.items(), key=lambda x: x[1], reverse=True)]
+        final_scores = sorted([(video, score) for video, score in final_scores.items()], key=lambda x: x[1], reverse=True)
+        # final_topk = [video for video, _ in sorted(final_scores.items(), key=lambda x: x[1], reverse=True)]
+        for video, score in final_scores:
+            print(f"Course: {video}, Score: {score}")
         # 提取排序后的视频ID
-        # sorted_videos_with_scores = [video for video, score in optimized_topk]
+        final_topk = [video for video, score in final_scores]
 
         # 将得分为0的视频保持原有顺序，追加到排序后的视频ID列表末尾
         # final_topk = sorted_videos_with_scores + list(zero_score_videos_set)
-        for video, score in limited_video_scores:
-            print(f"Course: {video}, Score: {score}")
-
+        
         return final_topk
 
     # def optimize_based_on_studentprefer(self, StudentWatchData_list, knowledge_graph, topk, idx2u):
