@@ -643,7 +643,7 @@ class Metrics(object):
         final_scores = {video: limited_video_scores.get(video, 0) + additional_scores.get(video, 0) for video in topk}
         final_scores = sorted([(video, score) for video, score in final_scores.items()], key=lambda x: x[1], reverse=True)
         # final_topk = [video for video, _ in sorted(final_scores.items(), key=lambda x: x[1], reverse=True)]
-        for video, score in top5_videos:
+        for video, score in limited_video_scores:
             print(f"top5_videos: Course: {video}, Score: {score}")
         for video, score in final_scores:
             print(f"final_scores: Course: {video}, Score: {score}")
