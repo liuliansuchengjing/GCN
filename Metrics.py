@@ -644,7 +644,7 @@ class Metrics(object):
 
         # 将得分为0的视频保持原有顺序，追加到排序后的视频ID列表末尾
         # final_topk = sorted_videos_with_scores + list(zero_score_videos_set)
-        for video, score in final_scores:
+        for video, score in limited_video_scores:
             print(f"Course: {video}, Score: {score}")
 
         return final_topk
