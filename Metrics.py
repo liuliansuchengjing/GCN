@@ -595,7 +595,7 @@ class Metrics(object):
         additional_scores = {video_id: (40 - i) if i < 40 else 0 for i, video_id in enumerate(topk)}
 
         zero_score_videos_set = set()
-        score = 1.5
+        score = 2.5
         # if len(StudentWatchData_list) > 10:
         #     StudentWatchData_list = StudentWatchData_list[-10:]
         # reversed_list = StudentWatchData_list[::-1]
