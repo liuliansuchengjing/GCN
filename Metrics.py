@@ -313,13 +313,11 @@ class Metrics(object):
             focus_concepts = graph.find_focus_concept(prev_video_name)
             if wc > 1 or d2 > 1:
                 # opt_topk = self.optimize_topk_based_on_concept1(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
-                print("initial_topk:", initial_topk)
                 prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
                 prev_course = prev_courses[0]
                 opt_topk = self.optimize_based_on_studentprefer(focus_concepts, student_watch_data_list, graph,
                                                                 knowledge_graph, initial_topk, idx2u, prev_course,
                                                                 course_video_mapping, all_shortest_paths)
-                print("opt_topk:", opt_topk)
             else:
                 opt_topk = list(initial_topk)
                 
@@ -643,10 +641,6 @@ class Metrics(object):
         final_scores = {video: limited_video_scores.get(video, 0) + additional_scores.get(video, 0) for video in topk}
         final_scores = sorted([(video, score) for video, score in final_scores.items()], key=lambda x: x[1], reverse=True)
         # final_topk = [video for video, _ in sorted(final_scores.items(), key=lambda x: x[1], reverse=True)]
-        for video, score in limited_video_scores.items():
-            print(f"limit_scores: Course: {video}, Score: {score}")
-        for video, score in final_scores:
-            print(f"final_scores: Course: {video}, Score: {score}")
         # 提取排序后的视频ID
         final_topk = [video for video, score in final_scores]
 
