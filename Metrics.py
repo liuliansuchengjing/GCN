@@ -443,10 +443,10 @@ class Metrics(object):
                 zero_score_videos_set.discard(video)
 
         # 将有得分的视频按得分排序
-        optimized_topk = sorted([(video, score) for video, score in scores_opt.items() if score >0],
+        optimized_topk = sorted([(video, score) for video, score in scores_opt.items() if score > 0],
                                 key=lambda x: x[1], reverse=True)
 
-        highscore_videos = [video for video, score in optimized_topk if score > 0]
+        highscore_videos = [video for video, score in optimized_topk if score < 4]
         # limited_video_scores = {video: video_scores[video] if video in top5_videos else 0 for video in topk}
         limited_video_scores = {video: scores_opt[video] if video in highscore_videos else 0 for video in topk}
         final_scores = {video: limited_video_scores.get(video, 0) + topk_scores.get(video, 0) for video in topk}
