@@ -407,7 +407,7 @@ class Metrics(object):
                                         all_shortest_paths):
         # video_scores = {}  # 用于存储视频及其累计相关性得分
         zero_score_videos_set = set()  # 用于去重存储得分为0的视频
-        scores = {video_id: (15 - i) if i < 15 else 0 for i, video_id in enumerate(sorted_topk)}
+        scores = {video_id: (40 - i) if i < 40 else 0 for i, video_id in enumerate(sorted_topk)}
         scores_opt = scores
         # scores_opt = {video_id: 0 for video_id in sorted_topk}
 
@@ -428,7 +428,7 @@ class Metrics(object):
 
                         if shortest_path != float('inf'):
                             if shortest_path == 0:
-                                scores_opt[video] += 2
+                                scores_opt[video] += 1
                             # elif shortest_path == 2:
                             #     scores_opt[video] += 0.3
                             # if scores_opt[video] == scores[video]:
