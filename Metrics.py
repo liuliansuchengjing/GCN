@@ -395,6 +395,7 @@ class Metrics(object):
 
     def reorder_top_predictions(self, topk, scores_pro):
         """根据得分重新排序topk预测视频"""
+        #scores_pro是字典
         scored_videos = sorted(((v, scores_pro[v]) for v in topk if scores_pro[v] > 0), key=lambda x: x[1],
                                reverse=True)
         unscored_videos = [v for v in topk if scores_pro[v] == 0]
@@ -451,6 +452,7 @@ class Metrics(object):
         final_scores = {video: limited_video_scores.get(video, 0) + topk_scores.get(video, 0) for video in topk}
         scores_opt = sorted([(video, score) for video, score in final_scores.items()], key=lambda x: x[1],
                               reverse=True)
+        scores_opt = dict(scores_opt)
         # # 提取排序后的视频ID
         # sorted_videos_with_scores = [video for video, score in optimized_topk]
         #
