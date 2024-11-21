@@ -271,7 +271,7 @@ class Metrics(object):
             # if wc > 1 or d2 > 1:
             #     score_opt = self.optimize_topk_based_on_concept1(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
             #     score = self.merge_scores(scores_pro, score_opt)
-            # 
+            #
             # else:
             #     # opt_topk = list(initial_topk)
             #     score = scores_pro
@@ -375,13 +375,13 @@ class Metrics(object):
                                 score += 10  # 确保相邻视频加足够高的分数
                                 f_next_video = False  # 标记为不需要再找下一个视频
                             elif distance == -1:
-                                score += 10
+                                score += 8
                             elif abs(distance) == 2:
-                                score += 10
+                                score += 6
                             elif abs(distance) == 3:
-                                score += 10
+                                score += 4
                             elif abs(distance) == 4:
-                                score += 10
+                                score += 2
                         except ValueError:
                             continue
 
