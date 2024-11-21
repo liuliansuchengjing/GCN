@@ -262,25 +262,25 @@ class Metrics(object):
             # if prev_courses and prev_courses[0] not in prev_course_list:
             #     prev_course_list.insert(0, prev_courses[0])
 
-            # # ---------------------nearby1-4
-            # scores_pro, f_next_video = self.score_predictions(initial_topk, y_p, idx2u, course_video_mapping, courses,
-            #                                                   prev_courses)
+            # ---------------------nearby1-4
+            scores_pro, f_next_video = self.score_predictions(initial_topk, y_p, idx2u, course_video_mapping, courses,
+                                                              prev_courses)
             # score = scores_pro
 
             # ------------------- 概念距离排序0
             focus_concepts = graph.find_focus_concept(prev_video_name)
             if wc > 1 or d2 > 1:
                 score_opt = self.optimize_topk_based_on_concept1(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
-                sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
-                # score = self.merge_scores(scores_pro, score_opt)
+                # sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
+                score = self.merge_scores(scores_pro, score_opt)
 
             else:
-                sorted_topk = list(initial_topk)
-                # score = scores_pro
+                # sorted_topk = list(initial_topk)
+                score = scores_pro
 
 
-            # # 根据得分重新排序topk
-            # sorted_topk = self.reorder_top_predictions(initial_topk, score)
+            # 根据得分重新排序topk
+            sorted_topk = self.reorder_top_predictions(initial_topk, score)
 
             # # # 喜好排序
             # prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
@@ -374,16 +374,16 @@ class Metrics(object):
                             distance = pred_index - y_index
 
                             if distance == 1:
-                                score += 10  # 确保相邻视频加足够高的分数
+                                score += 50  # 确保相邻视频加足够高的分数
                                 f_next_video = False  # 标记为不需要再找下一个视频
                             elif distance == -1:
-                                score += 10
+                                score += 50
                             elif abs(distance) == 2:
-                                score += 10
+                                score += 50
                             elif abs(distance) == 3:
-                                score += 10
+                                score += 50
                             elif abs(distance) == 4:
-                                score += 10
+                                score += 50
                         except ValueError:
                             continue
 
@@ -407,7 +407,7 @@ class Metrics(object):
                                         all_shortest_paths):
         # video_scores = {}  # 用于存储视频及其累计相关性得分
         zero_score_videos_set = set()  # 用于去重存储得分为0的视频
-        scores = {video_id: (40 - i) if i < 40 else 0 for i, video_id in enumerate(sorted_topk)}
+        scores = {video_id: (15 - i) if i < 15 else 0 for i, video_id in enumerate(sorted_topk)}
         scores_opt = scores
         # scores_opt = {video_id: 0 for video_id in sorted_topk}
 
