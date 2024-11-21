@@ -428,7 +428,7 @@ class Metrics(object):
 
                         if shortest_path != float('inf'):
                             if shortest_path == 0:
-                                scores_opt[video] += 1
+                                scores_opt[video] += 2
                             # elif shortest_path == 2:
                             #     scores_opt[video] += 0.3
                             # if scores_opt[video] == scores[video]:
