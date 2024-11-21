@@ -254,7 +254,6 @@ class Metrics(object):
 
             scores_len += 1
             initial_topk = self.get_top_k_predictions(p_, k=40)
-            print("initial_topk: ",initial_topk)
             prev_video_name = idx2u[y_p]
             prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
             # student_watch_data_list.append(StudentWatchData(prev_video_name, wt, dt))
@@ -289,8 +288,6 @@ class Metrics(object):
             next_video_id = self.find_next_video(prev_video_name, prev_courses, u2idx, courses)
             if next_video_id is not None and next_video_id not in sorted_topk:
                 sorted_topk.insert(0, next_video_id)
-
-            print("sorted_topk: ", sorted_topk)
 
             # 更新结果
             for k in k_list:
@@ -515,9 +512,6 @@ class Metrics(object):
                 merged_scores[video_id] += score  # 分数相加
             else:
                 merged_scores[video_id] = score  # 如果不存在，直接添加
-
-        for video, score in merged_scores.items():
-            print(f"Course: {video}, Score: {score}")
 
         return merged_scores
 
