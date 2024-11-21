@@ -255,7 +255,7 @@ class Metrics(object):
             scores_len += 1
             initial_topk = self.get_top_k_predictions(p_, k=40)
             prev_video_name = idx2u[y_p]
-            # prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
+            prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
             # student_watch_data_list.append(StudentWatchData(prev_video_name, wt, dt))
             student_watch_data_list.append(prev_video_name)
 
@@ -281,7 +281,7 @@ class Metrics(object):
             else:
                 # opt_topk = list(initial_topk)
                 score = scores_pro
-          
+
             # 根据得分重新排序topk
             sorted_topk = self.reorder_top_predictions(initial_topk, score)
 
