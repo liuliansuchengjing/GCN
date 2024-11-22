@@ -448,7 +448,7 @@ class Metrics(object):
 
         highscore_videos = [video for video, score in optimized_topk if score > 3]
         # limited_video_scores = {video: video_scores[video] if video in top5_videos else 0 for video in topk}
-        limited_video_scores = {video: (scores_opt[video]-2) if video in highscore_videos else scores_opt[video] for video in topk}
+        limited_video_scores = {video: (scores_opt[video]-1) if video in highscore_videos else scores_opt[video] for video in topk}
         final_scores = {video: limited_video_scores.get(video, 0) + topk_scores.get(video, 0) for video in topk}
         scores_opt = sorted([(video, score) for video, score in final_scores.items()], key=lambda x: x[1],
                               reverse=True)
