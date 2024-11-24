@@ -269,7 +269,7 @@ class Metrics(object):
 
             # ------------------- 概念距离排序0
             focus_concepts = graph.find_focus_concept(prev_video_name)
-            if wc > 1 or d2 > 1:
+            if wc > 1 and d2 > 1:
                 score_opt = self.optimize_topk_based_on_concept1(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
                 sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
                 # score = self.merge_scores(scores_pro, score_opt)
@@ -447,7 +447,7 @@ class Metrics(object):
                                 key=lambda x: x[1], reverse=True)
 
         highscore_videos = [video for video, score in optimized_topk if score > 4]
-        mediumscore_videos = [video for video, score in optimized_topk if (score > 2 and score < 5)]
+        mediumscore_videos = [video for video, score in optimized_topk if (score > 1 and score < 5)]
         # limited_video_scores = {video: video_scores[video] if video in top5_videos else 0 for video in topk}
         # limited_video_scores = {video: (scores_opt[video]-2) if video in highscore_videos else scores_opt[video] for video in topk}
         limited_video_scores = {
@@ -556,7 +556,6 @@ class Metrics(object):
                                         idx2u, prev_course, course_video_mapping, all_shortest_paths):
         # # 初始化视频的匹配分数
         video_scores = {video_id: 0 for video_id in topk}
-        additional_scores = {video_id: (40 - i) if i < 40 else 0 for i, video_id in enumerate(topk)}
 
         zero_score_videos_set = set()
         score = 2.5
