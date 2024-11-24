@@ -576,12 +576,14 @@ class Metrics(object):
                     if video_name in knowledge_graph:  # 确保视频存在于知识图谱中
                         video_concepts = [concept for concept in knowledge_graph.neighbors(video_name) if
                                           concept.startswith('K_')]
-                    for concept in video_concepts:
-                        for focus_concept in focus_concepts:
-                            shortest_path = graph.get_shortest_path_length(concept, focus_concept, all_shortest_paths)
-                            if shortest_path != float('inf'):
-                                if shortest_path == 0:
-                                    video_scores[video] += score
+                        for concept in video_concepts:
+                            for focus_concept in focus_concepts:
+                                shortest_path = graph.get_shortest_path_length(concept, focus_concept,
+                                                                               all_shortest_paths)
+                                if shortest_path != float('inf'):
+                                    if shortest_path == 0:
+                                        video_scores[video] += score
+
 
                     if video_scores[video] == 0:
                         zero_score_videos_set.add(video)
