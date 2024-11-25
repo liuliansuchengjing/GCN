@@ -37,8 +37,9 @@ def Student_ConceptGraph(StudentWatchData_list, knowledge_graph):
 
 
 class StudentWatchData:
-    def __init__(self, video_name, watch_time, total_time):
+    def __init__(self, video_name, watch_count, watch_time, total_time):
         self.video_name = video_name
+        self.watch_count = watch_count
         self.watch_time = watch_time
         self.total_time = total_time
 
@@ -55,7 +56,7 @@ class StudentWatchData:
         """
         定义类的字符串表示，方便调试和打印
         """
-        return f"StudentWatchData(video_id={self.video_id}, watch_time={self.watch_time}, total_time={self.total_time})"
+        return f"StudentWatchData(video_id={self.video_id}, watch_count={self.watch_count}, watch_time={self.watch_time}, total_time={self.total_time})"
 
 
 class ConceptGraph:
@@ -256,7 +257,7 @@ class Metrics(object):
             initial_topk = self.get_top_k_predictions(p_, k=40)
             prev_video_name = idx2u[y_p]
             prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
-            student_watch_data_list.append(StudentWatchData(prev_video_name, wt, dt))
+            student_watch_data_list.append(StudentWatchData(prev_video_name, wc, wt, dt))
             # student_watch_data_list.append(prev_video_name)
 
             # if prev_courses and prev_courses[0] not in prev_course_list:
@@ -574,9 +575,9 @@ class Metrics(object):
     def optimize_based_on_studentprefer(self, StudentWatchData_list, graph, knowledge_graph, topk,
                                         idx2u, prev_course, course_video_mapping, all_shortest_paths):
         # # 初始化视频的匹配分数
-        video_scores = {video_id: 0 for video_id in topk}
-        # video_scores = {video_id: (40 - i) if i < 40 else 0 for i, video_id in enumerate(topk)}
-        score = 0.6
+        # video_scores = {video_id: 0 for video_id in topk}
+        video_scores = {video_id: (40 - i) if i < 40 else 0 for i, video_id in enumerate(topk)}
+        score = 1
 
         zero_score_videos_set = set()
         if len(StudentWatchData_list) > 10:
@@ -585,7 +586,7 @@ class Metrics(object):
         for former_video_name in reversed_list:
             former_courses = self.get_courses_by_video(former_video_name.video_name, course_video_mapping)
             former_course = former_courses[0]
-            if former_course != prev_course and former_video_name.watch_time > 1:
+            if former_course != prev_course and (former_video_name.watch_count > 1 or former_video_name.watch_time > 1):
                 focus_concepts =graph.find_focus_concept(former_video_name.video_name)
                 for video in topk:
                     video_name = idx2u[video]  # 获取视频名称
