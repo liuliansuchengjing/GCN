@@ -250,7 +250,7 @@ class Metrics(object):
 
         for p_, y_, y_p, wc, dt, wt, d1, d2, d3 in zip(y_prob, y_true, y_prev, w_c, d_t, w_t, d_1, d_2, d_3):
             if y_ == self.PAD:
-                # student_watch_data_list = []
+                student_watch_data_list = []
                 continue
 
             scores_len += 1
