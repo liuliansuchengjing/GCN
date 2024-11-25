@@ -269,10 +269,10 @@ class Metrics(object):
 
             # # ---------------------- 喜好排序
             # prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
-            prev_course = prev_courses[0]
-            score_opt2 = self.optimize_based_on_studentprefer(student_watch_data_list, graph, knowledge_graph,
-                                                              initial_topk, idx2u, prev_course, course_video_mapping,
-                                                              all_shortest_paths)
+            # prev_course = prev_courses[0]
+            # score_opt2 = self.optimize_based_on_studentprefer(student_watch_data_list, graph, knowledge_graph,
+            #                                                   initial_topk, idx2u, prev_course, course_video_mapping,
+            #                                                   all_shortest_paths)
 
             # ------------------- 概念距离排序0
             # focus_concepts = graph.find_focus_concept(prev_video_name)
@@ -292,8 +292,14 @@ class Metrics(object):
             #     sorted_topk = list(initial_topk)
 
             # -------------------单独使用一个分数排序
-            if score_opt2 is not None:
-                sorted_topk = self.reorder_top_predictions(initial_topk, score_opt2)
+            # if score_opt2 is not None:
+            #     sorted_topk = self.reorder_top_predictions(initial_topk, score_opt2)
+            
+            focus_concepts = graph.find_focus_concept(prev_video_name)
+            if wc > 1 or d2 > 1:
+                score_opt = self.optimize_topk_based_on_concept1(knowledge_graph, focus_concepts, initial_topk, idx2u,
+                                                                 graph, all_shortest_paths)
+                sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
             else:
                 sorted_topk = list(initial_topk)
 
@@ -559,6 +565,9 @@ class Metrics(object):
         for video_id, score in scores_pro2.items():
             if video_id not in merged_scores:
                 merged_scores[video_id] = score  # 直接添加不存在的video_id
+
+        for video, score in merged_scores.items():
+            print(f"Course: {video}, Score: {score}")
 
         return merged_scores
 
