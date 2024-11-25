@@ -412,7 +412,7 @@ class Metrics(object):
                                         all_shortest_paths):
         # video_scores = {}  # 用于存储视频及其累计相关性得分
         zero_score_videos_set = set()  # 用于去重存储得分为0的视频
-        topk_scores = {video_id: (15 - i) if i < 15 else 0 for i, video_id in enumerate(topk)}
+        topk_scores = {video_id: (40 - i) if i < 40 else 0 for i, video_id in enumerate(topk)}
         # scores_opt = scores
         scores_opt = {video_id: 0 for video_id in topk}
 
@@ -479,8 +479,8 @@ class Metrics(object):
                                         all_shortest_paths):
         # video_scores = {}  # 用于存储视频及其累计相关性得分
         zero_score_videos_set = set()  # 用于去重存储得分为0的视频
-        scores_opt = {video_id: (40 - i) if i < 40 else 0 for i, video_id in enumerate(sorted_topk)}
-        # scores_opt = {video_id: 0 for video_id in sorted_topk}
+        # scores_opt = {video_id: (40 - i) if i < 40 else 0 for i, video_id in enumerate(sorted_topk)}
+        scores_opt = {video_id: 0 for video_id in sorted_topk}
 
         for video in sorted_topk:
             video_name = idx2u[video]  # 获取视频名称
@@ -560,7 +560,7 @@ class Metrics(object):
                                         idx2u, prev_course, course_video_mapping, all_shortest_paths):
         # # 初始化视频的匹配分数
         video_scores = {video_id: 0 for video_id in topk}
-        score = 0.5
+        score = 0.3
 
         zero_score_videos_set = set()
         if len(StudentWatchData_list) > 10:
@@ -585,12 +585,14 @@ class Metrics(object):
                                         video_scores[video] += score
 
 
-                    if video_scores[video] == 0:
-                        zero_score_videos_set.add(video)
-                    else:
-                        # 如果视频之前在 zero_score_videos_set 中，现在有得分，移除它
-                        zero_score_videos_set.discard(video)
+                    # if video_scores[video] == 0:
+                    #     zero_score_videos_set.add(video)
+                    # else:
+                    #     # 如果视频之前在 zero_score_videos_set 中，现在有得分，移除它
+                    #     zero_score_videos_set.discard(video)
 
+                for video, score in video_scores.item():
+                    print(f"Course: {video}, Score: {score}")
                 return video_scores
 
         return None
