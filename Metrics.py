@@ -573,8 +573,8 @@ class Metrics(object):
     def optimize_based_on_studentprefer(self, StudentWatchData_list, graph, knowledge_graph, topk,
                                         idx2u, prev_course, course_video_mapping, all_shortest_paths):
         # # 初始化视频的匹配分数
-        video_scores = {video_id: 0 for video_id in topk}
-        # video_scores = {video_id: (40 - i) if i < 40 else 0 for i, video_id in enumerate(topk)}
+        # video_scores = {video_id: 0 for video_id in topk}
+        video_scores = {video_id: (40 - i) if i < 40 else 0 for i, video_id in enumerate(topk)}
         score = 1
 
         zero_score_videos_set = set()
