@@ -282,12 +282,12 @@ class Metrics(object):
             #     score = self.merge_scores(score_opt, score_opt2)
             #     # # 根据得分重新排序topk
             #     sorted_topk = self.reorder_top_predictions(initial_topk, score)
-            # 
+            #
             # elif score_opt2 is not None:
             #     score = score_opt2
             #     # # 根据得分重新排序topk
             #     sorted_topk = self.reorder_top_predictions(initial_topk, score)
-            # 
+            #
             # else:
             #     sorted_topk = list(initial_topk)
 
@@ -598,8 +598,8 @@ class Metrics(object):
                     #     # 如果视频之前在 zero_score_videos_set 中，现在有得分，移除它
                     #     zero_score_videos_set.discard(video)
 
-                for video, score in video_scores.items():
-                    print(f"Course: {video}, Score: {score}")
+                # for video, score in video_scores.items():
+                #     print(f"Course: {video}, Score: {score}")
                 return video_scores
 
         return None
