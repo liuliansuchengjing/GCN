@@ -591,7 +591,7 @@ class Metrics(object):
                     #     # 如果视频之前在 zero_score_videos_set 中，现在有得分，移除它
                     #     zero_score_videos_set.discard(video)
 
-                for video, score in video_scores.item():
+                for video, score in video_scores.items():
                     print(f"Course: {video}, Score: {score}")
                 return video_scores
 
