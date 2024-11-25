@@ -275,12 +275,12 @@ class Metrics(object):
 
             # ------------------- 概念距离排序0
             focus_concepts = graph.find_focus_concept(prev_video_name)
-            
-            if wc > 1 and d2 > 1 :
+
+            if d2 > 2 :
                 score_opt = self.optimize_topk_based_on_concept2(knowledge_graph, focus_concepts, initial_topk, idx2u,
                                                                  graph, all_shortest_paths)
                 sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
-                
+
             elif wc > 1 or d2 > 1 :
                 score_opt = self.optimize_topk_based_on_concept1(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
                 sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
@@ -518,8 +518,8 @@ class Metrics(object):
                             # scores_opt[video] += (1 / (1 + shortest_path))
 
         return scores_opt
-    
-    
+
+
     def merge_scores(self, scores_pro1, scores_pro2):
         merged_scores = {}
 
