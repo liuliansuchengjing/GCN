@@ -273,22 +273,22 @@ class Metrics(object):
             #                                                   initial_topk, idx2u, prev_course, course_video_mapping,
             #                                                   all_shortest_paths)
 
-            # # ------------------- 概念距离排序0
-            # focus_concepts = graph.find_focus_concept(prev_video_name)
-            # if (wc > 1 or d2 > 1) :
-            #     score_opt = self.optimize_topk_based_on_concept1(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
-            #     # sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
-            #     score = self.merge_scores(score_opt, scores_pro)
-            # 
-            # 
-            # # elif score_opt2 is not None:
-            # #     # # 根据得分重新排序topk
-            # #     sorted_topk = self.reorder_top_predictions(initial_topk, score_opt2)
-            # 
-            # else:
-            #     # sorted_topk = list(initial_topk)
-            #     score = scores_pro
-            # 
+            # ------------------- 概念距离排序0
+            focus_concepts = graph.find_focus_concept(prev_video_name)
+            if (wc > 1 or d2 > 1) :
+                score_opt = self.optimize_topk_based_on_concept1(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
+                sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
+                # score = self.merge_scores(score_opt, scores_pro)
+
+
+            # elif score_opt2 is not None:
+            #     # # 根据得分重新排序topk
+            #     sorted_topk = self.reorder_top_predictions(initial_topk, score_opt2)
+
+            else:
+                sorted_topk = list(initial_topk)
+                # score = scores_pro
+
             # # 根据得分重新排序topk
             # sorted_topk = self.reorder_top_predictions(initial_topk, score)
 
@@ -296,13 +296,13 @@ class Metrics(object):
             # if score_opt2 is not None:
             #     sorted_topk = self.reorder_top_predictions(initial_topk, score_opt2)
 
-            focus_concepts = graph.find_focus_concept(prev_video_name)
-            if wc > 1 or d2 > 1:
-                score_opt = self.optimize_topk_based_on_concept1(knowledge_graph, focus_concepts, initial_topk, idx2u,
-                                                                 graph, all_shortest_paths)
-                sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
-            else:
-                sorted_topk = list(initial_topk)
+            # focus_concepts = graph.find_focus_concept(prev_video_name)
+            # if wc > 1 or d2 > 1:
+            #     score_opt = self.optimize_topk_based_on_concept1(knowledge_graph, focus_concepts, initial_topk, idx2u,
+            #                                                      graph, all_shortest_paths)
+            #     sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
+            # else:
+            #     sorted_topk = list(initial_topk)
 
             # ---------------------如果找到 next_video_id，则将其插入到首位
             next_video_id = self.find_next_video(prev_video_name, prev_courses, u2idx, courses)
