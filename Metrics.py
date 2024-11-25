@@ -276,12 +276,12 @@ class Metrics(object):
             # ------------------- 概念距离排序0
             focus_concepts = graph.find_focus_concept(prev_video_name)
 
-            if d2 > 2 :
-                score_opt = self.optimize_topk_based_on_concept2(knowledge_graph, focus_concepts, initial_topk, idx2u,
-                                                                 graph, all_shortest_paths)
-                sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
+            # if d2 > 2 :
+            #     score_opt = self.optimize_topk_based_on_concept2(knowledge_graph, focus_concepts, initial_topk, idx2u,
+            #                                                      graph, all_shortest_paths)
+            #     sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
 
-            elif wc > 1 or d2 > 1 :
+            if wc > 1 or d2 > 1 :
                 score_opt = self.optimize_topk_based_on_concept1(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
                 sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
                 # score = self.merge_scores(score_opt, score_opt2)
@@ -468,7 +468,7 @@ class Metrics(object):
                                 key=lambda x: x[1], reverse=True)
 
         highscore_videos = [video for video, score in optimized_topk if score > 4]
-        mediumscore_videos = [video for video, score in optimized_topk if (score > 0 and score < 5)]
+        mediumscore_videos = [video for video, score in optimized_topk if (score > 2 and score < 5)]
         # limited_video_scores = {video: video_scores[video] if video in top5_videos else 0 for video in topk}
         # limited_video_scores = {video: (scores_opt[video]-2) if video in highscore_videos else scores_opt[video] for video in topk}
         limited_video_scores = {
