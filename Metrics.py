@@ -275,19 +275,25 @@ class Metrics(object):
                                                               all_shortest_paths)
 
             # ------------------- 概念距离排序0
-            focus_concepts = graph.find_focus_concept(prev_video_name)
-            if (wc > 1 or d2 > 1) and (score_opt2 is not None):
-                score_opt = self.optimize_topk_based_on_concept1(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
-                # sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
-                score = self.merge_scores(score_opt, score_opt2)
-                # # 根据得分重新排序topk
-                sorted_topk = self.reorder_top_predictions(initial_topk, score)
+            # focus_concepts = graph.find_focus_concept(prev_video_name)
+            # if (wc > 1 or d2 > 1) and (score_opt2 is not None):
+            #     score_opt = self.optimize_topk_based_on_concept1(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
+            #     # sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
+            #     score = self.merge_scores(score_opt, score_opt2)
+            #     # # 根据得分重新排序topk
+            #     sorted_topk = self.reorder_top_predictions(initial_topk, score)
+            # 
+            # elif score_opt2 is not None:
+            #     score = score_opt2
+            #     # # 根据得分重新排序topk
+            #     sorted_topk = self.reorder_top_predictions(initial_topk, score)
+            # 
+            # else:
+            #     sorted_topk = list(initial_topk)
 
-            elif score_opt2 is not None:
-                score = score_opt2
-                # # 根据得分重新排序topk
-                sorted_topk = self.reorder_top_predictions(initial_topk, score)
-
+            # -------------------单独使用一个分数排序
+            if score_opt2 is not None:
+                sorted_topk = self.reorder_top_predictions(initial_topk, score_opt2)
             else:
                 sorted_topk = list(initial_topk)
 
@@ -412,7 +418,7 @@ class Metrics(object):
                                         all_shortest_paths):
         # video_scores = {}  # 用于存储视频及其累计相关性得分
         zero_score_videos_set = set()  # 用于去重存储得分为0的视频
-        topk_scores = {video_id: (40 - i) if i < 40 else 0 for i, video_id in enumerate(topk)}
+        topk_scores = {video_id: (15 - i) if i < 15 else 0 for i, video_id in enumerate(topk)}
         # scores_opt = scores
         scores_opt = {video_id: 0 for video_id in topk}
 
@@ -559,7 +565,8 @@ class Metrics(object):
     def optimize_based_on_studentprefer(self, StudentWatchData_list, graph, knowledge_graph, topk,
                                         idx2u, prev_course, course_video_mapping, all_shortest_paths):
         # # 初始化视频的匹配分数
-        video_scores = {video_id: 0 for video_id in topk}
+        # video_scores = {video_id: 0 for video_id in topk}
+        video_scores = {video_id: (40 - i) if i < 40 else 0 for i, video_id in enumerate(topk)}
         score = 0.3
 
         zero_score_videos_set = set()
