@@ -256,8 +256,8 @@ class Metrics(object):
             initial_topk = self.get_top_k_predictions(p_, k=40)
             prev_video_name = idx2u[y_p]
             prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
-            # student_watch_data_list.append(StudentWatchData(prev_video_name, wt, dt))
-            student_watch_data_list.append(prev_video_name)
+            student_watch_data_list.append(StudentWatchData(prev_video_name, wt, dt))
+            # student_watch_data_list.append(prev_video_name)
 
             # if prev_courses and prev_courses[0] not in prev_course_list:
             #     prev_course_list.insert(0, prev_courses[0])
@@ -567,17 +567,17 @@ class Metrics(object):
         # # 初始化视频的匹配分数
         # video_scores = {video_id: 0 for video_id in topk}
         video_scores = {video_id: (40 - i) if i < 40 else 0 for i, video_id in enumerate(topk)}
-        score = 0.3
+        score = 0.6
 
         zero_score_videos_set = set()
         if len(StudentWatchData_list) > 10:
             StudentWatchData_list = StudentWatchData_list[-10:]
         reversed_list = StudentWatchData_list[::-1]
         for former_video_name in reversed_list:
-            former_courses = self.get_courses_by_video(former_video_name, course_video_mapping)
+            former_courses = self.get_courses_by_video(former_video_name.video_name, course_video_mapping)
             former_course = former_courses[0]
-            if former_course != prev_course:
-                focus_concepts =graph.find_focus_concept(former_video_name)
+            if former_course != prev_course and former_video_name.watch_time > 1:
+                focus_concepts =graph.find_focus_concept(former_video_name.video_name)
                 for video in topk:
                     video_name = idx2u[video]  # 获取视频名称
                     if video_name in knowledge_graph:  # 确保视频存在于知识图谱中
