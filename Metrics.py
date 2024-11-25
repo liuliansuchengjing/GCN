@@ -7,33 +7,33 @@ from collections import defaultdict
 import networkx as nx
 
 
-def Student_ConceptGraph(StudentWatchData_list, knowledge_graph):
-    """
-    生成学生的概念图，包含每个概念的掌握度
-    :param StudentWatchData_list: 学生的观看记录（包含 StudentWatchData 对象的列表）
-    :param knowledge_graph: 知识图谱
-    :return: 学生的概念图
-    """
-    # 初始化空的概念图
-    student_concept_graph = nx.Graph()
-
-    # 遍历学生的观看记录，生成概念掌握得分
-    for record in StudentWatchData_list:
-        video_name = record.video_name  # 访问 StudentWatchData 对象中的 video_name
-        watch_time = record.watch_time  # 访问 watch_time
-        total_time = record.total_time  # 访问 total_time
-
-        if video_name in knowledge_graph:  # 确保视频存在于知识图谱中
-            video_concepts = [concept for concept in knowledge_graph.neighbors(video_name) if concept.startswith('K_')]
-            video_mastery = watch_time / total_time  # 计算学生对该视频的掌握度
-
-            for concept in video_concepts:
-                if student_concept_graph.has_node(concept):
-                    student_concept_graph.nodes[concept]['mastery'] += video_mastery
-                else:
-                    student_concept_graph.add_node(concept, mastery=video_mastery)
-
-    return student_concept_graph
+# def Student_ConceptGraph(StudentWatchData_list, knowledge_graph):
+#     """
+#     生成学生的概念图，包含每个概念的掌握度
+#     :param StudentWatchData_list: 学生的观看记录（包含 StudentWatchData 对象的列表）
+#     :param knowledge_graph: 知识图谱
+#     :return: 学生的概念图
+#     """
+#     # 初始化空的概念图
+#     student_concept_graph = nx.Graph()
+#
+#     # 遍历学生的观看记录，生成概念掌握得分
+#     for record in StudentWatchData_list:
+#         video_name = record.video_name  # 访问 StudentWatchData 对象中的 video_name
+#         watch_time = record.watch_time  # 访问 watch_time
+#         total_time = record.total_time  # 访问 total_time
+#
+#         if video_name in knowledge_graph:  # 确保视频存在于知识图谱中
+#             video_concepts = [concept for concept in knowledge_graph.neighbors(video_name) if concept.startswith('K_')]
+#             video_mastery = watch_time / total_time  # 计算学生对该视频的掌握度
+#
+#             for concept in video_concepts:
+#                 if student_concept_graph.has_node(concept):
+#                     student_concept_graph.nodes[concept]['mastery'] += video_mastery
+#                 else:
+#                     student_concept_graph.add_node(concept, mastery=video_mastery)
+#
+#     return student_concept_graph
 
 
 class StudentWatchData:
@@ -56,7 +56,7 @@ class StudentWatchData:
         """
         定义类的字符串表示，方便调试和打印
         """
-        return f"StudentWatchData(video_id={self.video_id}, watch_count={self.watch_count}, watch_time={self.watch_time}, total_time={self.total_time})"
+        return f"StudentWatchData(video_id={self.video_name}, watch_count={self.watch_count}, watch_time={self.watch_time}, total_time={self.total_time})"
 
 
 class ConceptGraph:
@@ -267,27 +267,27 @@ class Metrics(object):
             # scores_pro, f_next_video = self.score_predictions(initial_topk, y_p, idx2u, course_video_mapping, courses,
             #                                                   prev_courses)
 
-            # # # ---------------------- 喜好排序
-            # prev_course = prev_courses[0]
-            # score_opt2 = self.optimize_based_on_studentprefer(student_watch_data_list, graph, knowledge_graph,
-            #                                                   initial_topk, idx2u, prev_course, course_video_mapping,
-            #                                                   all_shortest_paths)
+            # # ---------------------- 喜好排序
+            prev_course = prev_courses[0]
+            score_opt2 = self.optimize_based_on_studentprefer(student_watch_data_list, graph, knowledge_graph,
+                                                              initial_topk, idx2u, prev_course, course_video_mapping,
+                                                              all_shortest_paths)
 
             # ------------------- 概念距离排序0
             focus_concepts = graph.find_focus_concept(prev_video_name)
             if wc > 1 or d2 > 1 :
                 score_opt = self.optimize_topk_based_on_concept1(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
                 sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
-                # score = self.merge_scores(score_opt, scores_pro)
+                # score = self.merge_scores(score_opt, score_opt2)
 
 
-            # elif score_opt2 is not None:
-            #     # # 根据得分重新排序topk
-            #     sorted_topk = self.reorder_top_predictions(initial_topk, score_opt2)
+            elif score_opt2 is not None:
+                # # 根据得分重新排序topk
+                sorted_topk = self.reorder_top_predictions(initial_topk, score_opt2)
 
             else:
                 sorted_topk = list(initial_topk)
-                # score = scores_pro
+                # score = score_opt2
 
             # # 根据得分重新排序topk
             # sorted_topk = self.reorder_top_predictions(initial_topk, score)
@@ -573,8 +573,8 @@ class Metrics(object):
     def optimize_based_on_studentprefer(self, StudentWatchData_list, graph, knowledge_graph, topk,
                                         idx2u, prev_course, course_video_mapping, all_shortest_paths):
         # # 初始化视频的匹配分数
-        # video_scores = {video_id: 0 for video_id in topk}
-        video_scores = {video_id: (40 - i) if i < 40 else 0 for i, video_id in enumerate(topk)}
+        video_scores = {video_id: 0 for video_id in topk}
+        # video_scores = {video_id: (40 - i) if i < 40 else 0 for i, video_id in enumerate(topk)}
         score = 1
 
         zero_score_videos_set = set()
@@ -584,7 +584,7 @@ class Metrics(object):
         for former_video_name in reversed_list:
             former_courses = self.get_courses_by_video(former_video_name.video_name, course_video_mapping)
             former_course = former_courses[0]
-            if former_course != prev_course and (former_video_name.watch_count > 1 or former_video_name.watch_time > 1):
+            if former_course != prev_course and (former_video_name.watch_count > 1 or (former_video_name.watch_time/former_video_name.total_time) > 1):
                 focus_concepts =graph.find_focus_concept(former_video_name.video_name)
                 for video in topk:
                     video_name = idx2u[video]  # 获取视频名称
