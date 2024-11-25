@@ -294,9 +294,9 @@ class Metrics(object):
             # -------------------单独使用一个分数排序
             # if score_opt2 is not None:
             #     sorted_topk = self.reorder_top_predictions(initial_topk, score_opt2)
-            
+
             focus_concepts = graph.find_focus_concept(prev_video_name)
-            if wc > 1 or d2 > 1:
+            if d2 > 1:
                 score_opt = self.optimize_topk_based_on_concept1(knowledge_graph, focus_concepts, initial_topk, idx2u,
                                                                  graph, all_shortest_paths)
                 sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
