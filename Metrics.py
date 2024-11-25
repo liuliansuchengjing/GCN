@@ -267,23 +267,29 @@ class Metrics(object):
             # scores_pro, f_next_video = self.score_predictions(initial_topk, y_p, idx2u, course_video_mapping, courses,
             #                                                   prev_courses)
 
-            # # ---------------------- 喜好排序
-            prev_course = prev_courses[0]
-            score_opt2 = self.optimize_based_on_studentprefer(student_watch_data_list, graph, knowledge_graph,
-                                                              initial_topk, idx2u, prev_course, course_video_mapping,
-                                                              all_shortest_paths)
+            # # # ---------------------- 喜好排序
+            # prev_course = prev_courses[0]
+            # score_opt2 = self.optimize_based_on_studentprefer(student_watch_data_list, graph, knowledge_graph,
+            #                                                   initial_topk, idx2u, prev_course, course_video_mapping,
+            #                                                   all_shortest_paths)
 
             # ------------------- 概念距离排序0
             focus_concepts = graph.find_focus_concept(prev_video_name)
-            if wc > 1 or d2 > 1 :
+            
+            if wc > 1 and d2 > 1 :
+                score_opt = self.optimize_topk_based_on_concept2(knowledge_graph, focus_concepts, initial_topk, idx2u,
+                                                                 graph, all_shortest_paths)
+                sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
+                
+            elif wc > 1 or d2 > 1 :
                 score_opt = self.optimize_topk_based_on_concept1(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
                 sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
                 # score = self.merge_scores(score_opt, score_opt2)
 
 
-            elif score_opt2 is not None:
-                # # 根据得分重新排序topk
-                sorted_topk = self.reorder_top_predictions(initial_topk, score_opt2)
+            # elif score_opt2 is not None:
+            #     # # 根据得分重新排序topk
+            #     sorted_topk = self.reorder_top_predictions(initial_topk, score_opt2)
 
             else:
                 sorted_topk = list(initial_topk)
@@ -425,7 +431,7 @@ class Metrics(object):
                                         all_shortest_paths):
         # video_scores = {}  # 用于存储视频及其累计相关性得分
         zero_score_videos_set = set()  # 用于去重存储得分为0的视频
-        topk_scores = {video_id: (40 - i) if i < 40 else 0 for i, video_id in enumerate(topk)}
+        topk_scores = {video_id: (15 - i) if i < 15 else 0 for i, video_id in enumerate(topk)}
         # scores_opt = scores
         scores_opt = {video_id: 0 for video_id in topk}
 
@@ -486,21 +492,18 @@ class Metrics(object):
         # return final_topk
         return scores_opt
 
-    def optimize_topk_based_on_concept2(self, knowledge_graph, focus_concepts, sorted_topk, idx2u, graph,
+    def optimize_topk_based_on_concept2(self, knowledge_graph, focus_concepts, topk, idx2u, graph,
                                         all_shortest_paths):
-        # video_scores = {}  # 用于存储视频及其累计相关性得分
-        zero_score_videos_set = set()  # 用于去重存储得分为0的视频
-        # scores_opt = {video_id: (40 - i) if i < 40 else 0 for i, video_id in enumerate(sorted_topk)}
-        scores_opt = {video_id: 0 for video_id in sorted_topk}
 
-        for video in sorted_topk:
+        scores_opt = {video_id: (15 - i) if i < 15 else 0 for i, video_id in enumerate(topk)}
+
+        for video in topk:
             video_name = idx2u[video]  # 获取视频名称
             if video_name in knowledge_graph:  # 确保视频存在于知识图谱中
                 # 获取与视频相关联的概念
                 # print("(opt)video_name:", video_name)
                 video_concepts = [concept for concept in knowledge_graph.neighbors(video_name) if
                                   concept.startswith('K_')]
-                # print("(opt)video_concepts:", video_concepts)
 
                 # 计算相关性得分
                 for concept in video_concepts:
@@ -508,32 +511,15 @@ class Metrics(object):
                         # shortest_path = graph.direct_get_shortest_path_length(concept, focus_concept, concept_graph)
                         shortest_path = graph.get_shortest_path_length(concept, focus_concept, all_shortest_paths)
 
-                        if shortest_path != float('inf') and shortest_path != 2:
-                            scores_opt[video] -= 0.1
+                        if shortest_path != float('inf'):
+                            if shortest_path == 0:
+                                scores_opt[video] += 2
+                            # if scores_opt[video] == scores[video]:
+                            # scores_opt[video] += (1 / (1 + shortest_path))
 
-            # 如果得分为0，将其标记为零分视频
-            if scores_opt[video] == 0:
-                zero_score_videos_set.add(video)
-            else:
-                # 如果视频之前在 zero_score_videos_set 中，现在有得分，移除它
-                zero_score_videos_set.discard(video)
-
-        # 将有得分的视频按得分排序
-        optimized_topk = sorted([(video, score) for video, score in scores_opt.items() if score > 0],
-                                key=lambda x: x[1], reverse=True)
-
-        # for video, score in optimized_topk:
-        #     print(f"Course: {video}, Score: {score}")
-
-        # 提取排序后的视频ID
-        sorted_videos_with_scores = [video for video, score in optimized_topk]
-
-        # 将得分为0的视频保持原有顺序，追加到排序后的视频ID列表末尾
-        final_topk = sorted_videos_with_scores + list(zero_score_videos_set)
-
-        return final_topk
-        # return scores_opt
-
+        return scores_opt
+    
+    
     def merge_scores(self, scores_pro1, scores_pro2):
         merged_scores = {}
 
