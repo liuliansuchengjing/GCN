@@ -425,7 +425,7 @@ class Metrics(object):
                                         all_shortest_paths):
         # video_scores = {}  # 用于存储视频及其累计相关性得分
         zero_score_videos_set = set()  # 用于去重存储得分为0的视频
-        topk_scores = {video_id: (15 - i) if i < 15 else 0 for i, video_id in enumerate(topk)}
+        topk_scores = {video_id: (40 - i) if i < 40 else 0 for i, video_id in enumerate(topk)}
         # scores_opt = scores
         scores_opt = {video_id: 0 for video_id in topk}
 
@@ -575,11 +575,11 @@ class Metrics(object):
         # # 初始化视频的匹配分数
         # video_scores = {video_id: 0 for video_id in topk}
         video_scores = {video_id: (40 - i) if i < 40 else 0 for i, video_id in enumerate(topk)}
-        score = 1
+        score = 0.5
 
-        zero_score_videos_set = set()
-        if len(StudentWatchData_list) > 10:
-            StudentWatchData_list = StudentWatchData_list[-10:]
+        # zero_score_videos_set = set()
+        # if len(StudentWatchData_list) > 10:
+        #     StudentWatchData_list = StudentWatchData_list[-10:]
         reversed_list = StudentWatchData_list[::-1]
         for former_video_name in reversed_list:
             former_courses = self.get_courses_by_video(former_video_name.video_name, course_video_mapping)
