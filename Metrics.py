@@ -468,7 +468,7 @@ class Metrics(object):
                                 key=lambda x: x[1], reverse=True)
 
         highscore_videos = [video for video, score in optimized_topk if score > 4]
-        mediumscore_videos = [video for video, score in optimized_topk if (score > 1 and score < 5)]
+        mediumscore_videos = [video for video, score in optimized_topk if (score > 0 and score < 5)]
         # limited_video_scores = {video: video_scores[video] if video in top5_videos else 0 for video in topk}
         # limited_video_scores = {video: (scores_opt[video]-2) if video in highscore_videos else scores_opt[video] for video in topk}
         limited_video_scores = {
