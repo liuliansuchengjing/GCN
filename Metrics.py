@@ -274,7 +274,7 @@ class Metrics(object):
             #                                                   all_shortest_paths)
 
             # # ------------------- 概念距离排序0
-            # focus_concepts = graph.find_focus_concept(prev_video_name)
+            focus_concepts = graph.find_focus_concept(prev_video_name)
             # 
             # # if d2 > 2 :
             # #     score_opt = self.optimize_topk_based_on_concept2(knowledge_graph, focus_concepts, initial_topk, idx2u,
