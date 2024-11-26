@@ -269,8 +269,8 @@ class Metrics(object):
 
 
 
-            # ------------------- 概念距离排序0
-            focus_concepts = graph.find_focus_concept(prev_video_name)
+            # # ------------------- 概念距离排序0
+            # focus_concepts = graph.find_focus_concept(prev_video_name)
 
             # if d2 > 2 :
             #     score_opt = self.optimize_topk_based_on_concept2(knowledge_graph, focus_concepts, initial_topk, idx2u,
@@ -581,7 +581,7 @@ class Metrics(object):
                                         idx2u, prev_course, course_video_mapping, all_shortest_paths):
         # # 初始化视频的匹配分数
         # video_scores = {video_id: 0 for video_id in topk}
-        video_scores = {video_id: (50 - i) if i < 5 else 0 for i, video_id in enumerate(topk)}
+        video_scores = {video_id: 50 if i < 10 else 0 for i, video_id in enumerate(topk)}
         score = 1
 
         # zero_score_videos_set = set()
@@ -603,19 +603,14 @@ class Metrics(object):
                             for focus_concept in focus_concepts:
                                 shortest_path = graph.get_shortest_path_length(concept, focus_concept,
                                                                                all_shortest_paths)
-                                if shortest_path != float('inf'):
-                                    if shortest_path == 0:
-                                        video_scores[video] += score
-
-
+                                if shortest_path == 0 and video_scores[video] != 50:
+                                    video_scores[video] += score
                     # if video_scores[video] == 0:
                     #     zero_score_videos_set.add(video)
                     # else:
                     #     # 如果视频之前在 zero_score_videos_set 中，现在有得分，移除它
                     #     zero_score_videos_set.discard(video)
 
-                for video, score in video_scores.items():
-                    print(f"Course: {video}, Score: {score}")
                 return video_scores
 
         return None
@@ -624,7 +619,7 @@ class Metrics(object):
                                         idx2u, prev_course, course_video_mapping, all_shortest_paths):
         # # 初始化视频的匹配分数
         # video_scores = {video_id: 0 for video_id in topk}
-        video_scores = {video_id: (50 - i) if i < 10 else 0 for i, video_id in enumerate(topk)}
+        video_scores = {video_id: 50 if i < 10 else 0 for i, video_id in enumerate(topk)}
         score = 1
 
         # zero_score_videos_set = set()
@@ -646,11 +641,9 @@ class Metrics(object):
                             for focus_concept in focus_concepts:
                                 shortest_path = graph.get_shortest_path_length(concept, focus_concept,
                                                                                all_shortest_paths)
-                                if shortest_path != float('inf'):
-                                    if shortest_path == 0:
-                                        video_scores[video] += score
-                for video, score in video_scores.items():
-                    print(f"Course: {video}, Score: {score}")
+                                if shortest_path == 0 and video_scores[video]!=50:
+                                    video_scores[video] += score
+                                        
                 return video_scores
 
         return None
