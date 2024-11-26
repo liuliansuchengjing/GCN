@@ -500,8 +500,8 @@ class Metrics(object):
     def optimize_topk_based_on_concept2(self, knowledge_graph, focus_concepts, topk, idx2u, graph,
                                         all_shortest_paths):
 
-        # scores_opt = {video_id: (15 - i) if i < 15 else 0 for i, video_id in enumerate(topk)}
-        scores_opt = {video_id: 0 for video_id in topk}
+        scores_opt = {video_id: (15 - i) if i < 15 else 0 for i, video_id in enumerate(topk)}
+        # scores_opt = {video_id: 0 for video_id in topk}
 
         for video in topk:
             video_name = idx2u[video]  # 获取视频名称
@@ -519,7 +519,7 @@ class Metrics(object):
 
                         if shortest_path != float('inf'):
                             if shortest_path == 0:
-                                scores_opt[video] += 2
+                                scores_opt[video] += 1
                             # if scores_opt[video] == scores[video]:
                             # scores_opt[video] += (1 / (1 + shortest_path))
 
