@@ -267,7 +267,7 @@ class Metrics(object):
             # scores_pro, f_next_video = self.score_predictions(initial_topk, y_p, idx2u, course_video_mapping, courses,
             #                                                   prev_courses)
 
-            
+
 
             # # ------------------- 概念距离排序0
             # focus_concepts = graph.find_focus_concept(prev_video_name)
@@ -292,6 +292,8 @@ class Metrics(object):
                                                                   all_shortest_paths)
                 if score_opt2 is not None:
                     sorted_topk = self.reorder_top_predictions(initial_topk, score_opt2)
+                else:
+                    sorted_topk = list(initial_topk)
 
             else:
                 sorted_topk = list(initial_topk)
