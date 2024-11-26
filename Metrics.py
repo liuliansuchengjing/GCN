@@ -281,22 +281,22 @@ class Metrics(object):
             # #                                                      graph, all_shortest_paths)
             # #     sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
             # 
-            # if wc > 1 or d2 > 1 :
-            #     score_opt = self.optimize_topk_based_on_concept1(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
-            #     # sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
-            #     score = self.merge_scores(score_opt, scores_pro)
+            if wc > 1 or d2 > 1 :
+                score_opt = self.optimize_topk_based_on_concept1(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
+                # sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
+                score = self.merge_scores(score_opt, scores_pro)
             # 
             # 
             # # elif score_opt2 is not None:
             # #     # # 根据得分重新排序topk
             # #     sorted_topk = self.reorder_top_predictions(initial_topk, score_opt2)
             # 
-            # else:
-            #     # sorted_topk = list(initial_topk)
-            #     score = scores_pro
-            # 
-            # # 根据得分重新排序topk
-            sorted_topk = self.reorder_top_predictions(initial_topk, scores_pro)
+            else:
+                # sorted_topk = list(initial_topk)
+                score = scores_pro
+            
+            # 根据得分重新排序topk
+            sorted_topk = self.reorder_top_predictions(initial_topk, score)
 
             # -------------------单独使用一个分数排序
             # if score_opt2 is not None:
