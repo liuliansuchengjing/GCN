@@ -267,10 +267,15 @@ class Metrics(object):
             # scores_pro, f_next_video = self.score_predictions(initial_topk, y_p, idx2u, course_video_mapping, courses,
             #                                                   prev_courses)
 
+            # # # ---------------------- 喜好排序
+            # prev_course = prev_courses[0]
+            # score_opt2 = self.optimize_based_on_studentprefer(student_watch_data_list, graph, knowledge_graph,
+            #                                                   initial_topk, idx2u, prev_course,
+            #                                                   course_video_mapping,
+            #                                                   all_shortest_paths)
 
-
-            # # ------------------- 概念距离排序0
-            # focus_concepts = graph.find_focus_concept(prev_video_name)
+            # ------------------- 概念距离排序0
+            focus_concepts = graph.find_focus_concept(prev_video_name)
             #
             # if d2 > 2 :
             #     score_opt = self.optimize_topk_based_on_concept2(knowledge_graph, focus_concepts, initial_topk, idx2u,
@@ -284,12 +289,8 @@ class Metrics(object):
 
 
             if d2 < 0.01:
-                # # ---------------------- 喜好排序
-                prev_course = prev_courses[0]
-                score_opt2 = self.optimize_based_on_studentprefer(student_watch_data_list, graph, knowledge_graph,
-                                                                  initial_topk, idx2u, prev_course,
-                                                                  course_video_mapping,
-                                                                  all_shortest_paths)
+                score_opt2 = self.optimize_topk_based_on_concept2(knowledge_graph, focus_concepts, initial_topk, idx2u,
+                                                                     graph, all_shortest_paths)
                 if score_opt2 is not None:
                     sorted_topk = self.reorder_top_predictions(initial_topk, score_opt2)
                 else:
