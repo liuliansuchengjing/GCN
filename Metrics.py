@@ -296,8 +296,10 @@ class Metrics(object):
             # 更新结果
             for k in k_list:
                 topk = sorted_topk[:k]
-                if y_ in topk:
-                    if k != 5:
+                if (y_ in topk) and (k == 5):
+                    grade = 1
+                if (grade != 1) and (y_ in topk):
+                    if k == 10:
                         print("-----------------------------------------------------")
                         print("true:",idx2u[y_])
 
