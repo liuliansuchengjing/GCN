@@ -233,7 +233,7 @@ class Metrics(object):
 
             # if prev_courses and prev_courses[0] not in prev_course_list:
             #     prev_course_list.insert(0, prev_courses[0])
-            
+
             # # # ---------------------- 喜好排序
             # prev_course = prev_courses[0]
             # score_opt2 = self.optimize_based_on_studentprefer2(student_watch_data_list, graph, knowledge_graph,
@@ -255,7 +255,7 @@ class Metrics(object):
             #     score_opt = self.optimize_topk_based_on_concept2(knowledge_graph, focus_concepts, initial_topk, idx2u,
             #                                                      graph, all_shortest_paths)
             #     sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
-            # 
+            #
             # if wc > 1 or d2 > 1 :
             #     score_opt = self.optimize_topk_based_on_concept1(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
             #     # sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
@@ -264,8 +264,8 @@ class Metrics(object):
 
             if scores_pro2 is not None:
                 score = self.merge_scores(scores_pro, scores_pro2)
-                
-            else:                
+
+            else:
                 # sorted_topk = list(initial_topk)
                 score = scores_pro
             #
@@ -371,6 +371,8 @@ class Metrics(object):
                     # 计算距离评分
                     score, f_next_video = self.calculate_distance_score(predicted_courses, prev_courses, courses,
                                                                         prev_video_name, predicted_video_name, 10)
+                    if score!=0:
+                        print("+score:", score)
                     scores_pro[video_id] += score
                 return scores_pro
         return None
@@ -531,9 +533,6 @@ class Metrics(object):
                 merged_scores[video_id] += score  # 分数相加
             else:
                 merged_scores[video_id] = score  # 如果不存在，直接添加
-                
-        for video, score in merged_scores.items():
-            print(f"Course: {video}, Score: {score}")
 
         return merged_scores
 
