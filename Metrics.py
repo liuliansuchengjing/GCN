@@ -267,19 +267,19 @@ class Metrics(object):
             # scores_pro, f_next_video = self.score_predictions(initial_topk, y_p, idx2u, course_video_mapping, courses,
             #                                                   prev_courses)
 
-            # # # ---------------------- 喜好排序
-            # prev_course = prev_courses[0]
-            # score_opt2 = self.optimize_based_on_studentprefer(student_watch_data_list, graph, knowledge_graph,
-            #                                                   initial_topk, idx2u, prev_course, course_video_mapping,
-            #                                                   all_shortest_paths)
+            # # ---------------------- 喜好排序
+            prev_course = prev_courses[0]
+            score_opt2 = self.optimize_based_on_studentprefer(student_watch_data_list, graph, knowledge_graph,
+                                                              initial_topk, idx2u, prev_course, course_video_mapping,
+                                                              all_shortest_paths)
 
             # # ------------------- 概念距离排序0
-            focus_concepts = graph.find_focus_concept(prev_video_name)
-
-            if d2 > 2 :
-                score_opt = self.optimize_topk_based_on_concept2(knowledge_graph, focus_concepts, initial_topk, idx2u,
-                                                                 graph, all_shortest_paths)
-                sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
+            # focus_concepts = graph.find_focus_concept(prev_video_name)
+            # 
+            # if d2 > 2 :
+            #     score_opt = self.optimize_topk_based_on_concept2(knowledge_graph, focus_concepts, initial_topk, idx2u,
+            #                                                      graph, all_shortest_paths)
+            #     sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
 
             # if wc > 1 or d2 > 1 :
             #     score_opt = self.optimize_topk_based_on_concept1(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
@@ -287,9 +287,9 @@ class Metrics(object):
             #     score = self.merge_scores(score_opt, scores_pro)
 
 
-            # elif score_opt2 is not None:
-            #     # # 根据得分重新排序topk
-            #     sorted_topk = self.reorder_top_predictions(initial_topk, score_opt2)
+            if d2 < 0.01 and score_opt2 is not None:
+                # # 根据得分重新排序topk
+                sorted_topk = self.reorder_top_predictions(initial_topk, score_opt2)
 
             else:
                 sorted_topk = list(initial_topk)
@@ -560,8 +560,8 @@ class Metrics(object):
                                         idx2u, prev_course, course_video_mapping, all_shortest_paths):
         # # 初始化视频的匹配分数
         # video_scores = {video_id: 0 for video_id in topk}
-        video_scores = {video_id: (40 - i) if i < 40 else 0 for i, video_id in enumerate(topk)}
-        score = 0.5
+        video_scores = {video_id: (15 - i) if i < 15 else 0 for i, video_id in enumerate(topk)}
+        score = 1
 
         # zero_score_videos_set = set()
         # if len(StudentWatchData_list) > 10:
