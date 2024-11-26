@@ -23,7 +23,7 @@ class StudentWatchData:
         if self.total_time == 0:
             return 0
         return self.watch_time / self.total_time
-    
+
     def research_course_order(self, courses):
         course_info = next((c for c in courses if c['id'] == self.video_course), None)
         if course_info:
@@ -319,8 +319,8 @@ class Metrics(object):
                             course_info = next((c for c in courses if c['id'] == prev_course), None)
                             if course_info:
                                 video_order = course_info.get('video_order', [])
-                                y_index = video_order.index(prev_video_name)
-                                    
+                                y_index = video_order.index(video_name)
+
                             print(video_name, prev_course, y_index)
 
                         print("student_watch_data_list:")
@@ -343,7 +343,7 @@ class Metrics(object):
                             course_info = next((c for c in courses if c['id'] == prev_course), None)
                             if course_info:
                                 video_order = course_info.get('video_order', [])
-                                y_index = video_order.index(prev_video_name)
+                                y_index = video_order.index(video_name)
 
                             print(video_name, prev_course, y_index)
 
