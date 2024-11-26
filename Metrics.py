@@ -8,8 +8,9 @@ import networkx as nx
 
 
 class StudentWatchData:
-    def __init__(self, video_name, watch_count, watch_time, total_time):
+    def __init__(self, video_name, video_course, watch_count, watch_time, total_time):
         self.video_name = video_name
+        self.video_course = video_course
         self.watch_count = watch_count
         self.watch_time = watch_time
         self.total_time = total_time
@@ -27,7 +28,7 @@ class StudentWatchData:
         """
         定义类的字符串表示，方便调试和打印
         """
-        return f"StudentWatchData(video_id={self.video_name}, watch_count={self.watch_count}, watch_time={self.watch_time}, total_time={self.total_time})"
+        return f"video_name={self.video_name}, video_course={self.video_course} , watch_count={self.watch_count}, watch_time={self.watch_time}, total_time={self.total_time}"
 
 
 class ConceptGraph:
@@ -218,17 +219,20 @@ class Metrics(object):
         # print("预先计算所有节点之间的最短路径")
         all_shortest_paths = dict(nx.all_pairs_shortest_path_length(concept_graph, cutoff=max_path_length))
         # print("()预先计算所有节点之间的最短路径")
+        grade = 0
 
         for p_, y_, y_p, wc, dt, wt, d1, d2, d3 in zip(y_prob, y_true, y_prev, w_c, d_t, w_t, d_1, d_2, d_3):
             if y_ == self.PAD:
                 student_watch_data_list = []
+                grade = 0
                 continue
 
             scores_len += 1
             initial_topk = self.get_top_k_predictions(p_, k=40)
             prev_video_name = idx2u[y_p]
             prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
-            student_watch_data_list.append(StudentWatchData(prev_video_name, wc, wt, dt))
+            prev_course = prev_courses[0]
+            student_watch_data_list.append(StudentWatchData(prev_video_name, prev_course, wc, wt, dt))
             # student_watch_data_list.append(prev_video_name)
 
             # if prev_courses and prev_courses[0] not in prev_course_list:
@@ -244,9 +248,9 @@ class Metrics(object):
             # ---------------------nearby1-4
             scores_pro, f_next_video = self.score_nearby(initial_topk, y_p, idx2u, course_video_mapping, courses,
                                                               prev_courses)
-            # ---------------------上上个nearby1-4
-            scores_pro2 = self.score_nearby2(initial_topk, student_watch_data_list, idx2u, course_video_mapping, courses,
-                                                         prev_courses)
+            # # ---------------------上上个nearby1-4
+            # scores_pro2 = self.score_nearby2(initial_topk, student_watch_data_list, idx2u, course_video_mapping, courses,
+            #                                              prev_courses)
 
             # ------------------- 概念距离排序0
             # focus_concepts = graph.find_focus_concept(prev_video_name)
@@ -262,13 +266,13 @@ class Metrics(object):
             #     score = self.merge_scores(score_opt, scores_pro)
 
 
-            if scores_pro2 is not None:
-                score = self.merge_scores(scores_pro, scores_pro2)
-
-            else:
-                # sorted_topk = list(initial_topk)
-                score = scores_pro
+            # if scores_pro2 is not None:
+            #     score = self.merge_scores(scores_pro, scores_pro2)
             #
+            # else:
+            #     # sorted_topk = list(initial_topk)
+            #     score = scores_pro
+            score = scores_pro
             # 根据得分重新排序topk
             sorted_topk = self.reorder_top_predictions(initial_topk, score)
 
@@ -292,6 +296,24 @@ class Metrics(object):
             # 更新结果
             for k in k_list:
                 topk = sorted_topk[:k]
+                if y_ in topk:
+                    if k != 5:
+                        print("-----------------------------------------------------")
+                        print("true:",idx2u[y_])
+
+                        print("topk:")
+                        for video in topk:
+                            video_name = idx2u[video]  # 获取视频名称
+                            prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
+                            prev_course = prev_courses[0]
+                            print(video_name, prev_course)
+
+                        print("student_watch_data_list:")
+                        if len(student_watch_data_list) > 10:
+                            student_watch_data_list = student_watch_data_list[-10:]
+                        for watch_list in student_watch_data_list:
+                            print(watch_list)
+
                 scores[f'hits@{k}'].append(1.0 if y_ in topk else 0.0)
                 scores[f'map@{k}'].append(self.apk([y_], topk, k))
 
