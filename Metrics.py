@@ -283,7 +283,7 @@ class Metrics(object):
             #     score = self.merge_scores(score_opt, scores_pro)
 
 
-            if d2 < 0.1:
+            if d2 < 0.01:
                 # # ---------------------- 喜好排序
                 prev_course = prev_courses[0]
                 score_opt2 = self.optimize_based_on_studentprefer(student_watch_data_list, graph, knowledge_graph,
