@@ -7,35 +7,6 @@ from collections import defaultdict
 import networkx as nx
 
 
-# def Student_ConceptGraph(StudentWatchData_list, knowledge_graph):
-#     """
-#     生成学生的概念图，包含每个概念的掌握度
-#     :param StudentWatchData_list: 学生的观看记录（包含 StudentWatchData 对象的列表）
-#     :param knowledge_graph: 知识图谱
-#     :return: 学生的概念图
-#     """
-#     # 初始化空的概念图
-#     student_concept_graph = nx.Graph()
-#
-#     # 遍历学生的观看记录，生成概念掌握得分
-#     for record in StudentWatchData_list:
-#         video_name = record.video_name  # 访问 StudentWatchData 对象中的 video_name
-#         watch_time = record.watch_time  # 访问 watch_time
-#         total_time = record.total_time  # 访问 total_time
-#
-#         if video_name in knowledge_graph:  # 确保视频存在于知识图谱中
-#             video_concepts = [concept for concept in knowledge_graph.neighbors(video_name) if concept.startswith('K_')]
-#             video_mastery = watch_time / total_time  # 计算学生对该视频的掌握度
-#
-#             for concept in video_concepts:
-#                 if student_concept_graph.has_node(concept):
-#                     student_concept_graph.nodes[concept]['mastery'] += video_mastery
-#                 else:
-#                     student_concept_graph.add_node(concept, mastery=video_mastery)
-#
-#     return student_concept_graph
-
-
 class StudentWatchData:
     def __init__(self, video_name, watch_count, watch_time, total_time):
         self.video_name = video_name
@@ -262,59 +233,44 @@ class Metrics(object):
 
             # if prev_courses and prev_courses[0] not in prev_course_list:
             #     prev_course_list.insert(0, prev_courses[0])
+            
+            # # # ---------------------- 喜好排序
+            # prev_course = prev_courses[0]
+            # score_opt2 = self.optimize_based_on_studentprefer2(student_watch_data_list, graph, knowledge_graph,
+            #                                                    initial_topk, idx2u, prev_course,
+            #                                                    course_video_mapping,
+            #                                                    all_shortest_paths)
 
             # ---------------------nearby1-4
-            # scores_pro, f_next_video = self.score_predictions(initial_topk, y_p, idx2u, course_video_mapping, courses,
-            #                                                   prev_courses)
+            scores_pro, f_next_video = self.score_nearby(initial_topk, y_p, idx2u, course_video_mapping, courses,
+                                                              prev_courses)
+            # ---------------------上上个nearby1-4
+            scores_pro2 = self.score_nearby2(initial_topk, student_watch_data_list, idx2u, course_video_mapping, courses,
+                                                         prev_courses)
 
-
-
-            # # ------------------- 概念距离排序0
+            # ------------------- 概念距离排序0
             # focus_concepts = graph.find_focus_concept(prev_video_name)
 
             # if d2 > 2 :
             #     score_opt = self.optimize_topk_based_on_concept2(knowledge_graph, focus_concepts, initial_topk, idx2u,
             #                                                      graph, all_shortest_paths)
             #     sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
-
+            # 
             # if wc > 1 or d2 > 1 :
             #     score_opt = self.optimize_topk_based_on_concept1(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
             #     # sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
             #     score = self.merge_scores(score_opt, scores_pro)
 
 
-            if d2 < 0.01:
-                # # ---------------------- 喜好排序
-                prev_course = prev_courses[0]
-                score_opt2 = self.optimize_based_on_studentprefer(student_watch_data_list, graph, knowledge_graph,
-                                                                  initial_topk, idx2u, prev_course,
-                                                                  course_video_mapping,
-                                                                  all_shortest_paths)
-                # score_opt2 = self.optimize_topk_based_on_concept2(knowledge_graph, focus_concepts, initial_topk, idx2u,
-                #                                                      graph, all_shortest_paths)
-                if score_opt2 is not None:
-                    sorted_topk = self.reorder_top_predictions(initial_topk, score_opt2)
-                else:
-                    sorted_topk = list(initial_topk)
-
-            else:
-                # # ---------------------- 喜好排序
-                prev_course = prev_courses[0]
-                score_opt2 = self.optimize_based_on_studentprefer2(student_watch_data_list, graph, knowledge_graph,
-                                                                  initial_topk, idx2u, prev_course,
-                                                                  course_video_mapping,
-                                                                  all_shortest_paths)
-                # score_opt2 = self.optimize_topk_based_on_concept2(knowledge_graph, focus_concepts, initial_topk, idx2u,
-                #                                                      graph, all_shortest_paths)
-                if score_opt2 is not None:
-                    sorted_topk = self.reorder_top_predictions(initial_topk, score_opt2)
-                else:
-                    sorted_topk = list(initial_topk)
+            if scores_pro2 is not None:
+                score = self.merge_scores(scores_pro, scores_pro2)
+                
+            else:                
                 # sorted_topk = list(initial_topk)
-                # score = scores_pro
+                score = scores_pro
             #
-            # # 根据得分重新排序topk
-            # sorted_topk = self.reorder_top_predictions(initial_topk, scores_pro)
+            # 根据得分重新排序topk
+            sorted_topk = self.reorder_top_predictions(initial_topk, score)
 
             # -------------------单独使用一个分数排序
             # if score_opt2 is not None:
@@ -380,7 +336,7 @@ class Metrics(object):
         """获取排序后的前K个预测视频"""
         return p_.argsort()[::-1][:k]
 
-    def score_predictions(self, topk, y_p, idx2u, course_video_mapping, courses, prev_courses):
+    def score_nearby(self, topk, y_p, idx2u, course_video_mapping, courses, prev_courses):
         """根据与历史视频的关联性给每个预测视频评分"""
         scores_pro = {video_id: 0 for video_id in topk}
         # scores_pro = {video_id: (20-i) if i < 20 else 0 for i, video_id in enumerate(topk)}
@@ -393,12 +349,33 @@ class Metrics(object):
 
             # 计算距离评分
             score, f_next_video = self.calculate_distance_score(predicted_courses, prev_courses, courses,
-                                                                prev_video_name, predicted_video_name)
+                                                                prev_video_name, predicted_video_name, 50)
             scores_pro[video_id] += score
 
         return scores_pro, f_next_video
 
-    def calculate_distance_score(self, predicted_courses, prev_courses, courses, prev_video_name, predicted_video_name):
+    def score_nearby2(self, topk, StudentWatchData_list, idx2u, course_video_mapping, courses, prev_courses):
+        """根据与历史视频的关联性给每个预测视频评分"""
+        scores_pro = {video_id: 0 for video_id in topk}
+        # scores_pro = {video_id: (20-i) if i < 20 else 0 for i, video_id in enumerate(topk)}
+        reversed_list = StudentWatchData_list[::-1]
+        for former_video_name in reversed_list:
+            former_courses = self.get_courses_by_video(former_video_name.video_name, course_video_mapping)
+            former_course = former_courses[0]
+            # if former_course != prev_course and (former_video_name.watch_count > 1 or (former_video_name.watch_time/former_video_name.total_time) > 1):
+            if former_course != prev_courses[0]:
+                prev_video_name = former_video_name.video_name
+                for video_id in topk:
+                    predicted_video_name = idx2u[video_id]
+                    predicted_courses = self.get_courses_by_video(predicted_video_name, course_video_mapping)
+                    # 计算距离评分
+                    score, f_next_video = self.calculate_distance_score(predicted_courses, prev_courses, courses,
+                                                                        prev_video_name, predicted_video_name, 10)
+                    scores_pro[video_id] += score
+                return scores_pro
+        return None
+
+    def calculate_distance_score(self, predicted_courses, prev_courses, courses, prev_video_name, predicted_video_name, add_s):
         """计算课程内的相对视频位置的距离评分"""
         score = 0
         f_next_video = True  # 新增一个标志，判断是否需要单独找相邻视频
@@ -415,16 +392,16 @@ class Metrics(object):
                             distance = pred_index - y_index
 
                             if distance == 1:
-                                score += 50  # 确保相邻视频加足够高的分数
+                                score += add_s  # 确保相邻视频加足够高的分数
                                 f_next_video = False  # 标记为不需要再找下一个视频
                             elif distance == -1:
-                                score += 50
+                                score += add_s
                             elif abs(distance) == 2:
-                                score += 50
+                                score += add_s
                             elif abs(distance) == 3:
-                                score += 50
+                                score += add_s
                             elif abs(distance) == 4:
-                                score += 50
+                                score += add_s
                         except ValueError:
                             continue
 
@@ -554,6 +531,9 @@ class Metrics(object):
                 merged_scores[video_id] += score  # 分数相加
             else:
                 merged_scores[video_id] = score  # 如果不存在，直接添加
+                
+        for video, score in merged_scores.items():
+            print(f"Course: {video}, Score: {score}")
 
         return merged_scores
 
@@ -643,7 +623,7 @@ class Metrics(object):
                                                                                all_shortest_paths)
                                 if shortest_path == 0 and video_scores[video]!=50:
                                     video_scores[video] += score
-                                        
+
                 return video_scores
 
         return None
