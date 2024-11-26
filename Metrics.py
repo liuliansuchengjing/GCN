@@ -298,7 +298,19 @@ class Metrics(object):
                     sorted_topk = list(initial_topk)
 
             else:
-                sorted_topk = list(initial_topk)
+                # # ---------------------- 喜好排序
+                prev_course = prev_courses[0]
+                score_opt2 = self.optimize_based_on_studentprefer2(student_watch_data_list, graph, knowledge_graph,
+                                                                  initial_topk, idx2u, prev_course,
+                                                                  course_video_mapping,
+                                                                  all_shortest_paths)
+                # score_opt2 = self.optimize_topk_based_on_concept2(knowledge_graph, focus_concepts, initial_topk, idx2u,
+                #                                                      graph, all_shortest_paths)
+                if score_opt2 is not None:
+                    sorted_topk = self.reorder_top_predictions(initial_topk, score_opt2)
+                else:
+                    sorted_topk = list(initial_topk)
+                # sorted_topk = list(initial_topk)
                 # score = scores_pro
             #
             # # 根据得分重新排序topk
@@ -604,6 +616,39 @@ class Metrics(object):
 
                 # for video, score in video_scores.items():
                 #     print(f"Course: {video}, Score: {score}")
+                return video_scores
+
+        return None
+    
+    def optimize_based_on_studentprefer2(self, StudentWatchData_list, graph, knowledge_graph, topk,
+                                        idx2u, prev_course, course_video_mapping, all_shortest_paths):
+        # # 初始化视频的匹配分数
+        # video_scores = {video_id: 0 for video_id in topk}
+        video_scores = {video_id: (50 - i) if i < 10 else 0 for i, video_id in enumerate(topk)}
+        score = 1
+
+        # zero_score_videos_set = set()
+        # if len(StudentWatchData_list) > 10:
+        #     StudentWatchData_list = StudentWatchData_list[-10:]
+        reversed_list = StudentWatchData_list[::-1]
+        for former_video_name in reversed_list:
+            former_courses = self.get_courses_by_video(former_video_name.video_name, course_video_mapping)
+            former_course = former_courses[0]
+            # if former_course != prev_course and (former_video_name.watch_count > 1 or (former_video_name.watch_time/former_video_name.total_time) > 1):
+            if former_course != prev_course:
+                focus_concepts =graph.find_focus_concept(former_video_name.video_name)
+                for video in topk:
+                    video_name = idx2u[video]  # 获取视频名称
+                    if video_name in knowledge_graph:  # 确保视频存在于知识图谱中
+                        video_concepts = [concept for concept in knowledge_graph.neighbors(video_name) if
+                                          concept.startswith('K_')]
+                        for concept in video_concepts:
+                            for focus_concept in focus_concepts:
+                                shortest_path = graph.get_shortest_path_length(concept, focus_concept,
+                                                                               all_shortest_paths)
+                                if shortest_path != float('inf'):
+                                    if shortest_path == 0:
+                                        video_scores[video] += score
                 return video_scores
 
         return None
