@@ -23,12 +23,19 @@ class StudentWatchData:
         if self.total_time == 0:
             return 0
         return self.watch_time / self.total_time
+    
+    def research_course_order(self, courses):
+        course_info = next((c for c in courses if c['id'] == self.video_course), None)
+        if course_info:
+            video_order = course_info.get('video_order', [])
+            y_index = video_order.index(self.video_name)
+        return y_index
 
     def __repr__(self):
         """
         定义类的字符串表示，方便调试和打印
         """
-        return f"video_name={self.video_name}, video_course={self.video_course} , watch_count={self.watch_count}, watch_time={self.watch_time}, total_time={self.total_time}"
+        return f"video_name={self.video_name}, watch_count={self.watch_count}, watch_time={self.watch_time}, total_time={self.total_time}, video_course={self.video_course}"
 
 
 class ConceptGraph:
@@ -300,7 +307,8 @@ class Metrics(object):
                     grade = 1
                 if (grade != 1) and (y_ in topk):
                     if k == 10:
-                        print("-----------------------------------------------------")
+                        grade = 2
+                        print("2-----------------------------------------------------")
                         print("true:",idx2u[y_])
 
                         print("topk:")
@@ -308,13 +316,43 @@ class Metrics(object):
                             video_name = idx2u[video]  # 获取视频名称
                             prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
                             prev_course = prev_courses[0]
-                            print(video_name, prev_course)
+                            course_info = next((c for c in courses if c['id'] == prev_course), None)
+                            if course_info:
+                                video_order = course_info.get('video_order', [])
+                                y_index = video_order.index(prev_video_name)
+                                    
+                            print(video_name, prev_course, y_index)
 
                         print("student_watch_data_list:")
                         if len(student_watch_data_list) > 10:
                             student_watch_data_list = student_watch_data_list[-10:]
                         for watch_list in student_watch_data_list:
-                            print(watch_list)
+                            order = watch_list.research_course_order(courses)
+                            print(watch_list, order)
+
+                if (grade != 1) and (grade != 2) and (y_ in topk):
+                    if k == 20:
+                        print("3-----------------------------------------------------")
+                        print("true:", idx2u[y_])
+
+                        print("topk:")
+                        for video in topk:
+                            video_name = idx2u[video]  # 获取视频名称
+                            prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
+                            prev_course = prev_courses[0]
+                            course_info = next((c for c in courses if c['id'] == prev_course), None)
+                            if course_info:
+                                video_order = course_info.get('video_order', [])
+                                y_index = video_order.index(prev_video_name)
+
+                            print(video_name, prev_course, y_index)
+
+                        print("student_watch_data_list:")
+                        if len(student_watch_data_list) > 10:
+                            student_watch_data_list = student_watch_data_list[-10:]
+                        for watch_list in student_watch_data_list:
+                            order = watch_list.research_course_order(courses)
+                            print(watch_list, order)
 
                 scores[f'hits@{k}'].append(1.0 if y_ in topk else 0.0)
                 scores[f'map@{k}'].append(self.apk([y_], topk, k))
