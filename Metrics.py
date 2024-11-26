@@ -569,7 +569,7 @@ class Metrics(object):
                                         idx2u, prev_course, course_video_mapping, all_shortest_paths):
         # # 初始化视频的匹配分数
         # video_scores = {video_id: 0 for video_id in topk}
-        video_scores = {video_id: (15 - i) if i < 15 else 0 for i, video_id in enumerate(topk)}
+        video_scores = {video_id: (50 - i) if i < 5 else 0 for i, video_id in enumerate(topk)}
         score = 1
 
         # zero_score_videos_set = set()
