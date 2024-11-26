@@ -283,7 +283,7 @@ class Metrics(object):
             #     score = self.merge_scores(score_opt, scores_pro)
 
 
-            if d2 > 2:
+            if d2 < 0.01:
                 # # ---------------------- 喜好排序
                 prev_course = prev_courses[0]
                 score_opt2 = self.optimize_based_on_studentprefer(student_watch_data_list, graph, knowledge_graph,
@@ -524,8 +524,8 @@ class Metrics(object):
                             # if scores_opt[video] == scores[video]:
                             # scores_opt[video] += (1 / (1 + shortest_path))
 
-        for video, score in scores_opt.items():
-            print(f"Course: {video}, Score: {score}")
+        # for video, score in scores_opt.items():
+        #     print(f"Course: {video}, Score: {score}")
         return scores_opt
 
 
