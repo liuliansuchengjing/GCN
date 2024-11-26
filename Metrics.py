@@ -284,14 +284,14 @@ class Metrics(object):
 
 
             if d2 > 2:
-                # # # ---------------------- 喜好排序
-                # prev_course = prev_courses[0]
-                # score_opt2 = self.optimize_based_on_studentprefer(student_watch_data_list, graph, knowledge_graph,
-                #                                                   initial_topk, idx2u, prev_course,
-                #                                                   course_video_mapping,
-                #                                                   all_shortest_paths)
-                score_opt2 = self.optimize_topk_based_on_concept2(knowledge_graph, focus_concepts, initial_topk, idx2u,
-                                                                     graph, all_shortest_paths)
+                # # ---------------------- 喜好排序
+                prev_course = prev_courses[0]
+                score_opt2 = self.optimize_based_on_studentprefer(student_watch_data_list, graph, knowledge_graph,
+                                                                  initial_topk, idx2u, prev_course,
+                                                                  course_video_mapping,
+                                                                  all_shortest_paths)
+                # score_opt2 = self.optimize_topk_based_on_concept2(knowledge_graph, focus_concepts, initial_topk, idx2u,
+                #                                                      graph, all_shortest_paths)
                 if score_opt2 is not None:
                     sorted_topk = self.reorder_top_predictions(initial_topk, score_opt2)
                 else:
@@ -568,8 +568,8 @@ class Metrics(object):
     def optimize_based_on_studentprefer(self, StudentWatchData_list, graph, knowledge_graph, topk,
                                         idx2u, prev_course, course_video_mapping, all_shortest_paths):
         # # 初始化视频的匹配分数
-        video_scores = {video_id: 0 for video_id in topk}
-        # video_scores = {video_id: (15 - i) if i < 15 else 0 for i, video_id in enumerate(topk)}
+        # video_scores = {video_id: 0 for video_id in topk}
+        video_scores = {video_id: (15 - i) if i < 15 else 0 for i, video_id in enumerate(topk)}
         score = 1
 
         # zero_score_videos_set = set()
