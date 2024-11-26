@@ -614,12 +614,12 @@ class Metrics(object):
                     #     # 如果视频之前在 zero_score_videos_set 中，现在有得分，移除它
                     #     zero_score_videos_set.discard(video)
 
-                # for video, score in video_scores.items():
-                #     print(f"Course: {video}, Score: {score}")
+                for video, score in video_scores.items():
+                    print(f"Course: {video}, Score: {score}")
                 return video_scores
 
         return None
-    
+
     def optimize_based_on_studentprefer2(self, StudentWatchData_list, graph, knowledge_graph, topk,
                                         idx2u, prev_course, course_video_mapping, all_shortest_paths):
         # # 初始化视频的匹配分数
@@ -649,6 +649,8 @@ class Metrics(object):
                                 if shortest_path != float('inf'):
                                     if shortest_path == 0:
                                         video_scores[video] += score
+                for video, score in video_scores.items():
+                    print(f"Course: {video}, Score: {score}")
                 return video_scores
 
         return None
