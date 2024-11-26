@@ -267,11 +267,11 @@ class Metrics(object):
             # scores_pro, f_next_video = self.score_predictions(initial_topk, y_p, idx2u, course_video_mapping, courses,
             #                                                   prev_courses)
 
-            
 
-            # # ------------------- 概念距离排序0
-            # focus_concepts = graph.find_focus_concept(prev_video_name)
-            #
+
+            # ------------------- 概念距离排序0
+            focus_concepts = graph.find_focus_concept(prev_video_name)
+
             # if d2 > 2 :
             #     score_opt = self.optimize_topk_based_on_concept2(knowledge_graph, focus_concepts, initial_topk, idx2u,
             #                                                      graph, all_shortest_paths)
@@ -283,13 +283,15 @@ class Metrics(object):
             #     score = self.merge_scores(score_opt, scores_pro)
 
 
-            if d2 < 0.01:
-                # # ---------------------- 喜好排序
-                prev_course = prev_courses[0]
-                score_opt2 = self.optimize_based_on_studentprefer(student_watch_data_list, graph, knowledge_graph,
-                                                                  initial_topk, idx2u, prev_course,
-                                                                  course_video_mapping,
-                                                                  all_shortest_paths)
+            if d2 > 2:
+                # # # ---------------------- 喜好排序
+                # prev_course = prev_courses[0]
+                # score_opt2 = self.optimize_based_on_studentprefer(student_watch_data_list, graph, knowledge_graph,
+                #                                                   initial_topk, idx2u, prev_course,
+                #                                                   course_video_mapping,
+                #                                                   all_shortest_paths)
+                score_opt2 = self.optimize_topk_based_on_concept2(knowledge_graph, focus_concepts, initial_topk, idx2u,
+                                                                     graph, all_shortest_paths)
                 if score_opt2 is not None:
                     sorted_topk = self.reorder_top_predictions(initial_topk, score_opt2)
                 else:
@@ -518,7 +520,7 @@ class Metrics(object):
 
                         if shortest_path != float('inf'):
                             if shortest_path == 0:
-                                scores_opt[video] += 2
+                                scores_opt[video] += 1
                             # if scores_opt[video] == scores[video]:
                             # scores_opt[video] += (1 / (1 + shortest_path))
 
