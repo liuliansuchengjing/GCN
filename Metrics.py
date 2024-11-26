@@ -314,7 +314,7 @@ class Metrics(object):
                         print("topk:")
                         for video in topk:
                             video_name = idx2u[video]  # 获取视频名称
-                            prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
+                            prev_courses = self.get_courses_by_video(video_name, course_video_mapping)
                             prev_course = prev_courses[0]
                             course_info = next((c for c in courses if c['id'] == prev_course), None)
                             if course_info:
@@ -338,7 +338,7 @@ class Metrics(object):
                         print("topk:")
                         for video in topk:
                             video_name = idx2u[video]  # 获取视频名称
-                            prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
+                            prev_courses = self.get_courses_by_video(video_name, course_video_mapping)
                             prev_course = prev_courses[0]
                             course_info = next((c for c in courses if c['id'] == prev_course), None)
                             if course_info:
