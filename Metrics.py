@@ -522,6 +522,8 @@ class Metrics(object):
                             # if scores_opt[video] == scores[video]:
                             # scores_opt[video] += (1 / (1 + shortest_path))
 
+        for video, score in scores_opt.items():
+            print(f"Course: {video}, Score: {score}")
         return scores_opt
 
 
