@@ -264,8 +264,8 @@ class Metrics(object):
             #     prev_course_list.insert(0, prev_courses[0])
 
             # ---------------------nearby1-4
-            scores_pro, f_next_video = self.score_predictions(initial_topk, y_p, idx2u, course_video_mapping, courses,
-                                                              prev_courses)
+            # scores_pro, f_next_video = self.score_predictions(initial_topk, y_p, idx2u, course_video_mapping, courses,
+            #                                                   prev_courses)
 
             # # # ---------------------- 喜好排序
             # prev_course = prev_courses[0]
@@ -275,28 +275,28 @@ class Metrics(object):
 
             # # ------------------- 概念距离排序0
             focus_concepts = graph.find_focus_concept(prev_video_name)
-            # 
-            # # if d2 > 2 :
-            # #     score_opt = self.optimize_topk_based_on_concept2(knowledge_graph, focus_concepts, initial_topk, idx2u,
-            # #                                                      graph, all_shortest_paths)
-            # #     sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
-            # 
-            if wc > 1 or d2 > 1 :
-                score_opt = self.optimize_topk_based_on_concept1(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
-                # sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
-                score = self.merge_scores(score_opt, scores_pro)
-            # 
-            # 
-            # # elif score_opt2 is not None:
-            # #     # # 根据得分重新排序topk
-            # #     sorted_topk = self.reorder_top_predictions(initial_topk, score_opt2)
-            # 
+
+            if d2 > 2 :
+                score_opt = self.optimize_topk_based_on_concept2(knowledge_graph, focus_concepts, initial_topk, idx2u,
+                                                                 graph, all_shortest_paths)
+                sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
+
+            # if wc > 1 or d2 > 1 :
+            #     score_opt = self.optimize_topk_based_on_concept1(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
+            #     # sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
+            #     score = self.merge_scores(score_opt, scores_pro)
+
+
+            # elif score_opt2 is not None:
+            #     # # 根据得分重新排序topk
+            #     sorted_topk = self.reorder_top_predictions(initial_topk, score_opt2)
+
             else:
-                # sorted_topk = list(initial_topk)
-                score = scores_pro
-            
-            # 根据得分重新排序topk
-            sorted_topk = self.reorder_top_predictions(initial_topk, score)
+                sorted_topk = list(initial_topk)
+                # score = scores_pro
+            #
+            # # 根据得分重新排序topk
+            # sorted_topk = self.reorder_top_predictions(initial_topk, scores_pro)
 
             # -------------------单独使用一个分数排序
             # if score_opt2 is not None:
@@ -397,16 +397,16 @@ class Metrics(object):
                             distance = pred_index - y_index
 
                             if distance == 1:
-                                score += 15  # 确保相邻视频加足够高的分数
+                                score += 50  # 确保相邻视频加足够高的分数
                                 f_next_video = False  # 标记为不需要再找下一个视频
                             elif distance == -1:
-                                score += 15
+                                score += 50
                             elif abs(distance) == 2:
-                                score += 15
+                                score += 50
                             elif abs(distance) == 3:
-                                score += 15
+                                score += 50
                             elif abs(distance) == 4:
-                                score += 15
+                                score += 50
                         except ValueError:
                             continue
 
