@@ -254,15 +254,15 @@ class Metrics(object):
             # # ---------------------nearby1-4
             # scores_pro, f_next_video = self.score_nearby(initial_topk, y_p, idx2u, course_video_mapping, courses,
             #                                                   prev_courses)
-            # 
+            #
             # # ------------------- 概念距离排序0
             # focus_concepts = graph.find_focus_concept(prev_video_name)
-            # 
+            #
             # if wc > 1 or d2 > 1 :
             #     score_opt = self.optimize_topk_based_on_concept1(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
             #     # sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
             #     score = self.merge_scores(score_opt, scores_pro)
-            # 
+            #
             # else:
             #     # sorted_topk = list(initial_topk)
             #     score = scores_pro
@@ -280,10 +280,9 @@ class Metrics(object):
             #     sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
             # else:
             #     sorted_topk = list(initial_topk)
+            sorted_topk = list(initial_topk)
 
             # ---------------------如果找到 next_video_id，则将其插入到首位
-            print("prev_courses:", prev_courses)
-            print("prev_course:", prev_course)
             next_video_id = self.find_next_video(prev_video_name, prev_course, u2idx, courses)
             if next_video_id is not None and next_video_id not in sorted_topk:
                 sorted_topk.insert(0, next_video_id)
@@ -297,24 +296,22 @@ class Metrics(object):
         scores = {k: np.mean(v) for k, v in scores.items()}
         return scores, scores_len
 
-    def find_next_video(self, prev_video_name, prev_courses, u2idx, courses):
+    def find_next_video(self, prev_video_name, prev_course, u2idx, courses):
         """在课程中找到相邻的下一个视频"""
         # prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
-
-        for course_id in prev_courses:
-            print("course_id:", course_id)
-            for course in courses:
-                if course['id'] == course_id:
-                    video_order = course.get('video_order', [])
-                    try:
-                        y_index = video_order.index(prev_video_name)
-                        # 如果下一个视频存在，返回它的ID
-                        if y_index + 1 < len(video_order):
-                            next_video_name = video_order[y_index + 1]
-                            if next_video_name in u2idx:
-                                return u2idx[next_video_name]
-                    except ValueError:
-                        continue
+        
+        for course in courses:
+            if course['id'] == prev_course:
+                video_order = course.get('video_order', [])
+                try:
+                    y_index = video_order.index(prev_video_name)
+                    # 如果下一个视频存在，返回它的ID
+                    if y_index + 1 < len(video_order):
+                        next_video_name = video_order[y_index + 1]
+                        if next_video_name in u2idx:
+                            return u2idx[next_video_name]
+                except ValueError:
+                    continue
         return None
 
     # def build_course_video_mapping(self, courses):
