@@ -252,9 +252,9 @@ class Metrics(object):
             #                                                    course_video_mapping,
             #                                                    all_shortest_paths)
 
-            # ---------------------nearby1-4
-            scores_pro, f_next_video = self.score_nearby(initial_topk, y_p, idx2u, course_video_mapping, courses,
-                                                              prev_course)
+            # # ---------------------nearby1-4
+            # scores_pro, f_next_video = self.score_nearby(initial_topk, y_p, idx2u, course_video_mapping, courses,
+            #                                                   prev_course)
 
             # # ------------------- 概念距离排序0
             # focus_concepts = graph.find_focus_concept(prev_video_name)
@@ -276,8 +276,8 @@ class Metrics(object):
             # else:
             #     sorted_topk = list(initial_topk)
                 # score = scores_pro
-            # 根据得分重新排序topk
-            sorted_topk = self.reorder_top_predictions(initial_topk, scores_pro)
+            # # 根据得分重新排序topk
+            # sorted_topk = self.reorder_top_predictions(initial_topk, scores_pro)
 
             # -------------------单独使用一个分数排序
             # if score_opt2 is not None:
@@ -290,6 +290,7 @@ class Metrics(object):
             #     sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
             # else:
             #     sorted_topk = list(initial_topk)
+            sorted_topk = list(initial_topk)
 
             # ---------------------如果找到 next_video_id，则将其插入到首位
             next_video_id = self.find_next_video(prev_video_name, prev_course, u2idx, courses)
