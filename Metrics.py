@@ -252,9 +252,9 @@ class Metrics(object):
             #                                                    course_video_mapping,
             #                                                    all_shortest_paths)
 
-            # ---------------------nearby1-4
-            scores_pro, f_next_video = self.score_nearby(initial_topk, y_p, idx2u, course_video_mapping, courses,
-                                                              prev_courses)
+            # # ---------------------nearby1-4
+            # scores_pro, f_next_video = self.score_nearby(initial_topk, y_p, idx2u, course_video_mapping, courses,
+            #                                                   prev_courses)
             # # ---------------------上上个nearby1-4
             # scores_pro2 = self.score_nearby2(initial_topk, student_watch_data_list, idx2u, course_video_mapping, courses,
             #                                              prev_courses)
@@ -279,21 +279,20 @@ class Metrics(object):
             # else:
             #     # sorted_topk = list(initial_topk)
             #     score = scores_pro
-            score = scores_pro
-            # 根据得分重新排序topk
-            sorted_topk = self.reorder_top_predictions(initial_topk, score)
+            # # 根据得分重新排序topk
+            # sorted_topk = self.reorder_top_predictions(initial_topk, score)
 
             # -------------------单独使用一个分数排序
             # if score_opt2 is not None:
             #     sorted_topk = self.reorder_top_predictions(initial_topk, score_opt2)
 
-            # focus_concepts = graph.find_focus_concept(prev_video_name)
-            # if wc > 1 or d2 > 1:
-            #     score_opt = self.optimize_topk_based_on_concept1(knowledge_graph, focus_concepts, initial_topk, idx2u,
-            #                                                      graph, all_shortest_paths)
-            #     sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
-            # else:
-            #     sorted_topk = list(initial_topk)
+            focus_concepts = graph.find_focus_concept(prev_video_name)
+            if wc > 1 and d2 > 1:
+                score_opt = self.optimize_topk_based_on_concept2(knowledge_graph, focus_concepts, initial_topk, idx2u,
+                                                                 graph, all_shortest_paths)
+                sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
+            else:
+                sorted_topk = list(initial_topk)
 
             # ---------------------如果找到 next_video_id，则将其插入到首位
             next_video_id = self.find_next_video(prev_video_name, prev_courses, u2idx, courses)
@@ -303,57 +302,6 @@ class Metrics(object):
             # 更新结果
             for k in k_list:
                 topk = sorted_topk[:k]
-                if (y_ in topk) and (k == 5):
-                    grade = 1
-                if (grade != 1) and (y_ in topk):
-                    if k == 10:
-                        grade = 2
-                        print("2-----------------------------------------------------")
-                        print("true:",idx2u[y_])
-
-                        print("topk:")
-                        for video in topk:
-                            video_name = idx2u[video]  # 获取视频名称
-                            prev_courses = self.get_courses_by_video(video_name, course_video_mapping)
-                            prev_course = prev_courses[0]
-                            course_info = next((c for c in courses if c['id'] == prev_course), None)
-                            if course_info:
-                                video_order = course_info.get('video_order', [])
-                                y_index = video_order.index(video_name)
-
-                            print(video_name, prev_course, y_index)
-
-                        print("student_watch_data_list:")
-                        if len(student_watch_data_list) > 10:
-                            student_watch_data_list = student_watch_data_list[-10:]
-                        for watch_list in student_watch_data_list:
-                            order = watch_list.research_course_order(courses)
-                            print(watch_list, order)
-
-                if (grade != 1) and (grade != 2) and (y_ in topk):
-                    if k == 20:
-                        print("3-----------------------------------------------------")
-                        print("true:", idx2u[y_])
-
-                        print("topk:")
-                        for video in topk:
-                            video_name = idx2u[video]  # 获取视频名称
-                            prev_courses = self.get_courses_by_video(video_name, course_video_mapping)
-                            prev_course = prev_courses[0]
-                            course_info = next((c for c in courses if c['id'] == prev_course), None)
-                            if course_info:
-                                video_order = course_info.get('video_order', [])
-                                y_index = video_order.index(video_name)
-
-                            print(video_name, prev_course, y_index)
-
-                        print("student_watch_data_list:")
-                        if len(student_watch_data_list) > 10:
-                            student_watch_data_list = student_watch_data_list[-10:]
-                        for watch_list in student_watch_data_list:
-                            order = watch_list.research_course_order(courses)
-                            print(watch_list, order)
-
                 scores[f'hits@{k}'].append(1.0 if y_ in topk else 0.0)
                 scores[f'map@{k}'].append(self.apk([y_], topk, k))
 
@@ -554,7 +502,7 @@ class Metrics(object):
     def optimize_topk_based_on_concept2(self, knowledge_graph, focus_concepts, topk, idx2u, graph,
                                         all_shortest_paths):
 
-        # scores_opt = {video_id: (15 - i) if i < 15 else 0 for i, video_id in enumerate(topk)}
+        scores_ori = {video_id: (15 - i) if i < 15 else 0 for i, video_id in enumerate(topk)}
         scores_opt = {video_id: 0 for video_id in topk}
 
         for video in topk:
@@ -573,12 +521,16 @@ class Metrics(object):
 
                         if shortest_path != float('inf'):
                             if shortest_path == 0:
-                                scores_opt[video] += 1
+                                scores_opt[video] = 1
                             # if scores_opt[video] == scores[video]:
                             # scores_opt[video] += (1 / (1 + shortest_path))
 
-        # for video, score in scores_opt.items():
-        #     print(f"Course: {video}, Score: {score}")
+        scores_opt = {
+            video: scores_opt.get(video, 0) + scores_ori.get(video, 0)
+            for video in topk
+        }
+        for video, score in scores_opt.items():
+            print(f"Course: {video}, Score: {score}")
         return scores_opt
 
 
