@@ -283,6 +283,8 @@ class Metrics(object):
 
             # ---------------------如果找到 next_video_id，则将其插入到首位
             next_video_id = self.find_next_video(prev_video_name, prev_course, u2idx, courses)
+            print("next_video_id:",next_video_id)
+            print("sorted_topk:",sorted_topk)
             if next_video_id is not None and next_video_id not in sorted_topk:
                 sorted_topk.insert(0, next_video_id)
                 print("insert:",next_video_id)
