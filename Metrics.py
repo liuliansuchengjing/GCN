@@ -251,9 +251,9 @@ class Metrics(object):
             #                                                    course_video_mapping,
             #                                                    all_shortest_paths)
 
-            # # ---------------------nearby1-4
-            # scores_pro, f_next_video = self.score_nearby(initial_topk, y_p, idx2u, course_video_mapping, courses,
-            #                                                   prev_courses)
+            # ---------------------nearby1-4
+            scores_pro, f_next_video = self.score_nearby(initial_topk, y_p, idx2u, course_video_mapping, courses,
+                                                              prev_courses)
 
             # # ------------------- 概念距离排序0
             # focus_concepts = graph.find_focus_concept(prev_video_name)
@@ -270,8 +270,7 @@ class Metrics(object):
             # sorted_topk = self.reorder_top_predictions(initial_topk, score)
 
             # -------------------单独使用一个分数排序
-            # if score_opt2 is not None:
-            #     sorted_topk = self.reorder_top_predictions(initial_topk, score_opt2)
+            sorted_topk = self.reorder_top_predictions(initial_topk, scores_pro)
 
             # focus_concepts = graph.find_focus_concept(prev_video_name)
             # if len(student_watch_data_list) < 3 and wc > 1 and d2 > 1:
@@ -280,7 +279,6 @@ class Metrics(object):
             #     sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
             # else:
             #     sorted_topk = list(initial_topk)
-            sorted_topk = list(initial_topk)
 
             # ---------------------如果找到 next_video_id，则将其插入到首位
             next_video_id = self.find_next_video(prev_video_name, prev_course, u2idx, courses)
@@ -348,6 +346,9 @@ class Metrics(object):
             score, f_next_video = self.calculate_distance_score(predicted_courses, prev_courses, courses,
                                                                 prev_video_name, predicted_video_name, 15)
             scores_pro[video_id] += score
+
+        for video, score in scores_opt.items():
+            print(f"Course: {video}, Score: {score}")
 
         return scores_pro, f_next_video
 
