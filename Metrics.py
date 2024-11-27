@@ -254,23 +254,24 @@ class Metrics(object):
             # # ---------------------nearby1-4
             # scores_pro, f_next_video = self.score_nearby(initial_topk, y_p, idx2u, course_video_mapping, courses,
             #                                                   prev_courses)
-
+            # 
             # # ------------------- 概念距离排序0
             # focus_concepts = graph.find_focus_concept(prev_video_name)
-
+            # 
             # if wc > 1 or d2 > 1 :
             #     score_opt = self.optimize_topk_based_on_concept1(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
             #     # sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
             #     score = self.merge_scores(score_opt, scores_pro)
-
+            # 
             # else:
             #     # sorted_topk = list(initial_topk)
             #     score = scores_pro
             # # 根据得分重新排序topk
             # sorted_topk = self.reorder_top_predictions(initial_topk, score)
 
-            # # -------------------单独使用一个分数排序
-            # sorted_topk = self.reorder_top_predictions(initial_topk, scores_pro)
+            # -------------------单独使用一个分数排序
+            # if score_opt2 is not None:
+            #     sorted_topk = self.reorder_top_predictions(initial_topk, score_opt2)
 
             # focus_concepts = graph.find_focus_concept(prev_video_name)
             # if len(student_watch_data_list) < 3 and wc > 1 and d2 > 1:
@@ -279,15 +280,13 @@ class Metrics(object):
             #     sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
             # else:
             #     sorted_topk = list(initial_topk)
-            sorted_topk = list(initial_topk)
 
             # ---------------------如果找到 next_video_id，则将其插入到首位
+            print("prev_courses:", prev_courses)
+            print("prev_course:", prev_course)
             next_video_id = self.find_next_video(prev_video_name, prev_course, u2idx, courses)
-            print("next_video_id:",next_video_id)
-            print("sorted_topk:",sorted_topk)
             if next_video_id is not None and next_video_id not in sorted_topk:
                 sorted_topk.insert(0, next_video_id)
-                print("insert:",next_video_id)
 
             # 更新结果
             for k in k_list:
@@ -301,7 +300,9 @@ class Metrics(object):
     def find_next_video(self, prev_video_name, prev_courses, u2idx, courses):
         """在课程中找到相邻的下一个视频"""
         # prev_courses = self.get_courses_by_video(prev_video_name, course_video_mapping)
+
         for course_id in prev_courses:
+            print("course_id:", course_id)
             for course in courses:
                 if course['id'] == course_id:
                     video_order = course.get('video_order', [])
@@ -350,9 +351,6 @@ class Metrics(object):
             score, f_next_video = self.calculate_distance_score(predicted_courses, prev_courses, courses,
                                                                 prev_video_name, predicted_video_name, 15)
             scores_pro[video_id] += score
-
-        for video, score in scores_opt.items():
-            print(f"Course: {video}, Score: {score}")
 
         return scores_pro, f_next_video
 
