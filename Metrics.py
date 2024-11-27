@@ -287,7 +287,7 @@ class Metrics(object):
             #     sorted_topk = self.reorder_top_predictions(initial_topk, score_opt2)
 
             focus_concepts = graph.find_focus_concept(prev_video_name)
-            if wc > 1 and d2 > 1:
+            if len(student_watch_data_list) < 3 and wc > 1 and d2 > 1:
                 score_opt = self.optimize_topk_based_on_concept2(knowledge_graph, focus_concepts, initial_topk, idx2u,
                                                                  graph, all_shortest_paths)
                 sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
@@ -529,8 +529,8 @@ class Metrics(object):
             video: scores_opt.get(video, 0) + scores_ori.get(video, 0)
             for video in topk
         }
-        for video, score in scores_opt.items():
-            print(f"Course: {video}, Score: {score}")
+        # for video, score in scores_opt.items():
+        #     print(f"Course: {video}, Score: {score}")
         return scores_opt
 
 
