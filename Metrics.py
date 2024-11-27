@@ -383,11 +383,11 @@ class Metrics(object):
                                 f_next_video = False  # 标记为不需要再找下一个视频
                             elif distance == -1:
                                 score += add_s
-                            elif abs(distance) == 2:
+                            elif distance == 2:
                                 score += add_s
-                            elif abs(distance) == 3:
+                            elif distance == 3:
                                 score += add_s
-                            elif abs(distance) == 4:
+                            elif distance == 4:
                                 score += add_s
                         except ValueError:
                             continue
