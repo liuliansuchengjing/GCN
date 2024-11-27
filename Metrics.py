@@ -255,19 +255,19 @@ class Metrics(object):
             scores_pro, f_next_video = self.score_nearby(initial_topk, y_p, idx2u, course_video_mapping, courses,
                                                               prev_courses)
 
-            # ------------------- 概念距离排序0
-            focus_concepts = graph.find_focus_concept(prev_video_name)
+            # # ------------------- 概念距离排序0
+            # focus_concepts = graph.find_focus_concept(prev_video_name)
 
-            if wc > 1 or d2 > 1 :
-                score_opt = self.optimize_topk_based_on_concept1(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
-                # sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
-                score = self.merge_scores(score_opt, scores_pro)
+            # if wc > 1 or d2 > 1 :
+            #     score_opt = self.optimize_topk_based_on_concept1(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
+            #     # sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
+            #     score = self.merge_scores(score_opt, scores_pro)
 
-            else:
-                # sorted_topk = list(initial_topk)
-                score = scores_pro
+            # else:
+            #     # sorted_topk = list(initial_topk)
+            #     score = scores_pro
             # 根据得分重新排序topk
-            # score = scores_pro
+            score = scores_pro
             sorted_topk = self.reorder_top_predictions(initial_topk, score)
 
             # -------------------单独使用一个分数排序
@@ -346,13 +346,13 @@ class Metrics(object):
 
             # 计算距离评分
             score, f_next_video = self.calculate_distance_score(predicted_courses, prev_courses, courses,
-                                                                prev_video_name, predicted_video_name, 15)
+                                                                prev_video_name, predicted_video_name)
             scores_pro[video_id] += score
 
         return scores_pro, f_next_video
 
 
-    def calculate_distance_score(self, predicted_courses, prev_courses, courses, prev_video_name, predicted_video_name, add_s):
+    def calculate_distance_score(self, predicted_courses, prev_courses, courses, prev_video_name, predicted_video_name):
         """计算课程内的相对视频位置的距离评分"""
         score = 0
         f_next_video = True  # 新增一个标志，判断是否需要单独找相邻视频
@@ -369,16 +369,28 @@ class Metrics(object):
                             distance = pred_index - y_index
 
                             if distance == 1:
-                                score = add_s  # 确保相邻视频加足够高的分数
+                                score = 15  # 确保相邻视频加足够高的分数
                                 f_next_video = False  # 标记为不需要再找下一个视频
                             elif distance == -1:
-                                score = add_s
+                                score = 14
                             elif distance == 2:
-                                score = add_s
+                                score = 13
+                            elif distance == -2:
+                                score = 12
                             elif distance == 3:
-                                score = add_s
+                                score = 11
+                            elif distance == -3:
+                                score = 10
                             elif distance == 4:
-                                score = add_s
+                                score = 9
+                            elif distance == -4:
+                                score = 8
+                            elif distance == 5:
+                                score = 7
+                            elif distance == 6:
+                                score = 6
+                            elif distance == 7:
+                                score = 5
                         except ValueError:
                             continue
 
