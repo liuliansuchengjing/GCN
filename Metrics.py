@@ -255,8 +255,8 @@ class Metrics(object):
             scores_pro, f_next_video = self.score_nearby(initial_topk, y_p, idx2u, course_video_mapping, courses,
                                                               prev_courses)
 
-            # # ------------------- 概念距离排序0
-            # focus_concepts = graph.find_focus_concept(prev_video_name)
+            # ------------------- 概念距离排序0
+            focus_concepts = graph.find_focus_concept(prev_video_name)
 
             if wc > 1 or d2 > 1 :
                 score_opt = self.optimize_topk_based_on_concept1(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
