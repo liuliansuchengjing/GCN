@@ -242,7 +242,6 @@ class HGNN_ATT(nn.Module):
         self.is_norm = is_norm
         if self.is_norm:
             self.batch_norm1 = torch.nn.BatchNorm1d(output_size)
-        self.gat1 = HGATLayer(input_size, output_size, dropout=self.dropout, transfer=False, concat=True, edge=True)
         self.hgnn = HGNNLayer(input_size, 0.1)
         self.fus1 = Fusion(output_size)
 
@@ -253,7 +252,6 @@ class HGNN_ATT(nn.Module):
         embedding_list = {}
         for sub_key in hypergraph_list.keys():
             sub_graph = hypergraph_list[sub_key]
-            # sub_node_embed, sub_edge_embed = self.gat1(x, sub_graph.cuda(), root_emb)
             sub_node_embed, sub_edge_embed = self.hgnn(x, sub_graph.cuda())
             sub_node_embed = F.dropout(sub_node_embed, self.dropout, training=self.training)
 
@@ -402,47 +400,17 @@ class MSHGAT(nn.Module):
                 dyemb += sub_emb
                 cas_emb += sub_cas
 
-        # dyemb_ = self.fus1(dyemb, GRUoutput1)
-        # cas_emb_ = self.fus2(cas_emb, GRUoutput2)
         item_emb, h_t1 = self.gru1(dyemb)
         pos_emb, h_t2 = self.gru2(cas_emb)
-        # item_emb = self.fus1(item_emb, dyemb)
-        # pos_emb = self.fus2(pos_emb, cas_emb)
         input_emb = item_emb + pos_emb
-        # input_emb = self.fus(item_emb, cas_emb)
         input_emb = self.LayerNorm(input_emb)
         input_emb = self.dropout(input_emb)
         extended_attention_mask = self.get_attention_mask(input)
         trm_output = self.trm_encoder(input_emb, extended_attention_mask, output_all_encoded_layers=False)
-        # gru_embedding, _ = self.GRU(trm_output)
-        
-        # output = self.fus2(dyemb, trm_output)
+
         pred = self.pred(trm_output)
         mask = get_previous_user_mask(input.cpu(), self.n_node)
 
         return (pred + mask).view(-1, pred.size(-1)).cuda()
 
 
-
-        # item_emb1 = dyemb
-        # input_emb1 = item_emb1 + cas_emb
-        # input_emb1 = self.LayerNorm(input_emb1)
-        # input_emb1 = self.dropout(input_emb1)
-        #
-        # position_ids = torch.arange(input.size(1), dtype=torch.long, device=input.device)
-        # position_ids = position_ids.unsqueeze(0).expand_as(input)
-        # position_embedding = self.position_embedding(position_ids.cuda())
-        # # item_emb2 = self.item_embedding(input.cuda())
-        # item_emb2 = all_emb
-        # input_emb2 = item_emb2 + position_embedding
-        # input_emb2 = self.LayerNorm(input_emb2)
-        # input_emb2 = self.dropout(input_emb2)
-        # input_emb = self.fus(input_emb1, input_emb2)
-        # extended_attention_mask = self.get_attention_mask(input)
-        # trm_output = self.trm_encoder(input_emb, extended_attention_mask, output_all_encoded_layers=False)
-        #
-        # # output = self.fus2(dyemb, trm_output)
-        # pred = self.pred(trm_output)
-        # mask = get_previous_user_mask(input.cpu(), self.n_node)
-        #
-        # return (pred + mask).view(-1, pred.size(-1)).cuda()
