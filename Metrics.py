@@ -164,7 +164,7 @@ class Metrics(object):
         # 	return 0.0
         return score / min(len(actual), k)
 
-    def ndgc(self, y_, topk, k):
+    def ndcg(self, y_, topk, k):
         DCG_score = 0
         IDCG_score = 0
         NDCG = 0
@@ -230,7 +230,7 @@ class Metrics(object):
                     topk = p_sort[-k:][::-1]
                     scores['hits@' + str(k)].extend([1. if y_ in topk else 0.])
                     scores['map@' + str(k)].extend([self.apk([y_], topk, k)])
-                    scores['NDCG@' + str(k)].extend([self.ndgc(y_, topk, k)])
+                    scores['NDCG@' + str(k)].extend([self.ndcg(y_, topk, k)])
 
         scores = {k: np.mean(v) for k, v in scores.items()}
         return scores, scores_len
