@@ -204,6 +204,7 @@ def test_epoch_pro(model, validation_data, graph, hypergraph_list, k_list=[5, 10
     for k in k_list:
         scores['hits@' + str(k)] = 0
         scores['map@' + str(k)] = 0
+        scores['NDCG@' + str(k)] = 0
 
     n_total_words = 0
     with torch.no_grad():
