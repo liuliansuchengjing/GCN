@@ -170,8 +170,8 @@ class Metrics(object):
         NDCG = 0
         for i in range(k):
             if topk[i] == y_:
-                DCG_score += [1 / np.log2(i + 2)]
-                IDCG_score += [1 / np.log2(2)]
+                DCG_score += 1 / np.log2(i + 2)
+                IDCG_score += 1 / np.log2(2)
 
         if IDCG_score != 0:
             NDCG = DCG_score / IDCG_score
