@@ -233,12 +233,12 @@ def test_epoch_pro(model, validation_data, graph, hypergraph_list, k_list=[5, 10
             for k in k_list:
                 scores['hits@' + str(k)] += scores_batch['hits@' + str(k)] * scores_len
                 scores['map@' + str(k)] += scores_batch['map@' + str(k)] * scores_len
-                scores['NCDG@' + str(k)] += scores_batch['NCDG@' + str(k)] * scores_len
+                scores['NDCG@' + str(k)] += scores_batch['NDCG@' + str(k)] * scores_len
 
     for k in k_list:
         scores['hits@' + str(k)] = scores['hits@' + str(k)] / n_total_words
         scores['map@' + str(k)] = scores['map@' + str(k)] / n_total_words
-        scores['NCDG@' + str(k)] = scores['NCDG@' + str(k)] / n_total_words
+        scores['NDCG@' + str(k)] = scores['NDCG@' + str(k)] / n_total_words
 
     return scores
 
