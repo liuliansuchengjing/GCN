@@ -164,7 +164,7 @@ class Metrics(object):
         # 	return 0.0
         return score / min(len(actual), k)
 
-    def ndgc(self, y_, topk, k):
+    def ndcg(self, y_, topk, k):
         DCG_score = 0
         IDCG_score = 0
         NDCG = 0
@@ -223,7 +223,7 @@ class Metrics(object):
                     topk = p_sort[-k:][::-1]
                     scores['hits@' + str(k)].extend([1. if y_ in topk else 0.])
                     scores['map@' + str(k)].extend([self.apk([y_], topk, k)])
-                    scores['NDCG@' + str(k)].extend([self.ndgc(y_, topk, k)])
+                    scores['NDCG@' + str(k)].extend([self.ndcg(y_, topk, k)])
 
         scores = {k: np.mean(v) for k, v in scores.items()}
         return scores, scores_len
@@ -254,7 +254,7 @@ class Metrics(object):
 
         scores = {f'hits@{k}': [] for k in k_list}
         scores.update({f'map@{k}': [] for k in k_list})
-        scores.update({f'map@{k}': [] for k in k_list})
+        scores.update({f'NDCG@{k}': [] for k in k_list})
 
         # 提取课程对应视频的映射关系
         course_video_mapping = self.build_course_video_mapping(courses)
@@ -338,7 +338,7 @@ class Metrics(object):
                 topk = sorted_topk[:k]
                 scores[f'hits@{k}'].append(1.0 if y_ in topk else 0.0)
                 scores[f'map@{k}'].append(self.apk([y_], topk, k))
-                scores[f'NDCG@{k}'].append(self.ndgc(y_, topk, k))
+                scores[f'NDCG@{k}'].append(self.ndcg(y_, topk, k))
 
         scores = {k: np.mean(v) for k, v in scores.items()}
         return scores, scores_len
