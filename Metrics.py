@@ -338,7 +338,7 @@ class Metrics(object):
                 topk = sorted_topk[:k]
                 scores[f'hits@{k}'].append(1.0 if y_ in topk else 0.0)
                 scores[f'map@{k}'].append(self.apk([y_], topk, k))
-                scores['NDCG@' + str(k)].extend([self.ndgc(y_, topk, k)])
+                scores[f'NDCG@{k}'].append(self.ndgc(y_, topk, k))
 
         scores = {k: np.mean(v) for k, v in scores.items()}
         return scores, scores_len
