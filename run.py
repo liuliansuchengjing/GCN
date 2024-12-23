@@ -227,9 +227,9 @@ def test_epoch_pro(model, validation_data, graph, hypergraph_list, k_list=[5, 10
             pred = model(tgt, tgt_timestamp, tgt_idx, graph, hypergraph_list)
             y_pred = pred.detach().cpu().numpy()
 
-            scores_batch, scores_len = metric.compute_metric3(y_pred, y_gold, k_list)
-            # scores_batch, scores_len = metric.compute_metric_pro(
-            #     y_pred, y_gold, y_prev, watch_count, duration_time, watch_time, d1 ,d2, d3, k_list)
+            # scores_batch, scores_len = metric.compute_metric3(y_pred, y_gold, k_list)
+            scores_batch, scores_len = metric.compute_metric_pro(
+                y_pred, y_gold, y_prev, watch_count, duration_time, watch_time, d1 ,d2, d3, k_list)
             n_total_words += scores_len
             for k in k_list:
                 scores['hits@' + str(k)] += scores_batch['hits@' + str(k)] * scores_len
