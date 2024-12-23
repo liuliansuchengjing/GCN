@@ -164,7 +164,7 @@ class Metrics(object):
         # 	return 0.0
         return score / min(len(actual), k)
 
-    def ndcg(self, y_, topk, k):
+    def ndgc(self, y_, topk, k):
         DCG_score = 0
         IDCG_score = 0
         NDCG = 0
@@ -176,7 +176,7 @@ class Metrics(object):
         if IDCG_score != 0:
             NDCG = DCG_score / IDCG_score
 
-        # print("NDCG:", NDCG)
+        print("NDCG:", NDCG)
         return NDCG
 
     def compute_metric(self, y_prob, y_true, k_list=[10, 50, 100]):
@@ -202,13 +202,6 @@ class Metrics(object):
         scores = {k: np.mean(v) for k, v in scores.items()}
         return scores, scores_len
 
-    def get_courses_by_video(self, video_name, course_video_mapping):
-        """根据视频名称获取其所属的课程"""
-        courses = []
-        for course, videos in course_video_mapping.items():
-            if video_name in videos:
-                courses.append(course)
-        return courses
 
     def compute_metric3(self, y_prob, y_true, k_list=[10, 50, 100]):
         '''
@@ -230,10 +223,18 @@ class Metrics(object):
                     topk = p_sort[-k:][::-1]
                     scores['hits@' + str(k)].extend([1. if y_ in topk else 0.])
                     scores['map@' + str(k)].extend([self.apk([y_], topk, k)])
-                    scores['NDCG@' + str(k)].extend([self.ndcg(y_, topk, k)])
+                    scores['NDCG@' + str(k)].extend([self.ndgc(y_, topk, k)])
 
         scores = {k: np.mean(v) for k, v in scores.items()}
         return scores, scores_len
+
+    def get_courses_by_video(self, video_name, course_video_mapping):
+        """根据视频名称获取其所属的课程"""
+        courses = []
+        for course, videos in course_video_mapping.items():
+            if video_name in videos:
+                courses.append(course)
+        return courses
 
     def compute_metric_pro(self, y_prob, y_true, y_prev, w_c, d_t, w_t, d_1, d_2, d_3, k_list=[5, 10, 20]):
         '''
@@ -252,6 +253,7 @@ class Metrics(object):
         student_watch_data_list = []
 
         scores = {f'hits@{k}': [] for k in k_list}
+        scores.update({f'map@{k}': [] for k in k_list})
         scores.update({f'map@{k}': [] for k in k_list})
 
         # 提取课程对应视频的映射关系
@@ -291,23 +293,27 @@ class Metrics(object):
             #                                                    course_video_mapping,
             #                                                    all_shortest_paths)
 
-            # ---------------------nearby1-4
-            scores_pro, f_next_video = self.score_nearby(initial_topk, y_p, idx2u, course_video_mapping, courses,
-                                                              prev_courses)
+            # # ---------------------nearby1-4
+            # scores_pro, f_next_video = self.score_nearby(initial_topk, y_p, idx2u, course_video_mapping, courses,
+            #                                                   prev_courses)
 
             # ------------------- 概念距离排序0
             focus_concepts = graph.find_focus_concept(prev_video_name)
 
-            if wc > 1 or d2 > 1 :
-                score_opt = self.optimize_topk_based_on_concept1(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
-                # sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
-                score = self.merge_scores(score_opt, scores_pro)
+            # if wc > 1 or d2 > 1 :
+            #     score_opt = self.optimize_topk_based_on_concept1(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
+            #     # sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
+            #     score = self.merge_scores(score_opt, scores_pro)
+            # 
+            # else:
+            #     # sorted_topk = list(initial_topk)
+            #     score = scores_pro
 
-            else:
-                # sorted_topk = list(initial_topk)
-                score = scores_pro
+            score = self.optimize_topk_based_on_concept1(knowledge_graph, focus_concepts, initial_topk, idx2u,
+                                                             graph, all_shortest_paths)
+                
+            
             # 根据得分重新排序topk
-            # score = scores_pro
             sorted_topk = self.reorder_top_predictions(initial_topk, score)
 
             # -------------------单独使用一个分数排序
@@ -332,6 +338,7 @@ class Metrics(object):
                 topk = sorted_topk[:k]
                 scores[f'hits@{k}'].append(1.0 if y_ in topk else 0.0)
                 scores[f'map@{k}'].append(self.apk([y_], topk, k))
+                scores['NDCG@' + str(k)].extend([self.ndgc(y_, topk, k)])
 
         scores = {k: np.mean(v) for k, v in scores.items()}
         return scores, scores_len
@@ -386,13 +393,13 @@ class Metrics(object):
 
             # 计算距离评分
             score, f_next_video = self.calculate_distance_score(predicted_courses, prev_courses, courses,
-                                                                prev_video_name, predicted_video_name)
+                                                                prev_video_name, predicted_video_name, 15)
             scores_pro[video_id] += score
 
         return scores_pro, f_next_video
 
 
-    def calculate_distance_score(self, predicted_courses, prev_courses, courses, prev_video_name, predicted_video_name):
+    def calculate_distance_score(self, predicted_courses, prev_courses, courses, prev_video_name, predicted_video_name, add_s):
         """计算课程内的相对视频位置的距离评分"""
         score = 0
         f_next_video = True  # 新增一个标志，判断是否需要单独找相邻视频
@@ -409,28 +416,16 @@ class Metrics(object):
                             distance = pred_index - y_index
 
                             if distance == 1:
-                                score = 15  # 确保相邻视频加足够高的分数
+                                score = add_s  # 确保相邻视频加足够高的分数
                                 f_next_video = False  # 标记为不需要再找下一个视频
                             elif distance == -1:
-                                score = 14
+                                score = add_s
                             elif distance == 2:
-                                score = 13
-                            elif distance == -2:
-                                score = 12
+                                score = add_s
                             elif distance == 3:
-                                score = 11
-                            elif distance == -3:
-                                score = 10
+                                score = add_s
                             elif distance == 4:
-                                score = 9
-                            elif distance == -4:
-                                score = 8
-                            elif distance == 5:
-                                score = 7
-                            elif distance == 6:
-                                score = 6
-                            elif distance == 7:
-                                score = 5
+                                score = add_s
                         except ValueError:
                             continue
 
