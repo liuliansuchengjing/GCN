@@ -176,7 +176,6 @@ class Metrics(object):
         if IDCG_score != 0:
             NDCG = DCG_score / IDCG_score
 
-        print("NDCG:", NDCG)
         return NDCG
 
     def compute_metric(self, y_prob, y_true, k_list=[10, 50, 100]):
