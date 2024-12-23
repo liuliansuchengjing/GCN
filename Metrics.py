@@ -299,21 +299,18 @@ class Metrics(object):
             # ------------------- 概念距离排序0
             focus_concepts = graph.find_focus_concept(prev_video_name)
 
-            # if wc > 1 or d2 > 1 :
-            #     score_opt = self.optimize_topk_based_on_concept1(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
-            #     # sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
-            #     score = self.merge_scores(score_opt, scores_pro)
-            # 
-            # else:
-            #     # sorted_topk = list(initial_topk)
-            #     score = scores_pro
-
-            score = self.optimize_topk_based_on_concept1(knowledge_graph, focus_concepts, initial_topk, idx2u,
-                                                             graph, all_shortest_paths)
-                
+            if wc > 1 or d2 > 1 :
+                score = self.optimize_topk_based_on_concept1(knowledge_graph, focus_concepts, initial_topk, idx2u, graph, all_shortest_paths)
+                sorted_topk = self.reorder_top_predictions(initial_topk, score)
+                # sorted_topk = self.reorder_top_predictions(initial_topk, score_opt)
+                # score = self.merge_scores(score_opt, scores_pro)
+            
+            else:
+                sorted_topk = list(initial_topk)
+                # score = scores_pro               
             
             # 根据得分重新排序topk
-            sorted_topk = self.reorder_top_predictions(initial_topk, score)
+            # sorted_topk = self.reorder_top_predictions(initial_topk, score)
 
             # -------------------单独使用一个分数排序
             # if score_opt2 is not None:
