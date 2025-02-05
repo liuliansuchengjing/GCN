@@ -176,7 +176,7 @@ def test_epoch(model, validation_data, graph, hypergraph_list, k_list=[5, 10, 20
             # print("Validation batch ", i)
             # prepare data
             # tgt, tgt_timestamp, tgt_idx = batch
-            tgt, tgt_timestamp, tgt_idx, watch_count, duration_time, watch_time, d1, d2, d3 = batch
+            tgt, tgt_timestamp, tgt_idx = batch
             y_gold = tgt[:, 1:].contiguous().view(-1).detach().cpu().numpy()
 
             # forward
