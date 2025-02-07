@@ -26,7 +26,7 @@ torch.cuda.manual_seed(0)
 metric = Metrics()
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-data_name', default='christianity')
+parser.add_argument('-data_name', default='MOO')
 parser.add_argument('-epoch', type=int, default=60)
 parser.add_argument('-batch_size', type=int, default=64)
 parser.add_argument('-d_model', type=int, default=64)
@@ -100,7 +100,7 @@ def train_epoch(model, training_data, graph, hypergraph_list, loss_func, optimiz
 def train_model(MSHGAT, data_path):
     # ========= Preparing DataLoader =========#
     user_size, total_cascades, timestamps, train, valid, test = Split_data(data_path, opt.train_rate, opt.valid_rate,
-                                                                           load_dict=True)
+                                                                           load_dict=False)
 
     train_data = DataLoader(train, batch_size=opt.batch_size, load_dict=True, cuda=False)
     valid_data = DataLoader(valid, batch_size=opt.batch_size, load_dict=True, cuda=False)
