@@ -22,10 +22,7 @@ class HGNN_conv(nn.Module):
             self.bias = nn.Parameter(torch.Tensor(out_ft))
         else:
             self.register_parameter('bias', None)
-
-
         self.reset_parameters()
-
 
     def reset_parameters(self):
         stdv = 1. / math.sqrt(self.weight.size(1))
@@ -33,7 +30,6 @@ class HGNN_conv(nn.Module):
         self.weight1.data.uniform_(-stdv, stdv)
         if self.bias is not None:
             self.bias.data.uniform_(-stdv, stdv)
-
 
     def forward(self, x, G):  # x: torch.Tensor, G: torch.Tensor
 
@@ -45,6 +41,7 @@ class HGNN_conv(nn.Module):
         x = G.matmul(edge)
 
         return x, edge
+
 
 class HGNNLayer(nn.Module):
     def __init__(self, emb_dim, dropout=0.15):
@@ -88,7 +85,6 @@ def get_previous_user_mask(seq, user_size):
     # print("masked_seq ",masked_seq.size())
     return masked_seq.cuda()
 
-
 # Fusion gate
 class Fusion(nn.Module):
     def __init__(self, input_size, out=1, dropout=0.2):
@@ -109,9 +105,7 @@ class Fusion(nn.Module):
         out = torch.sum(emb_score * emb, dim=0)
         return out
 
-
 '''Learn friendship network'''
-
 
 class GraphNN(nn.Module):
     def __init__(self, ntoken, ninp, dropout=0.5, is_norm=True):
@@ -142,7 +136,6 @@ class GraphNN(nn.Module):
 
 
 '''Learn diffusion network'''
-
 
 class HGNN_ATT(nn.Module):
     def __init__(self, input_size, n_hid, output_size, dropout=0.3, is_norm=True):
