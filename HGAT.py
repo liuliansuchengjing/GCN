@@ -415,7 +415,9 @@ class MSHGAT(nn.Module):
         print("input_emb 的形状为:", input_emb.shape)
         # input_emb = self.fus(item_emb, cas_emb)
         input_emb = self.LayerNorm(input_emb) #
+        print("LayerNorm/input_emb 的形状为:", input_emb.shape)
         input_emb = self.dropout(input_emb) #
+        print("dropout/input_emb 的形状为:", input_emb.shape)
         extended_attention_mask = self.get_attention_mask(dyemb) #input_emb->dyemb
         trm_output = self.trm_encoder(dyemb, extended_attention_mask, output_all_encoded_layers=False) #input_emb->dyemb
         # gru_embedding, _ = self.GRU(trm_output)
