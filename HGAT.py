@@ -413,7 +413,7 @@ class MSHGAT(nn.Module):
         # input_emb = self.LayerNorm(input_emb) #
         # input_emb = self.dropout(input_emb) #
         extended_attention_mask = self.get_attention_mask(dyemb) #input_emb->dyemb
-        trm_output = self.trm_encoder(input_emb, extended_attention_mask, output_all_encoded_layers=False)
+        trm_output = self.trm_encoder(dyemb, extended_attention_mask, output_all_encoded_layers=False) #input_emb->dyemb
         # gru_embedding, _ = self.GRU(trm_output)
         
         # output = self.fus2(dyemb, trm_output)
