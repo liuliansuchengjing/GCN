@@ -71,6 +71,7 @@ def train_epoch(model, training_data, graph, hypergraph_list, loss_func, optimiz
             training_data):  # tqdm(training_data, mininterval=2, desc='  - (Training)   ', leave=False):
         # data preparing
         tgt, tgt_timestamp, tgt_idx = (item.cuda() for item in batch)
+        print(tgt_idx)
 
         np.set_printoptions(threshold=np.inf)
         gold = tgt[:, 1:]
