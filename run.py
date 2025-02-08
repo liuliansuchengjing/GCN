@@ -71,7 +71,6 @@ def train_epoch(model, training_data, graph, hypergraph_list, loss_func, optimiz
             training_data):  # tqdm(training_data, mininterval=2, desc='  - (Training)   ', leave=False):
         # data preparing
         tgt, tgt_timestamp, tgt_idx = (item.cuda() for item in batch)
-        print(tgt_idx)
 
         np.set_printoptions(threshold=np.inf)
         gold = tgt[:, 1:]
@@ -176,8 +175,8 @@ def test_epoch(model, validation_data, graph, hypergraph_list, k_list=[5, 10, 20
                 validation_data):  # tqdm(validation_data, mininterval=2, desc='  - (Validation) ', leave=False):
             # print("Validation batch ", i)
             # prepare data
-            # tgt, tgt_timestamp, tgt_idx = batch
             tgt, tgt_timestamp, tgt_idx = batch
+            print(tgt_idx)
             y_gold = tgt[:, 1:].contiguous().view(-1).detach().cpu().numpy()
 
             # forward
