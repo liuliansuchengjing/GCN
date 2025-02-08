@@ -404,15 +404,15 @@ class MSHGAT(nn.Module):
 
         # dyemb_ = self.fus1(dyemb, GRUoutput1)
         # cas_emb_ = self.fus2(cas_emb, GRUoutput2)
-        item_emb, h_t1 = self.gru1(dyemb)
-        pos_emb, h_t2 = self.gru2(cas_emb)
+        # item_emb, h_t1 = self.gru1(dyemb) #
+        # pos_emb, h_t2 = self.gru2(cas_emb) #
         # item_emb = self.fus1(item_emb, dyemb)
         # pos_emb = self.fus2(pos_emb, cas_emb)
-        input_emb = item_emb + pos_emb
+        # input_emb = item_emb + pos_emb #
         # input_emb = self.fus(item_emb, cas_emb)
-        input_emb = self.LayerNorm(input_emb)
-        input_emb = self.dropout(input_emb)
-        extended_attention_mask = self.get_attention_mask(input)
+        # input_emb = self.LayerNorm(input_emb) #
+        # input_emb = self.dropout(input_emb) #
+        extended_attention_mask = self.get_attention_mask(dyemb) #input_emb->dyemb
         trm_output = self.trm_encoder(input_emb, extended_attention_mask, output_all_encoded_layers=False)
         # gru_embedding, _ = self.GRU(trm_output)
         
