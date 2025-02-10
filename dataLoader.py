@@ -97,12 +97,12 @@ def Split_data(data_name, train_rate =0.8, valid_rate = 0.1, random_seed = 300, 
         test_idx = cas_idx[valid_idx_:]
         test = [test, test_t, test_idx]
             
-        # random.seed(random_seed)
-        # random.shuffle(train)
-        # random.seed(random_seed)
-        # random.shuffle(train_t)
-        # random.seed(random_seed)
-        # random.shuffle(train_idx)
+        random.seed(random_seed)
+        random.shuffle(train)
+        random.seed(random_seed)
+        random.shuffle(train_t)
+        random.seed(random_seed)
+        random.shuffle(train_idx)
         
         total_len =  sum(len(i)-1 for i in t_cascades)
         train_size = len(train_t)
