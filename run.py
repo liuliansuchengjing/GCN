@@ -71,6 +71,7 @@ def train_epoch(model, training_data, graph, hypergraph_list, loss_func, optimiz
             training_data):  # tqdm(training_data, mininterval=2, desc='  - (Training)   ', leave=False):
         # data preparing
         tgt, tgt_timestamp, tgt_idx = (item.cuda() for item in batch)
+        print("training_tgt:", tgt)
 
         np.set_printoptions(threshold=np.inf)
         gold = tgt[:, 1:]
@@ -267,5 +268,5 @@ def test_model(MSHGAT, data_path):
 
 if __name__ == "__main__":
     model = MSHGAT
-    # train_model(model, opt.data_name)
-    test_model(model, opt.data_name)
+    train_model(model, opt.data_name)
+    # test_model(model, opt.data_name)
