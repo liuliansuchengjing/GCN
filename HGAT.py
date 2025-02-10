@@ -314,6 +314,6 @@ class MSHGAT(nn.Module):
         pred = self.pred(trm_output)
         mask = get_previous_user_mask(input.cpu(), self.n_node)
         pre = (pred + mask).view(-1, pred.size(-1)).cuda()
-        print("pre:", pre.size())
+        
 
         return pre
