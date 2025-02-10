@@ -152,9 +152,11 @@ class HGNN_ATT(nn.Module):
         root_emb = F.embedding(hypergraph_list[1].cuda(), x)
 
         hypergraph_list = hypergraph_list[0]
+        
         embedding_list = {}
         for sub_key in hypergraph_list.keys():
             sub_graph = hypergraph_list[sub_key]
+            print("sub_graph",sub_graph.size())
             # sub_node_embed, sub_edge_embed = self.gat1(x, sub_graph.cuda(), root_emb)
             sub_node_embed, sub_edge_embed = self.hgnn(x, sub_graph.cuda())
             sub_node_embed = F.dropout(sub_node_embed, self.dropout, training=self.training)
