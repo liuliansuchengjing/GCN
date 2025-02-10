@@ -249,9 +249,6 @@ class MSHGAT(nn.Module):
     def forward(self, input, input_timestamp, input_idx, graph, hypergraph_list):
 
         input = input[:, :-1]
-        numpy_array = input.numpy()
-        np.set_printoptions(threshold=np.inf)
-        print(numpy_array)
         
         input_timestamp = input_timestamp[:, :-1]
         hidden = self.dropout(self.gnn(graph))
