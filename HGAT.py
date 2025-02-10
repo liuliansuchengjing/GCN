@@ -313,5 +313,7 @@ class MSHGAT(nn.Module):
         trm_output = self.trm_encoder(input_emb, extended_attention_mask, output_all_encoded_layers=False) #input_emb->dyemb
         pred = self.pred(trm_output)
         mask = get_previous_user_mask(input.cpu(), self.n_node)
+        pre = (pred + mask).view(-1, pred.size(-1)).cuda()
+        print("pre:", pre.size())
 
-        return (pred + mask).view(-1, pred.size(-1)).cuda()
+        return pre
