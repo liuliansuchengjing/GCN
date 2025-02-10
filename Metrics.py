@@ -215,7 +215,7 @@ class Metrics(object):
         scores.update({'map@' + str(k): [] for k in k_list})
         scores.update({'NDCG@' + str(k): [] for k in k_list})
         for p_, y_ in zip(y_prob, y_true):
-            if y_ != self.PAD:
+            if y_ != self.PAD and y_ != 1:
                 scores_len += 1.0
                 p_sort = p_.argsort()
                 for k in k_list:
