@@ -156,7 +156,6 @@ class HGNN_ATT(nn.Module):
         embedding_list = {}
         for sub_key in hypergraph_list.keys():
             sub_graph = hypergraph_list[sub_key]
-            print("sub_graph",sub_graph.size())
             # sub_node_embed, sub_edge_embed = self.gat1(x, sub_graph.cuda(), root_emb)
             sub_node_embed, sub_edge_embed = self.hgnn(x, sub_graph.cuda())
             sub_node_embed = F.dropout(sub_node_embed, self.dropout, training=self.training)
@@ -282,9 +281,7 @@ class MSHGAT(nn.Module):
                 sub_cas = torch.einsum('ij,i->ij', sub_cas, input_idx)
                 sub_cas = F.embedding(sub_cas.cuda(), list(memory_emb_list.values())[ind - 1][1].cuda())
                 tensor = list(memory_emb_list.values())[ind - 1][1].cuda()
-                print("sub_cas:", tensor.shape)
                 sub_emb = F.embedding(cur.cuda(), list(memory_emb_list.values())[ind - 1][0].cuda())
-                tensor = list(memory_emb_list.values())[ind - 1][0]
                 print("sub_emb:", tensor.shape)
                 sub_input = cur + sub_input
                 all_input = cur + all_input
