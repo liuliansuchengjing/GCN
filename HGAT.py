@@ -280,9 +280,7 @@ class MSHGAT(nn.Module):
                 sub_cas[~temp] = 1
                 sub_cas = torch.einsum('ij,i->ij', sub_cas, input_idx)
                 sub_cas = F.embedding(sub_cas.cuda(), list(memory_emb_list.values())[ind - 1][1].cuda())
-                tensor = list(memory_emb_list.values())[ind - 1][1].cuda()
                 sub_emb = F.embedding(cur.cuda(), list(memory_emb_list.values())[ind - 1][0].cuda())
-                print("sub_emb:", tensor.shape)
                 sub_input = cur + sub_input
                 all_input = cur + all_input
 
