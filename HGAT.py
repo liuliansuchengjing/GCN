@@ -249,6 +249,7 @@ class MSHGAT(nn.Module):
     def forward(self, input, input_timestamp, input_idx, graph, hypergraph_list):
 
         input = input[:, :-1]
+        print("input:", input)
         input_timestamp = input_timestamp[:, :-1]
         hidden = self.dropout(self.gnn(graph))
         memory_emb_list = self.hgnn(hidden, hypergraph_list)
