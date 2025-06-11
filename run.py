@@ -26,7 +26,7 @@ torch.cuda.manual_seed(0)
 metric = Metrics()
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-data_name', default='rmr_MOOC10000')
+parser.add_argument('-data_name', default='rmr_Wcount_MOOC10000')
 parser.add_argument('-epoch', type=int, default=60)
 parser.add_argument('-batch_size', type=int, default=64)
 parser.add_argument('-d_model', type=int, default=64)
@@ -267,5 +267,5 @@ def test_model(MSHGAT, data_path):
 
 if __name__ == "__main__":
     model = MSHGAT
-    train_model(model, opt.data_name)
-    # test_model(model, opt.data_name)
+    # train_model(model, opt.data_name)
+    test_model(model, opt.data_name)
