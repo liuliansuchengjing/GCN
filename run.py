@@ -259,7 +259,7 @@ def test_model(MSHGAT, data_path):
     model.cuda()
 
     # scores = test_epoch_pro(model, test_data, relation_graph, hypergraph_list, k_list=[5, 10, 20, 25, 30, 35, 40])
-    scores = test_epoch(model, test_data, relation_graph, hypergraph_list, k_list=[5, 10, 20, 30, 40, 50])
+    scores = test_epoch(model, test_data, relation_graph, hypergraph_list, k_list=[5, 10, 15, 20, 30, 40, 50])
     print('  - (Test) ')
     for metric in scores.keys():
         print(metric + ' ' + str(scores[metric]))
